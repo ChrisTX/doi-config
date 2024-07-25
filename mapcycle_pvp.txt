@@ -32,3 +32,5 @@ salerno offensive
 sicily invasion
 sicily liberation
 tobruk liberation
+web_carentan_pvp invasion
+web_carentan_pvp liberation

@@ -3,8 +3,6 @@ bastogne raid
 bastogne stronghold
 breville entrenchment
 breville stronghold
-brittany entrenchment
-brittany stronghold
 causeway entrenchment
 causeway stronghold
 comacchio entrenchment
@@ -30,15 +28,14 @@ doi_reichsfarm stronghold
 doi_sandwall stronghold
 dunkirk entrenchment
 dunkirk stronghold
-el_guettar_alpha entrenchment
-el_guettar_alpha stronghold
 foy entrenchment
 foy raid
 foy stronghold
+kleve entrenchment
+kleve raid
+kleve stronghold
 kriegsmarine entrenchment
 kriegsmarine stronghold
-ladbroke entrenchment
-ladbroke stronghold
 lazio stronghold
 lighthouse entrenchment
 lighthouse stronghold
@@ -75,7 +72,6 @@ sicily stronghold
 squatter entrenchment
 squatter stronghold
 tobruk stronghold
-web_arcticfox stronghold
 web_carentan entrenchment
 web_carentan stronghold
 westwall entrenchment
