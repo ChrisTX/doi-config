@@ -14,7 +14,7 @@ rcon_password "MY-PASSWORD"
 
 exec doi-config/init-coop-commando.cfg
 ```
-Next, create a symbolic link for the `subscribed_file_ids.txt` in your `doi` folder.
+Next, create a symbolic link for the workshop ID file for the respective game mode to `subscribed_file_ids.txt` in your `doi` folder.
 
 You can create symbolic links to the SourcePawn scripts in your SourceMod scripting folder.
 After compiling the scripts with `spcomp`, they are ready for use.
