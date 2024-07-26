@@ -15,33 +15,34 @@ public OnPluginStart() {
   HookEvent("game_init", Event_GameStart, EventHookMode_Pre);
   HookEvent("game_start", Event_GameStart, EventHookMode_Pre);
   HookEvent("game_newmap", Event_GameStart, EventHookMode_Pre);
-  AdjustDoICVars();
+  AdjustDOICVars();
 }
 
 public Event_GameStart(Handle:event, const String:name[], bool:dontBroadcast) {
-  AdjustDoICVars();
+  AdjustDOICVars();
 }
 
-public SetVarUpperBound(const String:name[], Float:fMax) {
+public SetVarUpperBound(const String:name[], const float fMax) {
   Handle my_cvar = FindConVar(name);
   SetConVarBounds(my_cvar, ConVarBound_Upper, true, fMax);
 }
 
-public RemoveCheatFlag(const String:name[]) {
+public RemoveFlag(const String:name[], const int CVarFlag) {
   Handle my_cvar = FindConVar(name);
   int srda_flags = GetConVarFlags(my_cvar);
-  srda_flags &= ~FCVAR_CHEAT;
+  srda_flags &= ~CVarFlag;
   SetConVarFlags(my_cvar, srda_flags);
+}
+
+public RemoveCheatFlag(const String:name[]) {
+  RemoveFlag(name, FCVAR_CHEAT);
 }
 
 public RemoveNotifyFlag(const String:name[]) {
-  Handle my_cvar = FindConVar(name);
-  int srda_flags = GetConVarFlags(my_cvar);
-  srda_flags &= ~FCVAR_NOTIFY;
-  SetConVarFlags(my_cvar, srda_flags);
+  RemoveFlag(name, FCVAR_NOTIFY);
 }
 
-public AdjustDoICVars() {
+public AdjustDOICVars() {
   SetVarUpperBound("mp_coop_lobbysize", MaxClients - 24.0);
   SetVarUpperBound("mp_timer_pregame", 600.0);
   SetVarUpperBound("mp_timer_postgame", 600.0);
