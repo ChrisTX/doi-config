@@ -11,15 +11,14 @@ public Plugin myinfo =
 }
 
 public OnPluginStart() {
-  HookEvent("player_connect", Event_Connect, EventHookMode_Pre);
-  HookEvent("player_disconnect", Event_Connect, EventHookMode_Pre);
+  HookEvent("round_start", EventHandler, EventHookMode_Post);
   AddCommandListener(exec, "exec");
 }
 
 GetPlayerCount()
 {
-    new players;
-    for (new i = 1; i <= MaxClients; i++)
+    int players = 0;
+    for (int i = 1; i <= MaxClients; i++)
     {
         if (IsClientInGame(i) && !IsFakeClient(i))
             players++;
@@ -27,7 +26,7 @@ GetPlayerCount()
     return players;
 }
 
-public Event_Connect(Handle:event, const String:name[], bool:dontBroadcast) {
+public EventHandler(Handle:event, const String:name[], bool:dontBroadcast) {
   AdjustDifficulty();
 }
 
@@ -65,11 +64,21 @@ public AdjustDifficulty() {
   }
   SetVarValue("doi_bot_count_override", 1);
 
-  new clientcount = GetPlayerCount();
-  new botcount = 4 + clientcount * 2;
+  int clientcount = GetPlayerCount();
+  PrintToServer("Difficulty Scaler: Scaling for %d players", clientcount);
+
+  int botcount = 3 + clientcount * 3;
   if(botcount > 32)
     botcount = 32;
-  SetVarValue("doi_bot_count_default_enemy_max_players", botcount);
   SetVarValue("doi_bot_count_default_enemy_min_players", botcount);
-  SetVarValue("mp_cp_capture_time", 120 + clientcount * 15);
+  SetVarValue("doi_bot_count_default_enemy_max_players", botcount);
+
+  int friendly_botcount = 5 + clientcount;
+  int botlimit = 32 - botcount;
+  if(friendly_botcount > botlimit)
+    friendly_botcount = botlimit;
+  SetVarValue("doi_bot_count_default_friendly_min_players", friendly_botcount);
+  SetVarValue("doi_bot_count_default_friendly_max_players", friendly_botcount);
+
+  SetVarValue("mp_cp_capture_time", 180 + clientcount * 30);
 }
