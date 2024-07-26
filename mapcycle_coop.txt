@@ -20,6 +20,7 @@ dianville stronghold
 dog_red entrenchment
 dog_red raid
 dog_red stronghold
+doi_harbor_b01 stronghold
 doi_hinterhof_rework stronghold
 doi_laststand stronghold
 doi_pegasus stronghold
@@ -72,6 +73,7 @@ sicily stronghold
 squatter entrenchment
 squatter stronghold
 tobruk stronghold
+web_arcticfox stronghold
 web_carentan entrenchment
 web_carentan stronghold
 westwall entrenchment
