@@ -33,20 +33,23 @@ public Event_Connect(Handle:event, const String:name[], bool:dontBroadcast) {
 
 char CurrentGameMode[30];
 
-public Action exec(int client, const char[] command, int arg) 
-{ 
-    char cfgfilename[MAX_NAME_LENGTH]; 
-    GetCmdArgString(cfgfilename, sizeof(cfgfilename)); 
+// We need to identify the game mode if possible.
+public Action exec(int client, const char[] command, int arg)
+{
+    char cfgfilename[MAX_NAME_LENGTH];
+    GetCmdArgString(cfgfilename, sizeof(cfgfilename));
 
-    if(StrContains(cfgfilename, ".cfg") < 8  || StrContains(cfgfilename, "server_") != 1) return Plugin_Continue; 
+    if(StrContains(cfgfilename, ".cfg") < 8 || StrContains(cfgfilename, "server_") != 1)
+        return Plugin_Continue;
 
 
-    Format(CurrentGameMode, sizeof(CurrentGameMode), "%s", cfgfilename[8]); 
-    int dot = FindCharInString(CurrentGameMode, '.', true); 
+    Format(CurrentGameMode, sizeof(CurrentGameMode), "%s", cfgfilename[8]);
+    int dot = FindCharInString(CurrentGameMode, '.', true);
 
-    if(dot != -1) CurrentGameMode[dot] = '\0'; 
+    if(dot != -1)
+        CurrentGameMode[dot] = '\0';
 
-    return Plugin_Continue; 
+    return Plugin_Continue;
 }
 
 public SetVarValue(const String:name[], int value) {
@@ -56,7 +59,11 @@ public SetVarValue(const String:name[], int value) {
 
 public AdjustDifficulty() {
   if(!StrEqual(CurrentGameMode, "stronghold"))
-    return;
+  {
+        SetVarValue("doi_bot_count_override", 0);
+        return;
+  }
+  SetVarValue("doi_bot_count_override", 1);
 
   new clientcount = GetPlayerCount();
   new botcount = 4 + clientcount * 2;
@@ -64,5 +71,5 @@ public AdjustDifficulty() {
     botcount = 32;
   SetVarValue("doi_bot_count_default_enemy_max_players", botcount);
   SetVarValue("doi_bot_count_default_enemy_min_players", botcount);
-  SetVarValue("mp_cp_capture_time", 120 + clientcount * 15);
+  //SetVarValue("mp_cp_capture_time", 120 + clientcount * 15);
 }

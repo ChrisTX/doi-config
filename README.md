@@ -18,3 +18,4 @@ Next, create a symbolic link for the workshop ID file for the respective game mo
 
 You can create symbolic links to the SourcePawn scripts in your SourceMod scripting folder.
 After compiling the scripts with `spcomp`, they are ready for use.
+Note that the difficulty scaler needs a `server_stronghold.cfg` file to exist, but this can be empty.
