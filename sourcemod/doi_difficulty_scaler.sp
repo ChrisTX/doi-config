@@ -71,5 +71,5 @@ public AdjustDifficulty() {
     botcount = 32;
   SetVarValue("doi_bot_count_default_enemy_max_players", botcount);
   SetVarValue("doi_bot_count_default_enemy_min_players", botcount);
-  //SetVarValue("mp_cp_capture_time", 120 + clientcount * 15);
+  SetVarValue("mp_cp_capture_time", 120 + clientcount * 15);
 }
