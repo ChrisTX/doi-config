@@ -80,5 +80,5 @@ public AdjustDifficulty() {
   SetVarValue("doi_bot_count_default_friendly_min_players", friendly_botcount);
   SetVarValue("doi_bot_count_default_friendly_max_players", friendly_botcount);
 
-  SetVarValue("mp_cp_capture_time", 180 + clientcount * 30);
+  SetVarValue("mp_cp_capture_time", 180 + clientcount * 10);
 }
