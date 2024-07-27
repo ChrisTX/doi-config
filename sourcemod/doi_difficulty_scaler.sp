@@ -56,29 +56,58 @@ public SetVarValue(const String:name[], int value) {
   SetConVarInt(my_cvar, value, false, false);
 }
 
-public AdjustDifficulty() {
-  if(!StrEqual(CurrentGameMode, "stronghold"))
-  {
-        SetVarValue("doi_bot_count_override", 0);
-        return;
-  }
+public SetBotCounts(int friendly_count, int enemy_count) {
   SetVarValue("doi_bot_count_override", 1);
 
-  int clientcount = GetPlayerCount();
-  PrintToServer("Difficulty Scaler: Scaling for %d players", clientcount);
+  SetVarValue("doi_bot_count_default_enemy_min_players", enemy_count);
+  SetVarValue("doi_bot_count_default_enemy_max_players", enemy_count);
 
-  int botcount = 3 + clientcount * 3;
+  SetVarValue("doi_bot_count_default_friendly_min_players", friendly_count);
+  SetVarValue("doi_bot_count_default_friendly_max_players", friendly_count);
+}
+
+public SetBotsForStronghold(int playercount) {
+  int botcount = 3 + playercount * 2;
   if(botcount > 32)
     botcount = 32;
-  SetVarValue("doi_bot_count_default_enemy_min_players", botcount);
-  SetVarValue("doi_bot_count_default_enemy_max_players", botcount);
 
-  int friendly_botcount = 5 + clientcount;
+  int friendly_botcount = 5 + playercount;
   int botlimit = 32 - botcount;
   if(friendly_botcount > botlimit)
     friendly_botcount = botlimit;
-  SetVarValue("doi_bot_count_default_friendly_min_players", friendly_botcount);
-  SetVarValue("doi_bot_count_default_friendly_max_players", friendly_botcount);
 
-  SetVarValue("mp_cp_capture_time", 180 + clientcount * 10);
+  SetBotCounts(friendly_botcount, botcount);
+}
+
+public SetBotsForEntrenchment(int playercount) {
+  int botcount = 6 + playercount * 2;
+  if(botcount > 32)
+    botcount = 32;
+
+  int friendly_botcount = 3 + playercount;
+  int botlimit = 32 - botcount;
+  if(friendly_botcount > botlimit)
+    friendly_botcount = botlimit;
+
+  SetBotCounts(friendly_botcount, botcount);
+}
+
+public AdjustDifficulty() {
+
+  int playercount = GetPlayerCount();
+  PrintToServer("Difficulty Scaler: Scaling for %d players", playercount);
+
+  if(StrEqual(CurrentGameMode, "stronghold"))
+  {
+    SetBotsForStronghold(playercount);
+    SetVarValue("mp_cp_capture_time", 180 + playercount * 10);
+  }
+  else if(StrEqual(CurrentGameMode, "entrenchment"))
+  {
+    SetBotsForEntrenchment(playercount);
+  }
+  else
+  {
+    SetBotsForStronghold(playercount);
+  }
 }
