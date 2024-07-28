@@ -43,6 +43,7 @@ public RemoveNotifyFlag(const String:name[]) {
 }
 
 public AdjustDOICVars() {
+  SetVarUpperBound("doi_coop_lobby_size", MaxClients - 24.0);
   SetVarUpperBound("mp_coop_lobbysize", MaxClients - 24.0);
   SetVarUpperBound("mp_timer_pregame", 600.0);
   SetVarUpperBound("mp_timer_postgame", 600.0);
