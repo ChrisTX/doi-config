@@ -1,5 +1,4 @@
 alps_a2 liberation
-antwerp invasion
 argentan liberation
 bastogne invasion
 bastogne liberation
@@ -15,6 +14,7 @@ crete liberation
 dog_red invasion
 doi_curve_b6 invasion
 doi_donner liberation
+doi_pegasus invasion
 dunkirk invasion
 dunkirk liberation
 flakturm invasion
