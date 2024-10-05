@@ -1,4 +1,6 @@
 alps_a2 liberation
+ardennes invasion
+ardennes liberation
 argentan liberation
 bastogne invasion
 bastogne liberation
@@ -11,6 +13,8 @@ comacchio liberation
 comacchio offensive
 crete invasion
 crete liberation
+dianville invasion
+dianville liberation
 dog_red invasion
 doi_curve_b6 invasion
 doi_donner liberation
@@ -39,6 +43,8 @@ salerno liberation
 salerno offensive
 sicily invasion
 sicily liberation
+squatter invasion
+squatter offensive
 tobruk liberation
 watermill invasion
 web_carentan_pvp invasion
