@@ -13,8 +13,6 @@ comacchio liberation
 comacchio offensive
 crete invasion
 crete liberation
-dianville invasion
-dianville liberation
 dog_red invasion
 doi_curve_b6 invasion
 doi_donner liberation
