@@ -65,6 +65,4 @@ public AdjustDOICVars() {
   RemoveCheatFlag("mp_voice_max_distance_friendly");
   RemoveCheatFlag("mp_voice_max_distance_enemy");
   RemoveCheatFlag("sv_radial_debug_artillery");
-  RemoveNotifyFlag("mp_cp_capture_time");
-  RemoveNotifyFlag("mp_roundtime");
 }

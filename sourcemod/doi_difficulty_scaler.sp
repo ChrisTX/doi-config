@@ -100,7 +100,6 @@ public AdjustDifficulty() {
   if(StrEqual(CurrentGameMode, "stronghold"))
   {
     SetBotsForStronghold(playercount);
-    SetVarValue("mp_cp_capture_time", 180 + playercount * 10);
   }
   else if(StrEqual(CurrentGameMode, "entrenchment"))
   {
