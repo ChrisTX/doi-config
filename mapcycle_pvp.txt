@@ -1,4 +1,3 @@
-alps_a2 liberation
 ardennes invasion
 ardennes liberation
 argentan liberation
