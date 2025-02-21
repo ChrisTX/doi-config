@@ -26,7 +26,7 @@ In order to enable stats with custom content and the playlist restrictions not t
 ### SourceMod plugins
 Aside from the included plugins the servers run the following additions:
 
-- [SourceBans](https://gthub.com/sbpp/sourcebans-pp)
+- [SourceBans](https://github.com/sbpp/sourcebans-pp)
 - [Accelerator](https://forums.alliedmods.net/showthread.php?t=277703)
 - [Advertisements](https://forums.alliedmods.net/showthread.php?t=155705)
 - The threaded SQL admins module (included with SourceMod)
