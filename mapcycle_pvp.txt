@@ -1,4 +1,6 @@
-argentan liberation
+antwerp invasion
+ardennes liberation
+ardennes invasion
 bastogne invasion
 bastogne liberation
 breville invasion
@@ -11,7 +13,6 @@ comacchio offensive
 crete invasion
 crete liberation
 dog_red invasion
-doi_curve_b6 invasion
 doi_donner liberation
 doi_pegasus invasion
 dunkirk invasion
@@ -20,14 +21,17 @@ flakturm invasion
 foy invasion
 foy liberation
 gibraltar invasion
-heidel liberation
-jagd liberation
 kleve invasion
 kleve liberation
+konigsbach invasion
+konigsbach liberation
 lazio invasion
-metz offensive
+marketgarden liberation
+marketgarden invasion
 ortona invasion
 ortona liberation
+pointe_du_hoc invasion
+pointe_du_hoc liberation
 reichswald liberation
 reichswald offensive
 rhineland liberation
@@ -41,6 +45,5 @@ sicily liberation
 squatter invasion
 squatter offensive
 tobruk liberation
-watermill invasion
-web_carentan_pvp invasion
-web_carentan_pvp liberation
+vire invasion
+vire liberation
