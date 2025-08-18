@@ -14,11 +14,13 @@ rcon_password "MY-PASSWORD"
 
 exec doi-config/init-coop-commando.cfg
 ```
-Next, create a symbolic link for the workshop ID file for the respective game mode to `subscribed_file_ids.txt` in your `doi` folder.
+The included `prepare_server.sh` can be used to start up the server and perform most automatic tasks.
+It will update SourceMod, Metamod:Source, SourceBans, etc. as well as install the needed symbolic links for everything.
 
-You can create symbolic links to the SourcePawn scripts in your SourceMod scripting folder.
-After compiling the scripts with `spcomp`, they are ready for use.
-Note that the difficulty scaler needs a `server_stronghold.cfg` file to exist, but this can be empty.
+The appropriate workshop ID file for the server has to be passed on commandline to SRCDS via `sv_workshop_list_file`.
+
+### Difficulty scaler
+Included is a SourceMod plugin that automatically adjusts the bot count depending on the amount of players, independent from map scripting. For this to work, the currently active game mode needs to have a `server_<gamemode>.cfg` as it should have from the `gamemodes` folder.
 
 ### Server patch
 In order to enable stats with custom content and the playlist restrictions not to apply, the `engine_srv.so` has to be copied into `doi/bin`. It is patched to disable these restrictions.
