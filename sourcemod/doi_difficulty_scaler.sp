@@ -3,16 +3,16 @@
 
 public Plugin myinfo =
 {
-  name    = "DoI difficulty scaler",
-  author    = "REV-CREW",
-  description = "Scale difficulty dynamically",
-  version   = "1.0",
-  url   = "https://rev-crew.info"
+    name    = "DOI difficulty scaler",
+    author    = "DOI revival project",
+    description = "Scale difficulty dynamically",
+    version   = "1.1",
+    url   = "https://rev-crew.info"
 }
 
 public OnPluginStart() {
-  HookEvent("round_start", EventHandler, EventHookMode_Post);
-  AddCommandListener(exec, "exec");
+    HookEvent("round_start", EventHandler, EventHookMode_Post);
+    AddCommandListener(exec, "exec");
 }
 
 GetPlayerCount()
@@ -27,7 +27,7 @@ GetPlayerCount()
 }
 
 public EventHandler(Handle:event, const String:name[], bool:dontBroadcast) {
-  AdjustDifficulty();
+    AdjustDifficulty();
 }
 
 char CurrentGameMode[30];
@@ -52,61 +52,62 @@ public Action exec(int client, const char[] command, int arg)
 }
 
 public SetVarValue(const String:name[], int value) {
-  Handle my_cvar = FindConVar(name);
-  SetConVarInt(my_cvar, value, false, false);
+    Handle my_cvar = FindConVar(name);
+    SetConVarInt(my_cvar, value, false, false);
 }
 
 public SetBotCounts(int friendly_count, int enemy_count) {
-  SetVarValue("doi_bot_count_override", 1);
+    SetVarValue("doi_bot_count_override", 1);
 
-  SetVarValue("doi_bot_count_default_enemy_min_players", enemy_count);
-  SetVarValue("doi_bot_count_default_enemy_max_players", enemy_count);
+    SetVarValue("doi_bot_count_default_enemy_min_players", enemy_count);
+    SetVarValue("doi_bot_count_default_enemy_max_players", enemy_count);
 
-  SetVarValue("doi_bot_count_default_friendly_min_players", friendly_count);
-  SetVarValue("doi_bot_count_default_friendly_max_players", friendly_count);
+    SetVarValue("doi_bot_count_default_friendly_min_players", friendly_count);
+    SetVarValue("doi_bot_count_default_friendly_max_players", friendly_count);
 }
 
 public SetBotsForStronghold(int playercount) {
-  int botcount = 3 + playercount * 2;
-  if(botcount > 32)
-    botcount = 32;
+    int botcount = 3 + playercount * 2;
+    if(botcount > 32)
+        botcount = 32;
 
-  int friendly_botcount = 5 + playercount;
-  int botlimit = 32 - botcount;
-  if(friendly_botcount > botlimit)
-    friendly_botcount = botlimit;
+    int friendly_botcount = 5 + playercount;
+    int botlimit = 32 - botcount;
+    if(friendly_botcount > botlimit)
+        friendly_botcount = botlimit;
 
-  SetBotCounts(friendly_botcount, botcount);
+    SetBotCounts(friendly_botcount, botcount);
 }
 
 public SetBotsForEntrenchment(int playercount) {
-  int botcount = 6 + playercount * 2;
-  if(botcount > 32)
-    botcount = 32;
+    int botcount = 6 + playercount * 2;
+    if(botcount > 32)
+        botcount = 32;
 
-  int friendly_botcount = 3 + playercount;
-  int botlimit = 32 - botcount;
-  if(friendly_botcount > botlimit)
-    friendly_botcount = botlimit;
+    int friendly_botcount = 3 + playercount;
+    int botlimit = 32 - botcount;
+    if(friendly_botcount > botlimit)
+        friendly_botcount = botlimit;
 
-  SetBotCounts(friendly_botcount, botcount);
+    SetBotCounts(friendly_botcount, botcount);
 }
 
 public AdjustDifficulty() {
 
-  int playercount = GetPlayerCount();
-  PrintToServer("Difficulty Scaler: Scaling for %d players", playercount);
+    int playercount = GetPlayerCount();
+    bool have_scaled = false;
 
-  if(StrEqual(CurrentGameMode, "stronghold"))
-  {
-    SetBotsForStronghold(playercount);
-  }
-  else if(StrEqual(CurrentGameMode, "entrenchment"))
-  {
-    SetBotsForEntrenchment(playercount);
-  }
-  else
-  {
-    SetBotsForStronghold(playercount);
-  }
+    if(StrEqual(CurrentGameMode, "stronghold") || StrEqual(CurrentGameMode, "raid"))
+    {
+        SetBotsForStronghold(playercount);
+        have_scaled = true;
+    }
+    else if(StrEqual(CurrentGameMode, "entrenchment"))
+    {
+        SetBotsForEntrenchment(playercount);
+        have_scaled = true;
+    }
+
+    if(have_scaled)
+        PrintToServer("Difficulty Scaler: Scaling for %d players", playercount);
 }
