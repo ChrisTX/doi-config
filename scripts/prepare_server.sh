@@ -15,6 +15,13 @@ done
 # Apply server playlist unlock patch
 cp doi/cfg/doi-config/server-patch/server_srv.so doi/bin/server_srv.so
 
+# Link included sourcemod scripts
+for smscript in doi/cfg/doi-config/sourcemod/*.sp
+do
+    smscript_file="${smscript##*/}"
+    ln -sf ../../../cfg/doi-config/sourcemod/$smscript_file doi/addons/sourcemod/scripting/$smscript_file
+done
+
 # Remove the shipped, outdated standard libraries
 rm bin/libgcc_s.so.1
 rm bin/libstdc++.so.6
