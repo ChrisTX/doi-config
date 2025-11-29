@@ -19,6 +19,9 @@ It will update SourceMod, Metamod:Source, SourceBans, etc. as well as install th
 
 The appropriate workshop ID file for the server has to be passed on commandline to SRCDS via `sv_workshop_list_file`.
 
+### HunkAlloc
+The configuration includes a setting of `r_hunkalloclightmaps 0` to prevent crashes with large maps like `ardennes`. Under certain circumstances, like loading such a map as the default server map, it might be necessary to add this to the server launch parameters.
+
 ### Difficulty scaler
 Included is a SourceMod plugin that automatically adjusts the bot count depending on the amount of players, independent from map scripting. For this to work, the currently active game mode needs to have a `server_<gamemode>.cfg` as it should have from the `gamemodes` folder.
 
