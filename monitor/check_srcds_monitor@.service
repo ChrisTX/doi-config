@@ -1,0 +1,19 @@
+[Unit]
+Description=SRCDS monitor for instance %i
+After=network.target
+
+[Service]
+Type=simple
+# Per-instance EnvironmentFile (create this at ~/.config/systemd/user/check_srcds_monitor@%i.env)
+# The env file should at minimum define HOST and RESTART_UNIT (PORT is optional).
+EnvironmentFile=%h/.config/systemd/user/check_srcds_monitor@%i.env
+# ExecStart passes the env variables as CLI args to the script (so config parameters are passed to the Python script)
+ExecStart=/usr/bin/env python3 /home/youruser/check_srcds_restart.py --host=${HOST} --port=${PORT} --restart-unit=${RESTART_UNIT} --interval=${INTERVAL} --timeout=${TIMEOUT} --failure-threshold=${FAILURE_THRESHOLD} --restart-cooldown=${RESTART_COOLDOWN} --max-restarts-per-hour=${MAX_RESTARTS_PER_HOUR}
+# Use SIGINT as the stop signal so the script receives the same signal it expects for graceful shutdown (Ctrl+C)
+KillSignal=SIGINT
+TimeoutStopSec=20
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
