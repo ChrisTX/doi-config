@@ -343,7 +343,7 @@ def parse_args() -> argparse.Namespace:
         help="systemd unit to control (e.g. my-server@instance.service or my-server.service)",
         default=os.getenv("RESTART_UNIT"),
     )
-    p.add_argument("--interval", type=float, help="seconds between checks", default=float(os.getenv("INTERVAL", "10")))
+    p.add_argument("--interval", type=float, help="seconds between checks", default=float(os.getenv("INTERVAL", "30")))
     p.add_argument("--timeout", type=float, help="a2s socket timeout (seconds)", default=float(os.getenv("TIMEOUT", "5")))
     p.add_argument("--failure-threshold", type=int, help="consecutive failed queries before restart/start", default=int(os.getenv("FAILURE_THRESHOLD", "3")))
     p.add_argument("--restart-cooldown", type=float, help="seconds to wait between restarts (monotonic)", default=float(os.getenv("RESTART_COOLDOWN", "300")))
