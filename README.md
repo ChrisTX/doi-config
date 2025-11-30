@@ -31,6 +31,17 @@ Included is a SourceMod plugin that automatically adjusts the bot count dependin
 ### Server patch
 In order to enable stats with custom content and the playlist restrictions not to apply, the `engine_srv.so` has to be copied into `doi/bin`. It is patched to disable these restrictions.
 
+### SourceMod keybinds
+The admin menu `sm_admin` requires the keys 6 to 0 to be bound. Add the following to your client configuration (`config.cfg`):
+
+```
+bind "6" "slot6"
+bind "7" "slot7"
+bind "8" "slot8"
+bind "9" "slot9"
+bind "0" "slot10"
+```
+
 ### SourceMod plugins
 Aside from the included plugins the servers run the following additions:
 
