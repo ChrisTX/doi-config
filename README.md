@@ -22,6 +22,9 @@ The appropriate workshop ID file for the server has to be passed on commandline 
 ### HunkAlloc
 The configuration includes a setting of `r_hunkalloclightmaps 0` to prevent crashes with large maps like `ardennes`. Under certain circumstances, like loading such a map as the default server map, it might be necessary to add this to the server launch parameters.
 
+### Tickrate
+The tickrate for Day of Infamy should not be changed. While it's possible to run with 128 tick, the game never supported this properly. In particular, at 128 tick, throwables like grenades will start to bounce excessively. Effectively, the game physics break down, even if the game otherwise runs fine.
+
 ### Difficulty scaler
 Included is a SourceMod plugin that automatically adjusts the bot count depending on the amount of players, independent from map scripting. For this to work, the currently active game mode needs to have a `server_<gamemode>.cfg` as it should have from the `gamemodes` folder.
 
