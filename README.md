@@ -22,6 +22,28 @@ The appropriate workshop ID file for the server has to be passed on commandline 
 ### HunkAlloc
 The configuration includes a setting of `r_hunkalloclightmaps 0` to prevent crashes with large maps like `ardennes`. Under certain circumstances, like loading such a map as the default server map, it might be necessary to add this to the server launch parameters.
 
+### Libraries (Linux)
+The game requires certain 32-bit libraries being installed on Linux. These are
+
+```
+glibc
+libgcc
+libstdc++
+SDL2
+OpenAL
+util-linux
+freetype2
+fontconfig
+```
+
+The Steam Client library has additional possible dependencies. These are likely not required but still a good idea to have installed:
+
+```
+SDL3
+libX11
+PulseAudio (libpulse)
+```
+
 ### Tickrate
 The tickrate for Day of Infamy should not be changed. While it's possible to run with 128 tick, the game never supported this properly. In particular, at 128 tick, throwables like grenades will start to bounce excessively. Effectively, the game physics break down, even if the game otherwise runs fine.
 
