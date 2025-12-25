@@ -28,9 +28,6 @@ rm bin/libstdc++.so.6
 rm bin/libogg.so
 rm bin/libvorbis.so
 
-# Correct srcds_run line endings
-sed -i 's/\r$//' srcds_run
-
 # Update metamod source and sourcemod
 METAMOD_BRANCH="1.12"
 SOURCEMOD_BRANCH="1.12"
