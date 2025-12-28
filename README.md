@@ -19,8 +19,10 @@ It will update SourceMod, Metamod:Source, SourceBans, etc. as well as install th
 
 The appropriate workshop ID file for the server has to be passed on commandline to SRCDS via `sv_workshop_list_file`.
 
-### HunkAlloc
-The configuration includes a setting of `r_hunkalloclightmaps 0` to prevent crashes with large maps like `ardennes`. Under certain circumstances, like loading such a map as the default server map, it might be necessary to add this to the server launch parameters.
+### Engine hunk overflow
+The configuration includes a setting of `r_hunkalloclightmaps 0` to prevent crashes with large maps like `ardennes`.
+Community made maps of that size contain significant lightmap data, and will otherwise experience what's known as an [Engine Hunk Overflow](https://developer.valvesoftware.com/wiki/Engine_Hunk_Overflow).
+Under certain circumstances, like loading such a map as the default server map, it might be necessary to add this to the server launch parameters.
 
 ### Libraries (Linux)
 The game server requires certain 32-bit libraries being installed on Linux. These are
@@ -62,7 +64,7 @@ The tickrate for Day of Infamy should not be changed. While it's possible to run
 Included is a SourceMod plugin that automatically adjusts the bot count depending on the amount of players, independent from map scripting. For this to work, the currently active game mode needs to have a `server_<gamemode>.cfg` as it should have from the `gamemodes` folder.
 
 ### Server patch
-In order to enable stats with custom content and the playlist restrictions not to apply, the `engine_srv.so` has to be copied into `doi/bin`. It is patched to disable these restrictions.
+In order to enable stats with custom content and the playlist restrictions not to apply, the provided `engine_srv.so` in the `server-patch` directory has to be copied into `doi/bin`. It has been modified to not enforce the aforementioned restrictions.
 
 ### SourceMod keybinds
 The admin menu `sm_admin` requires the keys 6 to 0 to be bound. Add the following to your client configuration (`config.cfg`):
