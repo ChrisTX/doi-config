@@ -10,10 +10,11 @@ Historically, Day of Infamy shipped three game executables:
 `dayofinfamy.exe` and `dayofinfamy_x64.exe` are the 32-bit and 64-bit versions of the game.
 
 Until the [removal of BattlEye from the game](https://steamdb.info/patchnotes/21294077/), `dayofinfamy_BE.exe` functioned as the loader for BattlEye.
-It would start the BattlEye kernel driver among other things, which causes Windows 11 24H2 and newer to variously bluescreen or freeze upon loading.
+It would start the BattlEye kernel driver among other things, which caused Windows 11 24H2 and newer to variously bluescreen or freeze upon loading.
+The BattlEye components hadn't been updated since 2018, eventually leading to that driver becoming a problem.
 Afterwards, it would have launched the game variant appropriate for the operating system, launching the 64-bit variant on a 64-bit Windows version and the 32-bit one otherwise.
 In general, 32-bit Windows applications can run on both 32-bit and 64-bit Windows editions, but 64-bit applications require a 64-bit Windows edition.
-32-bit Windows installations are very rare nowadays, with Windows 11 not even being offered 
+32-bit Windows installations are very rare nowadays, with Windows 11 not even being offered in 32-bit editions at all.
 
 Since BattlEye has been removed however, the Steam game configuration was changed to make Steam's "Play" button launch `dayofinfamy.exe` instead of `dayofinfamy_BE.exe`, putting everyone on the 32-bit variant by default now, whereas the vast majority of players would have been running the 64-bit variant until recently.
 It is possible to still launch `dayofinfamy_x64.exe` in the game folder manually, or to replace `dayofinfamy.exe` with `dayofinfamy_x64.exe` to make Steam launch the 64-bit variant via its "Play" button.
@@ -36,7 +37,6 @@ OK
 Due to differences in memory limits between the 32-bit and 64-bit versions, this issue is practically only seen in the 32-bit game client or server.
 Thus, it's recommended to use the 64-bit game client or add `+r_hunkalloclightmaps 0` to your game launch options.
 For this, right click the game in Steam, go to properties and then in General you can find the launch options.
-Add `+r_hunkalloclightmaps 0` to the text box.
 
 ## Slot keybinds for menus
 SourceMod menus, like `sm_admin` require the keys 6 to 0 to be bound to commands.
