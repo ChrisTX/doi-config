@@ -23,26 +23,37 @@ The appropriate workshop ID file for the server has to be passed on commandline 
 The configuration includes a setting of `r_hunkalloclightmaps 0` to prevent crashes with large maps like `ardennes`. Under certain circumstances, like loading such a map as the default server map, it might be necessary to add this to the server launch parameters.
 
 ### Libraries (Linux)
-The game requires certain 32-bit libraries being installed on Linux. These are
+The game server requires certain 32-bit libraries being installed on Linux. These are
 
 ```
 glibc
 libgcc
 libstdc++
 SDL2
-OpenAL
-util-linux
-freetype2
-fontconfig
+zlib
 ```
 
-The Steam Client library has additional possible dependencies. These are likely not required but still a good idea to have installed:
+It is possible to replace SDL2 with the `sdl2-compat` compatibility layer that implements SDL2 atop SDL3.
+
+The Steam Client library has the following additional possible dependencies, which are however only loaded by client apps and not servers:
 
 ```
 SDL3
 libX11
 PulseAudio (libpulse)
 ```
+
+The game server binaries contain references to the following libraries as well:
+
+```
+OpenAL
+util-linux
+freetype2
+fontconfig
+```
+
+These libraries would only be loaded by the client code paths in `engine.so`, and thus if the game asks for any of them, there's something going wrong.
+In particular, this happened when BattlEye got removed from the game with [in 2025](https://steamdb.info/depot/462311/history/?changeid=M:9106077001589815964) until resolved the next day in [a second update](https://steamdb.info/depot/462311/history/?changeid=M:1007577009454669389).
 
 ### Tickrate
 The tickrate for Day of Infamy should not be changed. While it's possible to run with 128 tick, the game never supported this properly. In particular, at 128 tick, throwables like grenades will start to bounce excessively. Effectively, the game physics break down, even if the game otherwise runs fine.
