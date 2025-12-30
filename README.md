@@ -5,8 +5,10 @@ This is the configuration for the Kim Jong Un servers.
 ## Usage
 
 In order to use this configuration, clone it in your `doi/cfg` folder, i.e. as `doi/cfg/doi-config`.
+It's not possible in Source configs to handle paths dynamically, thus the location cannot be changed.
+
 Afterwards, create a server config that loads the `init-<gamemode>.cfg` config files.
-For example, for the Coop Commando configuration set, use
+For example, for the Coop Commando configuration set, your `server.cfg` might look like this:
 
 ```
 hostname "MY-SERVER-NAME"
@@ -14,10 +16,12 @@ rcon_password "MY-PASSWORD"
 
 exec doi-config/init-coop-commando.cfg
 ```
-The included `prepare_server.sh` can be used to start up the server and perform most automatic tasks.
-It will update SourceMod, Metamod:Source, SourceBans, etc. as well as install the needed symbolic links for everything.
 
-The appropriate workshop ID file for the server has to be passed on commandline to SRCDS via `sv_workshop_list_file`.
+The included `prepare_server.sh` can be used to start up the server and perform most automatic tasks.
+It will update SourceMod, Metamod:Source, SourceBans, and etc., as well as install symbolic links to the Git folder where needed.
+
+Lastly, the appropriate workshop ID file in the `configs` folder for the server has to be passed on commandline to SRCDS via `sv_workshop_list_file`.
+It's not possible to set this dynamically after launch, unfortunately.
 
 ### Engine hunk overflow
 The configuration includes a setting of `r_hunkalloclightmaps 0` to prevent crashes with large maps like `ardennes`.

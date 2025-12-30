@@ -6,10 +6,10 @@ cd $1
 git -C doi/cfg/doi-config pull
 
 # Create config symlinks
-for gameconfig in doi/cfg/doi-config/gamemodes/*.cfg
+for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg
 do
     gameconfig_file="${gameconfig##*/}"
-    ln -sf doi-config/gamemodes/$gameconfig_file doi/cfg/$gameconfig_file
+    ln -sf doi-config/configs/gamemodes/$gameconfig_file doi/cfg/$gameconfig_file
 done
 
 # Apply server playlist unlock patch
