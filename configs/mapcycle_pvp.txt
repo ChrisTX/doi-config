@@ -1,4 +1,3 @@
-antwerp invasion
 bastogne invasion
 bastogne liberation
 breville invasion
@@ -45,5 +44,3 @@ sicily liberation
 squatter invasion
 squatter offensive
 tobruk liberation
-vire invasion
-vire liberation
