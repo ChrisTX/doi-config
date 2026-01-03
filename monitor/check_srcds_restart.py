@@ -40,6 +40,7 @@ def _have_dbus() -> bool:
 
 
 class Monitor:
+    """SRCDS monitor class."""
 
     def __init__(
         self,
@@ -53,6 +54,7 @@ class Monitor:
         max_restarts_per_hour: int,
         unit_scope: UnitScope,
     ):
+        """Initialise the SRCDS monitor."""
         self.server_host = server_host
         self.port = port
         self.systemd_unit = systemd_unit
@@ -255,7 +257,7 @@ class Monitor:
         active_state = self.get_unit_state()
         match active_state:
             case "failed":
-                return True, "restart allowed as the unit failed"
+                return False, "restart forbidden as the unit failed"
             case "inactive":
                 return False, "unit is listed as inactive"
             case "activating" | "deactivating" | "refreshing" | "reloading":
@@ -335,9 +337,8 @@ class Monitor:
                     "Unit is inactive, but not failed; refusing restart:",
                     self.systemd_unit)
             case "failed":
-                self._log("Unit has failed; attempting to start unit:",
+                self._log("Unit has failed; restart handled by systemd:",
                           self.systemd_unit)
-                self.attempt_restart()
             case "active":
                 # Unit is active -> perform A2S query
                 try:
@@ -366,6 +367,7 @@ class Monitor:
                             self.attempt_restart()
 
     def run(self) -> None:
+        """SRCDS monitor main loop."""
         self._log(
             "Starting SRCDS monitor for",
             f"{self.server_host}:{self.port}",
@@ -381,6 +383,7 @@ class Monitor:
 
 
 def parse_args() -> argparse.Namespace:
+    """Initialise the commandline argument parser."""
     p = argparse.ArgumentParser(
         description=
         "SRCDS monitor that restarts/starts a systemd unit when the server is down."
@@ -389,7 +392,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--server-host",
         help="SRCDS host/IP (or set SERVER_HOST env)",
-        default=os.getenv("SERVER_HOST", socket.gethostname()),
+        default=os.getenv("SERVER_HOST", socket.gethostname())
     )
     p.add_argument("--port",
                    type=int,
@@ -400,6 +403,7 @@ def parse_args() -> argparse.Namespace:
         help=
         "systemd unit to control (e.g. my-server@instance.service or my-server.service)",
         default=os.getenv("SERVER_UNIT"),
+        required=True
     )
     p.add_argument("--interval",
                    type=float,
@@ -430,6 +434,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Main routine."""
     args = parse_args()
 
     if not args.server_host:
