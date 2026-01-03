@@ -1,0 +1,6 @@
+[Unit]
+Description=Restart doi-server@%i (user instance)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl --user try-restart doi-server@%i.service
