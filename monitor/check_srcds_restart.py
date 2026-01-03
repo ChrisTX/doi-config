@@ -324,6 +324,7 @@ class Monitor:
         # If the unit is not active, reset the failure count to prevent previous failures from causing a chain reset
         if active_state != "active":
             self._consecutive_failures = 0
+            self._proc_responded_after_start = False
 
         match active_state:
             case "maintenance":
