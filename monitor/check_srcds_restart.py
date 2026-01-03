@@ -402,8 +402,7 @@ def parse_args() -> argparse.Namespace:
         "--systemd-unit",
         help=
         "systemd unit to control (e.g. my-server@instance.service or my-server.service)",
-        default=os.getenv("SERVER_UNIT"),
-        required=True
+        default=os.getenv("SERVER_UNIT")
     )
     p.add_argument("--interval",
                    type=float,
