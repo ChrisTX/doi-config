@@ -78,6 +78,9 @@ done
 git clone https://github.com/sbpp/sourcebans-pp.git
 cp -r sourcebans-pp/game/addons/sourcemod/scripting doi/addons/sourcemod
 cp -r sourcebans-pp/game/addons/sourcemod/translations doi/addons/sourcemod
+if [ "$FRESH_INSTALLATION" = true ]; then
+    cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
+fi
 rm -rf sourcebans-pp
 
 # Update sm-advertisements
