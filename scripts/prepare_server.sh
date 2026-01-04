@@ -111,6 +111,6 @@ popd
 
 # Install MOTDs
 if [ -n "$2" ]; then
-    ls -sf doi/cfg/doi-config/texts/server_$2.cfg doi/cfg/server.cfg
-    ls -sf doi/cfg/doi-config/texts/motd_$2.txt doi/motd.txt
+    ln -sf doi-config/texts/server_$2.cfg doi/cfg/server.cfg
+    ln -sf cfg/doi-config/texts/motd_$2.txt doi/motd.txt
 fi
