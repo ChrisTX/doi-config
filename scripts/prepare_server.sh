@@ -3,7 +3,12 @@
 steamcmd +force_install_dir $1 +login anonymous +app_update 462310 validate +quit
 
 cd $1
-git -C doi/cfg/doi-config pull
+if [ -d "doi/cfg/doi-config" ]
+then
+    git -C doi/cfg/doi-config pull
+else
+    git -C doi/cfg/doi-config clone https://github.com/ChrisTX/doi-config.git
+fi
 
 # Apply server playlist unlock patch
 cp doi/cfg/doi-config/server-patch/server_srv.so doi/bin/server_srv.so
@@ -27,7 +32,7 @@ done
 for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg
 do
     gameconfig_file="${gameconfig##*/}"
-    ln -sf doi-config/configs/gamemodes/$gameconfig doi/cfg/$gameconfig_file
+    ln -sf doi-config/configs/gamemodes/$gameconfig_file doi/cfg/$gameconfig_file
 done
 
 # Remove all theater VPKs to ensure they update
