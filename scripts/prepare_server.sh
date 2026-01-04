@@ -86,7 +86,7 @@ cp -r sm-advertisements/addons/sourcemod/scripting doi/addons/sourcemod
 rm -rf sm-advertisements
 
 # Add our advertisements
-ln -sf ../../../cfg/doi-config/configs/advertisements.txt doi/addons/sourcemod/config/advertisements.txt
+ln -sf ../../../cfg/doi-config/texts/advertisements.txt doi/addons/sourcemod/configs/advertisements.txt
 
 # Enable SQL admin plugins
 pushd doi/addons/sourcemod/plugins
@@ -108,3 +108,9 @@ do
     fi
 done
 popd
+
+# Install MOTDs
+if [ -n "$2" ]; then
+    ls -sf doi/cfg/doi-config/texts/server_$2.cfg doi/cfg/server.cfg
+    ls -sf doi/cfg/doi-config/texts/motd_$2.txt doi/motd.txt
+fi
