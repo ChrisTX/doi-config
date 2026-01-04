@@ -1,0 +1,32 @@
+// Advertisements 2.1
+// by Tsunami
+//
+// Types
+// -----
+// center: Center message
+// chat: Chat message
+// hint: Hint message
+// menu: Menu message
+// top: Top message
+//
+// Flags (optional)
+// -----
+// Accepts flags of admins that will not see the advertisement.
+// When omitted everyone will see the advertisement.
+// When left empty only admins will see the advertisement.
+
+"Advertisements"
+{
+    "1"
+    {
+	"chat"			"{green}We do events like this one twice a week on this server. Join our discord at: {default}https://discord.gg/MKNwv3RbMG"
+    }
+    "2"
+    {
+	"chat"			"{olive}If you encounter errors in the console run {green}retry {olive}in the console"
+    }
+    "3"
+    {
+        "menu"                  "Join us for weekly team games in our discord at\nhttps://discord.gg/MKNwv3RbMG"
+    }
+}

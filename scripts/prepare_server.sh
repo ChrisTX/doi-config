@@ -5,8 +5,10 @@ steamcmd +force_install_dir $1 +login anonymous +app_update 462310 validate +qui
 cd $1
 if [ -d "doi/cfg/doi-config" ]
 then
+    FRESH_INSTALLATION=false
     git -C doi/cfg/doi-config pull
 else
+    FRESH_INSTALLATION=true
     git -C doi/cfg/doi-config clone https://github.com/ChrisTX/doi-config.git
 fi
 
@@ -56,7 +58,11 @@ curl -o metamod.tgz $METAMOD_URL
 curl -o sourcemod.tgz $SOURCEMOD_URL
 
 tar -xf metamod.tgz -C doi
-tar -xf sourcemod.tgz -C doi --exclude="configs" --exclude="cfg"
+if [ "$FRESH_INSTALLATION" = true ] ; then
+    tar -xf sourcemod.tgz -C doi
+else
+    tar -xf sourcemod.tgz -C doi --exclude="configs" --exclude="cfg"
+fi
 
 rm metamod.tgz
 rm sourcemod.tgz
@@ -78,6 +84,9 @@ rm -rf sourcebans-pp
 git clone https://github.com/ErikMinekus/sm-advertisements.git
 cp -r sm-advertisements/addons/sourcemod/scripting doi/addons/sourcemod
 rm -rf sm-advertisements
+
+# Add our advertisements
+ln -sf ../../../cfg/doi-config/configs/advertisements.txt doi/addons/sourcemod/config/advertisements.txt
 
 # Enable SQL admin plugins
 pushd doi/addons/sourcemod/plugins
