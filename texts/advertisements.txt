@@ -19,14 +19,14 @@
 {
     "1"
     {
-	"chat"			"{green}We do events like this one twice a week on this server. Join our discord at: {default}https://discord.gg/MKNwv3RbMG"
+        "chat"			"{green}We run events most days of the week on this server. Join our discord at: {default}https://discord.gg/MKNwv3RbMG"
     }
     "2"
     {
-	"chat"			"{olive}If you encounter errors in the console run {green}retry {olive}in the console"
+        "chat"			"{olive}If you encounter errors in the console run {green}retry {olive}in the console"
     }
     "3"
     {
-        "menu"                  "Join us for weekly team games in our discord at\nhttps://discord.gg/MKNwv3RbMG"
+        "menu"          "Join us for weekly team games in our discord at\nhttps://discord.gg/MKNwv3RbMG"
     }
 }
