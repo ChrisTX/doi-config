@@ -92,7 +92,7 @@ rm -rf sm-advertisements
 ln -sf ../../../cfg/doi-config/texts/advertisements.txt doi/addons/sourcemod/configs/advertisements.txt
 
 # Update AFK Manager
-ln -sf ../doi-config/doi-config/afk_manager.cfg doi/cfg/sourcemod/afk_manager.cfg
+ln -sf ../doi-config/configs/afk_manager.cfg doi/cfg/sourcemod/afk_manager.cfg
 curl -o doi/addons/sourcemod/scripting/afk_manager4.sp http://afkmanager.dawgclan.net/scripting/afk_manager4.sp
 git clone https://github.com/Bara/Multi-Colors.git
 cp -r Multi-Colors/addons/sourcemod/scripting/include doi/addons/sourcemod/scripting/include
