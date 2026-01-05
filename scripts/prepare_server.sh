@@ -98,7 +98,7 @@ curl -o doi/addons/sourcemod/translations/afk_manager.phrases.txt http://afkmana
 git clone https://github.com/Bara/Multi-Colors.git
 cp -r Multi-Colors/addons/sourcemod/scripting/include doi/addons/sourcemod/scripting/include
 rm -rf Multi-Colors
-patch -N doi/addons/sourcemod/scripting/afk_manager4.sp doi/cfg/doi-config/scripting/afkmanager.patch
+patch -N doi/addons/sourcemod/scripting/afk_manager4.sp doi/cfg/doi-config/scripts/afkmanager.patch
 
 # Enable SQL admin plugins
 pushd doi/addons/sourcemod/plugins

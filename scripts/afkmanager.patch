@@ -1,11 +1,29 @@
---- afk_manager4.sp	2026-01-05 12:09:56.723981394 +0100
-+++ /home/cpfeiffer/afk_manager4.sp	2026-01-05 12:03:12.554328014 +0100
+--- afk_manager4.sp	2026-01-05 12:27:32.637458474 +0100
++++ afk_manager4.sp.fixed	2026-01-05 12:32:04.568550150 +0100
 @@ -498,7 +498,7 @@
  }
  
  // Chat Functions
 -void AFK_PrintToChat(int client, const char[] sMessage, any:...)
-+void AFK_PrintToChat(int client, const char[] sMessage, any...)
++void AFK_PrintToChat(int client, const char[] sMessage, any ...)
  {
  	int iStart = client;
  	int iEnd = MaxClients;
+@@ -638,7 +638,7 @@
+ 
+ 
+ // General Functions
+-char ActionToString(Action action)
++char[] ActionToString(Action action)
+ {
+ 	char Action_Name[32];
+ 	switch (action)
+@@ -901,7 +901,7 @@
+ 	return Plugin_Continue;
+ }
+ 
+-public int Updater_OnPluginUpdated()
++public void Updater_OnPluginUpdated()
+ {
+ 	LogToFile(AFKM_LogFile, "AFK Manager has just been updated to a new version");
+ 	ReloadPlugin();
