@@ -1,0 +1,11 @@
+--- afk_manager4.sp	2026-01-05 12:09:56.723981394 +0100
++++ /home/cpfeiffer/afk_manager4.sp	2026-01-05 12:03:12.554328014 +0100
+@@ -498,7 +498,7 @@
+ }
+ 
+ // Chat Functions
+-void AFK_PrintToChat(int client, const char[] sMessage, any:...)
++void AFK_PrintToChat(int client, const char[] sMessage, any...)
+ {
+ 	int iStart = client;
+ 	int iEnd = MaxClients;
