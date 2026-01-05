@@ -27,7 +27,7 @@ for modfolder in doi/cfg/doi-config/mods/*/
 do
     modfolder_path="${modfolder%*/}"
     modfolder_name="${modfolder_path##*/}"
-    ln -sf ../cfg/doi-config/mods/$modfolder_name doi/custom/$modfolder_name
+    ln -sfn ../cfg/doi-config/mods/$modfolder_name doi/custom/$modfolder_name
 done
 
 # Create config symlinks
