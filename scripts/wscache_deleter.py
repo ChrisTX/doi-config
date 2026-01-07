@@ -2,6 +2,7 @@
 import argparse
 import pathlib
 import shutil
+import sys
 import vdf
 from typing import Any, List
 
@@ -123,8 +124,14 @@ def main() -> None:
     """Main function."""
     args = parse_args()
 
-    wscache = WorkshopCache(args.path)
-    wscache.remove_items(args.item)
+    try:
+        wscache = WorkshopCache(args.path)
+        wscache.remove_items(args.item)
+    except WorkshopCacheEmpty as wce:
+        print("skipped: " + str(wce))
+    except Exception as e:
+        print("ERROR: " + str(e))
+        sys.exit(1)
 
 
 if __name__ == "__main__":
