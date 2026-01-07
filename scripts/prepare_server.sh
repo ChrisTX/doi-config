@@ -9,7 +9,7 @@ then
     git -C doi/cfg/doi-config pull
 else
     FRESH_INSTALLATION=true
-    git -C doi/cfg/doi-config clone https://github.com/ChrisTX/doi-config.git
+    git clone https://github.com/ChrisTX/doi-config.git doi/cfg/doi-config
 fi
 
 # Apply server playlist unlock patch
@@ -38,8 +38,7 @@ do
 done
 
 # Remove all theater VPKs to ensure they update
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-$SCRIPT_DIR/wscache_deleter.py -p $(pwd) -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
+./doi/cfg/doi-config/scripts/wscache_deleter.py -p $(pwd) -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
 
 # Update metamod source and sourcemod
 METAMOD_BRANCH="1.12"
