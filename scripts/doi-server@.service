@@ -7,7 +7,7 @@ Environment=LD_LIBRARY_PATH=/path/to/srcds/servers/dayofinfamy-%i:/path/to/srcds
 EnvironmentFile=/path/to/srcds/servers/systemd/%i.conf
 WorkingDirectory=/path/to/srcds/servers/dayofinfamy-%i
 ExecStartPre=/path/to/srcds/servers/doi-config/scripts/prepare_server.sh /path/to/srcds/servers/dayofinfamy-%i %i
-ExecStart=/path/to/srcds/servers/dayofinfamy-%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} -clientport ${CLIENT_PORT} +map "${STARTUP_MAP}" +sv_workshop_list_file "${WORKSHOP_IDS_FILE}" +r_hunkalloclightmaps 0
+ExecStart=/path/to/srcds/servers/dayofinfamy-%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} -clientport ${CLIENT_PORT} +map "${STARTUP_MAP}" +sv_workshop_list_file "${WORKSHOP_IDS_FILE}" +r_hunkalloclightmaps 0 +mp_theater_override "${THEATER}"
 KillSignal=SIGINT
 ReadWritePaths=/path/to/srcds/servers/dayofinfamy-%i
 PrivateTmp=yes
