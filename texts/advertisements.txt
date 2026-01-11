@@ -6,7 +6,7 @@
 // center: Center message
 // chat: Chat message
 // hint: Hint message
-// menu: Menu message
+// menu: Menu message - WARNING: blocks numrow key inputs while active.
 // top: Top message
 //
 // Flags (optional)
@@ -27,6 +27,6 @@
     }
     "3"
     {
-        "menu"          "Join us for weekly team games in our discord at\nhttps://discord.gg/MKNwv3RbMG"
+        "hint"          "Join us for weekly team games in our discord at\nhttps://discord.gg/MKNwv3RbMG"
     }
 }
