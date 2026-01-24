@@ -196,7 +196,8 @@
 		
 		"AttackingTeam"		"TEAM_TWO"
 		"controlpoint"		"occupy_cap"
-		"controlpoint"		"church_front_cap"
+		"controlpoint"		"allied_rear_defense_cap"
+		"controlpoint"		"church_cap"
 		"controlpoint"		"entrenchment_cap1"
 		"controlpoint"		"radiopoint_final"
 		
@@ -206,6 +207,7 @@
 			"0"  "sz_offensive_a"
 			"1"  "sz_offensive_b"
 			"2"  "sz_offensive_c"
+			"3"  "sz_offensive_c"
 		}
 		
 		"entities"
