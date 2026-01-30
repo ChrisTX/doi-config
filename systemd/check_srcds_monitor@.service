@@ -1,0 +1,18 @@
+[Unit]
+Description=SRCDS monitor for instance %i
+After=network.target
+
+[Service]
+Type=simple
+# Per-instance EnvironmentFile (create this at ~/.config/systemd/user/check_srcds_monitor@%i.env)
+# The env file should at minimum define SERVER_UNIT (SERVER_HOST and SERVER_PORT are optional and assume localhost:27015 otherwise).
+EnvironmentFile=%h/.config/systemd/user/check_srcds_monitor@%i.env
+ExecStart=/usr/bin/env python3 %h/servers/doi-config/monitor/check_srcds_restart.py
+# Use SIGINT as the stop signal so the script receives the same signal it expects for graceful shutdown (Ctrl+C)
+KillSignal=SIGINT
+TimeoutStopSec=20
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
