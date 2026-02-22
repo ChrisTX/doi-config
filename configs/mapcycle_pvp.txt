@@ -4,7 +4,6 @@ brittany invasion
 comacchio invasion
 crete invasion
 dog_red invasion
-doi_pegasus invasion
 doi_reichswald invasion
 dunkirk invasion
 flakturm invasion
@@ -13,7 +12,6 @@ gibraltar invasion
 kleve invasion
 konigsbach invasion
 lazio invasion
-marketgarden invasion
 ortona invasion
 pointe_du_hoc invasion
 reichswald invasion
