@@ -29,4 +29,8 @@
     {
         "hint"          "Join us for weekly team games in our discord at\nhttps://discord.gg/MKNwv3RbMG"
     }
+    "4"
+    {
+        "chat"			"{green}Please subscribe to Jim's mod Revival Vietnam, otherwise issues can arise."
+    }
 }
