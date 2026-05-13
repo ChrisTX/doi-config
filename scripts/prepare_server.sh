@@ -1,8 +1,8 @@
 #!/bin/bash
 
-steamcmd +force_install_dir $1 +login anonymous +app_update 462310 validate +quit
+steamcmd +force_install_dir "$1" +login anonymous +app_update 462310 validate +quit
 
-cd $1
+cd "$1" || exit
 if [ -d "doi/cfg/doi-config" ]
 then
     FRESH_INSTALLATION=false
@@ -27,18 +27,18 @@ for modfolder in doi/cfg/doi-config/mods/*/
 do
     modfolder_path="${modfolder%*/}"
     modfolder_name="${modfolder_path##*/}"
-    ln -sfn ../cfg/doi-config/mods/$modfolder_name doi/custom/$modfolder_name
+    ln -sfn ../cfg/doi-config/mods/"$modfolder_name" doi/custom/"$modfolder_name"
 done
 
 # Create config symlinks
 for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg
 do
     gameconfig_file="${gameconfig##*/}"
-    ln -sf doi-config/configs/gamemodes/$gameconfig_file doi/cfg/$gameconfig_file
+    ln -sf doi-config/configs/gamemodes/"$gameconfig_file" doi/cfg/"$gameconfig_file"
 done
 
 # Remove all theater VPKs to ensure they update
-./doi/cfg/doi-config/scripts/wscache_deleter.py -p $(pwd) -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
+./doi/cfg/doi-config/scripts/wscache_deleter.py -p "$(pwd)" -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
 
 # Update metamod source and sourcemod
 METAMOD_BRANCH="1.12"
@@ -53,8 +53,8 @@ LATEST_SOURCEMOD_FILE=$(curl "${SOURCEMOD_BASE_URL}/sourcemod-latest-linux" | xa
 METAMOD_URL="${METAMOD_BASE_URL}/${LATEST_METAMOD_FILE}"
 SOURCEMOD_URL="${SOURCEMOD_BASE_URL}/${LATEST_SOURCEMOD_FILE}"
 
-curl -o metamod.tgz $METAMOD_URL
-curl -o sourcemod.tgz $SOURCEMOD_URL
+curl -o metamod.tgz "$METAMOD_URL"
+curl -o sourcemod.tgz "$SOURCEMOD_URL"
 
 tar -xf metamod.tgz -C doi
 if [ "$FRESH_INSTALLATION" = true ] ; then
@@ -70,7 +70,7 @@ rm sourcemod.tgz
 for smscript in doi/cfg/doi-config/sourcemod/*.sp
 do
     smscript_file="${smscript##*/}"
-    ln -sf ../../../cfg/doi-config/sourcemod/$smscript_file doi/addons/sourcemod/scripting/$smscript_file
+    ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
 done
 
 # Update sourcebans-pp
@@ -100,7 +100,7 @@ rm -rf Multi-Colors
 patch -N doi/addons/sourcemod/scripting/afk_manager4.sp doi/cfg/doi-config/scripts/afkmanager.patch
 
 # Enable SQL admin plugins
-pushd doi/addons/sourcemod/plugins
+pushd doi/addons/sourcemod/plugins || exit
 mv disabled/admin-sql-threaded.smx .
 mv disabled/sql-admin-manager.smx .
 
@@ -114,14 +114,14 @@ mv basebans.smx disabled
 for plugin in *.smx
 do
     scriptfile="${plugin%.*}"
-    if [ -f ../scripting/$scriptfile.sp ]; then
-        ../scripting/spcomp64 ../scripting/$scriptfile.sp
+    if [ -f ../scripting/"$scriptfile".sp ]; then
+        ../scripting/spcomp64 ../scripting/"$scriptfile".sp
     fi
 done
-popd
+popd || exit
 
 # Install MOTDs
 if [ -n "$2" ]; then
-    ln -sf doi-config/texts/server_$2.cfg doi/cfg/server.cfg
-    ln -sf cfg/doi-config/texts/motd_$2.txt doi/motd.txt
+    ln -sf doi-config/texts/server_"$2".cfg doi/cfg/server.cfg
+    ln -sf cfg/doi-config/texts/motd_"$2".txt doi/motd.txt
 fi
