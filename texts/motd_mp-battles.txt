@@ -1,23 +1,15 @@
-In game rules :
-
-1: Everything is more or less authorized.
-
-2: Spawn Camping is considered part of the game, as long as no exploits or explosive launchers are used. Will lead to a instant kick if you use Piat/Bazooka/Panzerschreck in the first 5 seconds of the enemy team's spawn.
-
-3: Intentionally spawn killing with fire support is forbidden.
-
-4: Piat (and other explosives launchers or grenades) spam from parachuted ammo crates is forbidden.
-
-5: Leaving map (using ammo crates) is forbidden.
-
-6: Destroying your own radio (as the defending team) at the end of the game is authorized.
-
-7: Destroying the radio from outside bunkers (as the attacking team) or with stuka is authorized (but it's lame).
-
-8: Meleeing in restricted zone is authorized. 
-
-9: Racist language will not be tolerated and you will recieve a gag with the duration to be decided based on the number of offenses
-
-Discord: https://discord.gg/MKNwv3RbMG
-
-Please subscribe to Jim's "Revival Vietnam" mod!
+1.    Spawn camping is allowed if players can counter it by taking another route or using smoke. 
+2.    Killing 5 seconds after enemies spawn (including line of sight) is forbidden, as it is considered spawnkilling and cannot be countered. This includes Mgs and rockets/grenades.
+3.    Spawn killing with explosive launchers or grenades is forbidden. TNT is allowed due to its fuse time and restricted throw range. 
+4.    Deliberate artillery spawn camping is forbidden. Avoid bombing spawn areas, especially with carpet bombers, which travel in straight lines. 
+5.    Constant PIAT/explosive launcher spam using ammo crates is forbidden. Supply packs may be used for grenades, but not for spawn killing. 
+6.    Using exploits or ammo crates to leave the map is forbidden. Players should remain in areas where they can be attacked. 
+7.    Defenders may destroy their own radio at the end of the game. 
+8.    Attackers may destroy radios from outside the bunker or with a Stuka, though it is discouraged. It is recommended to eliminate remaining enemies first. 
+9.    Bayonetting in restricted areas is allowed. 
+10.    Voice spam with the intention of annoying others is forbidden, as it can reveal teammate positions. However using voice for gameplay purposes (baiting, etc) is allowed. 
+11.    Racist or discriminatory language is prohibited and may result in a gag or further punishment. 
+12.    Accidental team kills or misplaced fire support should be followed by a quick apology; otherwise, they may be treated as intentional. 
+13.    Intentional rule breaking will result in admin action, ranging from slays to bans depending on severity. 
+14.    Using officer with fewer than 15 players is discouraged, and abuse toward radio players will not be tolerated. 
+These rules are intended to keep the game enjoyable for both new and experienced players by preventing exploits and abusive behaviour. Players are also welcome to join the Doi Revival Community for updates and events.
