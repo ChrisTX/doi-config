@@ -3,13 +3,12 @@
 steamcmd +force_install_dir "$1" +login anonymous +app_update 462310 validate +quit
 
 cd "$1" || exit
-if [ -d "doi/cfg/doi-config" ]
-then
-    FRESH_INSTALLATION=false
-    git -C doi/cfg/doi-config pull
+if [ -d "doi/cfg/doi-config" ]; then
+	FRESH_INSTALLATION=false
+	git -C doi/cfg/doi-config pull
 else
-    FRESH_INSTALLATION=true
-    git clone https://github.com/ChrisTX/doi-config.git doi/cfg/doi-config
+	FRESH_INSTALLATION=true
+	git clone https://github.com/ChrisTX/doi-config.git doi/cfg/doi-config
 fi
 
 # Apply server playlist unlock patch
@@ -23,18 +22,16 @@ rm bin/libvorbis.so
 
 # Add included mods
 mkdir -p doi/custom
-for modfolder in doi/cfg/doi-config/mods/*/
-do
-    modfolder_path="${modfolder%*/}"
-    modfolder_name="${modfolder_path##*/}"
-    ln -sfn ../cfg/doi-config/mods/"$modfolder_name" doi/custom/"$modfolder_name"
+for modfolder in doi/cfg/doi-config/mods/*/; do
+	modfolder_path="${modfolder%*/}"
+	modfolder_name="${modfolder_path##*/}"
+	ln -sfn ../cfg/doi-config/mods/"$modfolder_name" doi/custom/"$modfolder_name"
 done
 
 # Create config symlinks
-for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg
-do
-    gameconfig_file="${gameconfig##*/}"
-    ln -sf doi-config/configs/gamemodes/"$gameconfig_file" doi/cfg/"$gameconfig_file"
+for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg; do
+	gameconfig_file="${gameconfig##*/}"
+	ln -sf doi-config/configs/gamemodes/"$gameconfig_file" doi/cfg/"$gameconfig_file"
 done
 
 # Remove all theater VPKs to ensure they update
@@ -57,20 +54,19 @@ curl -o metamod.tgz "$METAMOD_URL"
 curl -o sourcemod.tgz "$SOURCEMOD_URL"
 
 tar -xf metamod.tgz -C doi
-if [ "$FRESH_INSTALLATION" = true ] ; then
-    tar -xf sourcemod.tgz -C doi
+if [ "$FRESH_INSTALLATION" = true ]; then
+	tar -xf sourcemod.tgz -C doi
 else
-    tar -xf sourcemod.tgz -C doi --exclude="configs" --exclude="cfg"
+	tar -xf sourcemod.tgz -C doi --exclude="configs" --exclude="cfg"
 fi
 
 rm metamod.tgz
 rm sourcemod.tgz
 
 # Link included sourcemod scripts
-for smscript in doi/cfg/doi-config/sourcemod/*.sp
-do
-    smscript_file="${smscript##*/}"
-    ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
+for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
+	smscript_file="${smscript##*/}"
+	ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
 done
 
 # Update sourcebans-pp
@@ -78,7 +74,7 @@ git clone https://github.com/sbpp/sourcebans-pp.git
 cp -r sourcebans-pp/game/addons/sourcemod/scripting doi/addons/sourcemod
 cp -r sourcebans-pp/game/addons/sourcemod/translations doi/addons/sourcemod
 if [ "$FRESH_INSTALLATION" = true ]; then
-    cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
+	cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
 fi
 rm -rf sourcebans-pp
 
@@ -111,17 +107,16 @@ mv nextmap.smx disabled
 mv basebans.smx disabled
 
 # Recompile scripts
-for plugin in *.smx
-do
-    scriptfile="${plugin%.*}"
-    if [ -f ../scripting/"$scriptfile".sp ]; then
-        ../scripting/spcomp64 ../scripting/"$scriptfile".sp
-    fi
+for plugin in *.smx; do
+	scriptfile="${plugin%.*}"
+	if [ -f ../scripting/"$scriptfile".sp ]; then
+		../scripting/spcomp64 ../scripting/"$scriptfile".sp
+	fi
 done
 popd || exit
 
 # Install MOTDs
 if [ -n "$2" ]; then
-    ln -sf doi-config/texts/server_"$2".cfg doi/cfg/server.cfg
-    ln -sf cfg/doi-config/texts/motd_"$2".txt doi/motd.txt
+	ln -sf doi-config/texts/server_"$2".cfg doi/cfg/server.cfg
+	ln -sf cfg/doi-config/texts/motd_"$2".txt doi/motd.txt
 fi
