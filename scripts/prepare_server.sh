@@ -35,7 +35,7 @@ for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg; do
 done
 
 # Remove all theater VPKs to ensure they update
-./doi/cfg/doi-config/scripts/wscache_deleter.py -p "$(pwd)" -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
+./doi/cfg/doi-config/scripts/wscache_deleter.py -p "$PWD" -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
 
 # Update metamod source and sourcemod
 METAMOD_BRANCH="1.12"
@@ -116,7 +116,7 @@ done
 popd || exit
 
 # Install MOTDs
-if [ -n "$2" ]; then
+if [ "$2" != "" ]; then
 	ln -sf doi-config/texts/server_"$2".cfg doi/cfg/server.cfg
 	ln -sf cfg/doi-config/texts/motd_"$2".txt doi/motd.txt
 fi

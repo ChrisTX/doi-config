@@ -52,7 +52,7 @@ class WorkshopCache:
 
     def __del__(self) -> None:
         """Write out the VDF on destruction."""
-        if not self._vdf is None:
+        if self._vdf is not None:
             self.write()
 
     def _get_main(self) -> Any:
