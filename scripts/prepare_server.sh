@@ -54,7 +54,7 @@ curl -o metamod.tgz "$METAMOD_URL"
 curl -o sourcemod.tgz "$SOURCEMOD_URL"
 
 tar -xf metamod.tgz -C doi
-if [ "$FRESH_INSTALLATION" = true ]; then
+if [[ $FRESH_INSTALLATION ]]; then
 	tar -xf sourcemod.tgz -C doi
 else
 	tar -xf sourcemod.tgz -C doi --exclude="configs" --exclude="cfg"
@@ -73,7 +73,7 @@ done
 git clone https://github.com/sbpp/sourcebans-pp.git
 cp -r sourcebans-pp/game/addons/sourcemod/scripting doi/addons/sourcemod
 cp -r sourcebans-pp/game/addons/sourcemod/translations doi/addons/sourcemod
-if [ "$FRESH_INSTALLATION" = true ]; then
+if [[ $FRESH_INSTALLATION ]]; then
 	cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
 fi
 rm -rf sourcebans-pp
@@ -109,14 +109,14 @@ mv basebans.smx disabled
 # Recompile scripts
 for plugin in *.smx; do
 	scriptfile="${plugin%.*}"
-	if [ -f ../scripting/"$scriptfile".sp ]; then
+	if [[ -f ../scripting/"$scriptfile".sp ]]; then
 		../scripting/spcomp64 ../scripting/"$scriptfile".sp
 	fi
 done
 popd || exit
 
 # Install MOTDs
-if [ "$2" != "" ]; then
+if [[ -n $2 ]]; then
 	ln -sf doi-config/texts/server_"$2".cfg doi/cfg/server.cfg
 	ln -sf cfg/doi-config/texts/motd_"$2".txt doi/motd.txt
 fi
