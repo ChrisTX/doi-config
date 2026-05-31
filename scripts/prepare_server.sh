@@ -54,7 +54,7 @@ curl -o metamod.tgz "$METAMOD_URL"
 curl -o sourcemod.tgz "$SOURCEMOD_URL"
 
 tar -xf metamod.tgz -C doi
-if [[ $FRESH_INSTALLATION ]]; then
+if [[ "$FRESH_INSTALLATION" == "true" ]]; then
 	tar -xf sourcemod.tgz -C doi
 else
 	tar -xf sourcemod.tgz -C doi --exclude="configs" --exclude="cfg"
@@ -73,7 +73,7 @@ done
 git clone https://github.com/sbpp/sourcebans-pp.git
 cp -r sourcebans-pp/game/addons/sourcemod/scripting doi/addons/sourcemod
 cp -r sourcebans-pp/game/addons/sourcemod/translations doi/addons/sourcemod
-if [[ $FRESH_INSTALLATION ]]; then
+if [[ "$FRESH_INSTALLATION" == "true" ]]; then
 	cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
 fi
 rm -rf sourcebans-pp
