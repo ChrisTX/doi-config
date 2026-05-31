@@ -59,7 +59,7 @@ rm sourcemod.tgz
 
 # Disable SourceMod gamedata update. We update all of SourceMod with this script every time.
 # This isn't supported yet via HTTPS either, according to the core.cfg comment.
-sed -i doi/addons/sourcemod/configs/core.cfg "s/(\"DisableAutoUpdate\"\s\+)\"no\"/\1\"yes\"/"
+sed -i -E "s/(\"DisableAutoUpdate\"\s+)\"no\"/\1\"yes\"/" doi/addons/sourcemod/configs/core.cfg
 
 # Link included sourcemod scripts
 for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
@@ -75,12 +75,12 @@ cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
 rm -rf sourcebans-pp
 
 sourcebans_replacer () {
-    sed -i doi/addons/sourcemod/configs/sourcebans/sourcebans.cfg "s/(\"$1\"\s\+)\"[^\"]*\"/\1\"$2\"/"
+    sed -i -E "s/(\"$1\"\s+)\"[^\"]*\"/\1\"$2\"/" doi/addons/sourcemod/configs/sourcebans/sourcebans.cfg
 }
 
 sourcebans_replacer "BackupConfigs" "0"
 if [[ -n $SOURCEBANS_WEBSITE ]]; then
-    sourcebans_replacer "Website" "$SOURCEBANS_WEBSITE"
+    sourcebans_replacer "Website" "https:\/\/$SOURCEBANS_WEBSITE"
 fi
 if [[ -n $SOURCEBANS_SERVER_ID ]]; then
     sourcebans_replacer "ServerID" "$SOURCEBANS_SERVER_ID"
@@ -123,6 +123,8 @@ for plugin in *.smx; do
 done
 popd || exit
 
+pushd doi/cfg || exit
+
 # Install MOTDs if known to our config system
 # Otherwise users need to make their own server.cfg loading init-...
 if [[ ! -n $SERVER_CONFIG_NAME && -f doi-config/texts/server_"$2".cfg ]]; then
@@ -133,13 +135,15 @@ if [[ -n $SERVER_CONFIG_NAME ]]; then
         echo "Error: Config ""$SERVER_CONFIG_NAME requested but unknown!" >&2
         exit 1
     fi
-    ln -sf doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg doi/cfg/server.cfg
-    ln -sf cfg/doi-config/texts/motd_"$SERVER_CONFIG_NAME".txt doi/motd.txt
+    cp doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg server.cfg
+    cp doi-config/texts/motd_"$SERVER_CONFIG_NAME".txt ../motd.txt
 fi
 
 if [[ -n $RCON_PASSWORD ]]; then
-    echo "rcon_password \"$RCON_PASSWORD\"" > doi/cfg/rcon.cfg
-    if [[ ! grep -q \"exec rcon.cfg\" doi/cfg/server.cfg ]]; then
-        echo "exec rcon.cfg" >> doi/cfg/server.cfg
+    echo "rcon_password \"$RCON_PASSWORD\"" > rcon.cfg
+    if ! grep -q "exec rcon.cfg" server.cfg; then
+        echo "exec rcon.cfg" >> server.cfg
     fi
 fi
+
+popd || exit

@@ -7,7 +7,8 @@ Environment=LD_LIBRARY_PATH=%h/servers/dayofinfamy-%i:%h/servers/dayofinfamy-%i/
 EnvironmentFile=%h/.config/systemd/user/doi-server@%i.env
 WorkingDirectory=%h/servers/dayofinfamy-%i
 ExecStartPre=%h/doi-config/scripts/prepare_server.sh %h/servers/dayofinfamy-%i %i
-ExecStart=%h/servers/dayofinfamy-%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} -clientport ${CLIENT_PORT} +map \"${STARTUP_MAP}\" +sv_workshop_list_file \"${WORKSHOP_IDS_FILE}\" +r_hunkalloclightmaps 0 +mp_theater_override \"${THEATER}\" +sv_password \"${PASSWORD}\"
+ExecStartPre=/usr/bin/cp -r %h/doi-secrets %h/servers/dayofinfamy-%i/doi
+ExecStart=%h/servers/dayofinfamy-%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} -clientport ${CLIENT_PORT} +map \"${STARTUP_MAP}\" +sv_workshop_list_file \"${WORKSHOP_IDS_FILE}\" +r_hunkalloclightmaps 0 +mp_theater_override \"${THEATER}\" +sv_password \"${SERVER_PASSWORD}\"
 KillSignal=SIGINT
 ReadWritePaths=%h/servers/dayofinfamy-%i
 PrivateTmp=yes
