@@ -4,11 +4,9 @@ steamcmd +force_install_dir "$1" +login anonymous +app_update 462310 validate +q
 
 cd "$1" || exit
 if [ -d "doi/cfg/doi-config" ]; then
-	FRESH_INSTALLATION=false
-	git -C doi/cfg/doi-config pull
+    git -C doi/cfg/doi-config pull
 else
-	FRESH_INSTALLATION=true
-	git clone https://github.com/ChrisTX/doi-config.git doi/cfg/doi-config
+    git clone https://github.com/ChrisTX/doi-config.git doi/cfg/doi-config
 fi
 
 # Apply server playlist unlock patch
@@ -23,15 +21,15 @@ rm bin/libvorbis.so
 # Add included mods
 mkdir -p doi/custom
 for modfolder in doi/cfg/doi-config/mods/*/; do
-	modfolder_path="${modfolder%*/}"
-	modfolder_name="${modfolder_path##*/}"
-	ln -sfn ../cfg/doi-config/mods/"$modfolder_name" doi/custom/"$modfolder_name"
+    modfolder_path="${modfolder%*/}"
+    modfolder_name="${modfolder_path##*/}"
+    ln -sfn ../cfg/doi-config/mods/"$modfolder_name" doi/custom/"$modfolder_name"
 done
 
 # Create config symlinks
 for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg; do
-	gameconfig_file="${gameconfig##*/}"
-	ln -sf doi-config/configs/gamemodes/"$gameconfig_file" doi/cfg/"$gameconfig_file"
+    gameconfig_file="${gameconfig##*/}"
+    ln -sf doi-config/configs/gamemodes/"$gameconfig_file" doi/cfg/"$gameconfig_file"
 done
 
 # Remove all theater VPKs to ensure they update
@@ -54,29 +52,39 @@ curl -o metamod.tgz "$METAMOD_URL"
 curl -o sourcemod.tgz "$SOURCEMOD_URL"
 
 tar -xf metamod.tgz -C doi
-if [[ "$FRESH_INSTALLATION" == "true" ]]; then
-	tar -xf sourcemod.tgz -C doi
-else
-	tar -xf sourcemod.tgz -C doi --exclude="configs" --exclude="cfg"
-fi
+tar -xf sourcemod.tgz -C doi
 
 rm metamod.tgz
 rm sourcemod.tgz
 
+# Disable SourceMod gamedata update. We update all of SourceMod with this script every time.
+# This isn't supported yet via HTTPS either, according to the core.cfg comment.
+sed -i doi/addons/sourcemod/configs/core.cfg "s/(\"DisableAutoUpdate\"\s\+)\"no\"/\1\"yes\"/"
+
 # Link included sourcemod scripts
 for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
-	smscript_file="${smscript##*/}"
-	ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
+    smscript_file="${smscript##*/}"
+    ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
 done
 
 # Update sourcebans-pp
 git clone https://github.com/sbpp/sourcebans-pp.git
 cp -r sourcebans-pp/game/addons/sourcemod/scripting doi/addons/sourcemod
 cp -r sourcebans-pp/game/addons/sourcemod/translations doi/addons/sourcemod
-if [[ "$FRESH_INSTALLATION" == "true" ]]; then
-	cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
-fi
+cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
 rm -rf sourcebans-pp
+
+sourcebans_replacer () {
+    sed -i doi/addons/sourcemod/configs/sourcebans/sourcebans.cfg "s/(\"$1\"\s\+)\"[^\"]*\"/\1\"$2\"/"
+}
+
+sourcebans_replacer "BackupConfigs" "0"
+if [[ -n $SOURCEBANS_WEBSITE ]]; then
+    sourcebans_replacer "Website" "$SOURCEBANS_WEBSITE"
+fi
+if [[ -n $SOURCEBANS_SERVER_ID ]]; then
+    sourcebans_replacer "ServerID" "$SOURCEBANS_SERVER_ID"
+fi
 
 # Update sm-advertisements
 git clone https://github.com/ErikMinekus/sm-advertisements.git
@@ -108,15 +116,30 @@ mv basebans.smx disabled
 
 # Recompile scripts
 for plugin in *.smx; do
-	scriptfile="${plugin%.*}"
-	if [[ -f ../scripting/"$scriptfile".sp ]]; then
-		../scripting/spcomp64 ../scripting/"$scriptfile".sp
-	fi
+    scriptfile="${plugin%.*}"
+    if [[ -f ../scripting/"$scriptfile".sp ]]; then
+        ../scripting/spcomp64 ../scripting/"$scriptfile".sp
+    fi
 done
 popd || exit
 
-# Install MOTDs
-if [[ -n $2 ]]; then
-	ln -sf doi-config/texts/server_"$2".cfg doi/cfg/server.cfg
-	ln -sf cfg/doi-config/texts/motd_"$2".txt doi/motd.txt
+# Install MOTDs if known to our config system
+# Otherwise users need to make their own server.cfg loading init-...
+if [[ ! -n $SERVER_CONFIG_NAME && -f doi-config/texts/server_"$2".cfg ]]; then
+    SERVER_CONFIG_NAME=$2
+fi
+if [[ -n $SERVER_CONFIG_NAME ]]; then
+    if [[ ! -f doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg ]]; then
+        echo "Error: Config ""$SERVER_CONFIG_NAME requested but unknown!" >&2
+        exit 1
+    fi
+    ln -sf doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg doi/cfg/server.cfg
+    ln -sf cfg/doi-config/texts/motd_"$SERVER_CONFIG_NAME".txt doi/motd.txt
+fi
+
+if [[ -n $RCON_PASSWORD ]]; then
+    echo "rcon_password \"$RCON_PASSWORD\"" > doi/cfg/rcon.cfg
+    if [[ ! grep -q \"exec rcon.cfg\" doi/cfg/server.cfg ]]; then
+        echo "exec rcon.cfg" >> doi/cfg/server.cfg
+    fi
 fi
