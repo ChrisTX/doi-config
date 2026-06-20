@@ -114,6 +114,17 @@ mv nextmap.smx disabled
 # SourceBans requires basebans to be off
 mv basebans.smx disabled
 
+# Add SMJansson, SteamWorks for SourceBans++ Discord integration
+# See https://sbpp.github.io/integrations/discord-forward-setup/
+curl -o doi/addons/sourcemod/extensions/smjansson.ext.so https://github.com/davenonymous/SMJansson/raw/refs/heads/master/bin/smjansson.ext.so
+curl -o package-lin.tgz https://github.com/KyleSanderson/SteamWorks/releases/download/1.2.3c/package-lin.tgz
+
+tar -xf package-lin.tgz --strip-components=1 -C doi
+rm package-lin.tgz
+
+# Install the actual SourceBans++ discord-forward
+curl -o doi/addons/sourcemod/scripting/sbpp_discord.sp https://raw.githubusercontent.com/sbpp/discord-forward/refs/heads/master/sbpp_discord.sp
+
 # Recompile scripts
 for plugin in *.smx; do
     scriptfile="${plugin%.*}"
