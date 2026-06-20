@@ -69,6 +69,7 @@ done
 
 # Update sourcebans-pp
 git clone https://github.com/sbpp/sourcebans-pp.git
+./sourcebans-pp/game/addons/sourcemod/scripting/scripts/resolve-plugin-version.sh
 cp -r sourcebans-pp/game/addons/sourcemod/scripting doi/addons/sourcemod
 cp -r sourcebans-pp/game/addons/sourcemod/translations doi/addons/sourcemod
 cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
@@ -119,6 +120,8 @@ curl -L -o doi/addons/sourcemod/scripting/include/SteamWorks.inc https://github.
 
 # Install the actual SourceBans++ discord-forward
 curl -o doi/addons/sourcemod/scripting/sbpp_discord.sp https://raw.githubusercontent.com/sbpp/discord-forward/refs/heads/master/sbpp_discord.sp
+
+patch -N doi/addons/sourcemod/scripting/sbpp_discord.sp doi/cfg/doi-config/scripts/sbpp_discord.patch
 
 # Enable SQL admin plugins
 pushd doi/addons/sourcemod/plugins || exit
