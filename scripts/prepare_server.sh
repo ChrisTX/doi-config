@@ -103,6 +103,23 @@ cp -r Multi-Colors/addons/sourcemod/scripting/include doi/addons/sourcemod/scrip
 rm -rf Multi-Colors
 patch -N doi/addons/sourcemod/scripting/afk_manager4.sp doi/cfg/doi-config/scripts/afkmanager.patch
 
+# Add SMJansson, SteamWorks for SourceBans++ Discord integration
+# See https://sbpp.github.io/integrations/discord-forward-setup/
+git clone https://github.com/davenonymous/SMJansson.git
+cp SMJansson/bin/* doi/addons/sourcemod/extensions
+cp -r SMJansson/pawn/scripting/. doi/addons/sourcemod/scripting
+
+curl -L -o package-lin.tgz https://github.com/KyleSanderson/SteamWorks/releases/download/1.2.3c/package-lin.tgz
+
+tar -xf package-lin.tgz --strip-components=1 -C doi
+rm package-lin.tgz
+
+# Git fixes are needed for compatibility with current SourceMod
+curl -L -o doi/addons/sourcemod/scripting/include/SteamWorks.inc https://github.com/KyleSanderson/SteamWorks/raw/refs/heads/master/Pawn/includes/SteamWorks.inc
+
+# Install the actual SourceBans++ discord-forward
+curl -o doi/addons/sourcemod/scripting/sbpp_discord.sp https://raw.githubusercontent.com/sbpp/discord-forward/refs/heads/master/sbpp_discord.sp
+
 # Enable SQL admin plugins
 pushd doi/addons/sourcemod/plugins || exit
 mv disabled/admin-sql-threaded.smx .
@@ -114,17 +131,6 @@ mv nextmap.smx disabled
 # SourceBans requires basebans to be off
 mv basebans.smx disabled
 
-# Add SMJansson, SteamWorks for SourceBans++ Discord integration
-# See https://sbpp.github.io/integrations/discord-forward-setup/
-curl -o doi/addons/sourcemod/extensions/smjansson.ext.so https://github.com/davenonymous/SMJansson/raw/refs/heads/master/bin/smjansson.ext.so
-curl -o package-lin.tgz https://github.com/KyleSanderson/SteamWorks/releases/download/1.2.3c/package-lin.tgz
-
-tar -xf package-lin.tgz --strip-components=1 -C doi
-rm package-lin.tgz
-
-# Install the actual SourceBans++ discord-forward
-curl -o doi/addons/sourcemod/scripting/sbpp_discord.sp https://raw.githubusercontent.com/sbpp/discord-forward/refs/heads/master/sbpp_discord.sp
-
 # Recompile scripts
 for plugin in *.smx; do
     scriptfile="${plugin%.*}"
@@ -132,6 +138,13 @@ for plugin in *.smx; do
         ../scripting/spcomp64 ../scripting/"$scriptfile".sp
     fi
 done
+for plugin in ../scripting/sbpp*.sp; do
+    ../scripting/spcomp64 "$plugin"
+done
+../scripting/spcomp64 ../scripting/advertisements.sp
+../scripting/spcomp64 ../scripting/afk_manager4.sp
+../scripting/spcomp64 ../scripting/doi_cvar_unlocker.sp
+../scripting/spcomp64 ../scripting/doi_difficulty_scaler.sp
 popd || exit
 
 pushd doi/cfg || exit
