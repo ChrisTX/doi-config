@@ -71,7 +71,7 @@ for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
 done
 
 # Update GeoIP databases
-if [[ -d "/var/lib/GeoIP" ]]; then
+if [[ -f "/var/lib/GeoIP/GeoLite2-City.mmdb" ]]; then
 	rm doi/addons/sourcemod/configs/geoip/GeoLite2-*.mmdb
 	ln -sf /var/lib/GeoIP/GeoLite2-City.mmdb doi/addons/sourcemod/configs/geoip
 fi
