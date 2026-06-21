@@ -2,7 +2,7 @@
 
 cd ~
 if [ -d "repo" ]; then
-    rm -rf repo
+	rm -rf repo
 fi
 git clone https://github.com/sbpp/sourcebans-pp.git repo
 

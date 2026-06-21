@@ -4,9 +4,9 @@ steamcmd +force_install_dir "$1" +login anonymous +app_update 462310 validate +q
 
 cd "$1" || exit
 if [ -d "doi/cfg/doi-config" ]; then
-    git -C doi/cfg/doi-config pull
+	git -C doi/cfg/doi-config pull
 else
-    git clone https://github.com/ChrisTX/doi-config.git doi/cfg/doi-config
+	git clone https://github.com/ChrisTX/doi-config.git doi/cfg/doi-config
 fi
 
 # Apply server playlist unlock patch
@@ -21,15 +21,15 @@ rm bin/libvorbis.so
 # Add included mods
 mkdir -p doi/custom
 for modfolder in doi/cfg/doi-config/mods/*/; do
-    modfolder_path="${modfolder%*/}"
-    modfolder_name="${modfolder_path##*/}"
-    ln -sfn ../cfg/doi-config/mods/"$modfolder_name" doi/custom/"$modfolder_name"
+	modfolder_path="${modfolder%*/}"
+	modfolder_name="${modfolder_path##*/}"
+	ln -sfn ../cfg/doi-config/mods/"$modfolder_name" doi/custom/"$modfolder_name"
 done
 
 # Create config symlinks
 for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg; do
-    gameconfig_file="${gameconfig##*/}"
-    ln -sf doi-config/configs/gamemodes/"$gameconfig_file" doi/cfg/"$gameconfig_file"
+	gameconfig_file="${gameconfig##*/}"
+	ln -sf doi-config/configs/gamemodes/"$gameconfig_file" doi/cfg/"$gameconfig_file"
 done
 
 # Remove all theater VPKs to ensure they update
@@ -66,14 +66,14 @@ sed -i -E "s/(\"DisableAutoUpdate\"\s+)\"no\"/\1\"yes\"/" doi/addons/sourcemod/c
 
 # Link included sourcemod scripts
 for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
-    smscript_file="${smscript##*/}"
-    ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
+	smscript_file="${smscript##*/}"
+	ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
 done
 
 # Update GeoIP databases
 if [[ -d "/var/lib/GeoIP" ]]; then
-    rm doi/addons/sourcemod/configs/geoip/GeoLite2-*.mmdb
-    ln -sf /var/lib/GeoIP/GeoLite2-City.mmdb doi/addons/sourcemod/configs/geoip
+	rm doi/addons/sourcemod/configs/geoip/GeoLite2-*.mmdb
+	ln -sf /var/lib/GeoIP/GeoLite2-City.mmdb doi/addons/sourcemod/configs/geoip
 fi
 
 # Update sourcebans-pp
@@ -84,16 +84,16 @@ cp -r sourcebans-pp/game/addons/sourcemod/translations doi/addons/sourcemod
 cp -r sourcebans-pp/game/addons/sourcemod/configs doi/addons/sourcemod
 rm -rf sourcebans-pp
 
-sourcebans_replacer () {
-    sed -i -E "s/(\"$1\"\s+)\"[^\"]*\"/\1\"$2\"/" doi/addons/sourcemod/configs/sourcebans/sourcebans.cfg
+sourcebans_replacer() {
+	sed -i -E "s/(\"$1\"\s+)\"[^\"]*\"/\1\"$2\"/" doi/addons/sourcemod/configs/sourcebans/sourcebans.cfg
 }
 
 sourcebans_replacer "BackupConfigs" "0"
 if [[ -n $SOURCEBANS_WEBSITE ]]; then
-    sourcebans_replacer "Website" "https:\/\/$SOURCEBANS_WEBSITE"
+	sourcebans_replacer "Website" "https:\/\/$SOURCEBANS_WEBSITE"
 fi
 if [[ -n $SOURCEBANS_SERVER_ID ]]; then
-    sourcebans_replacer "ServerID" "$SOURCEBANS_SERVER_ID"
+	sourcebans_replacer "ServerID" "$SOURCEBANS_SERVER_ID"
 fi
 
 # Update sm-advertisements
@@ -146,13 +146,13 @@ mv basebans.smx disabled
 
 # Recompile scripts
 for plugin in *.smx; do
-    scriptfile="${plugin%.*}"
-    if [[ -f ../scripting/"$scriptfile".sp ]]; then
-        ../scripting/spcomp64 ../scripting/"$scriptfile".sp
-    fi
+	scriptfile="${plugin%.*}"
+	if [[ -f ../scripting/"$scriptfile".sp ]]; then
+		../scripting/spcomp64 ../scripting/"$scriptfile".sp
+	fi
 done
 for plugin in ../scripting/sbpp*.sp; do
-    ../scripting/spcomp64 "$plugin"
+	../scripting/spcomp64 "$plugin"
 done
 ../scripting/spcomp64 ../scripting/advertisements.sp
 ../scripting/spcomp64 ../scripting/afk_manager4.sp
@@ -165,22 +165,22 @@ pushd doi/cfg || exit
 # Install MOTDs if known to our config system
 # Otherwise users need to make their own server.cfg loading init-...
 if [[ ! -n $SERVER_CONFIG_NAME && -f doi-config/texts/server_"$2".cfg ]]; then
-    SERVER_CONFIG_NAME=$2
+	SERVER_CONFIG_NAME=$2
 fi
 if [[ -n $SERVER_CONFIG_NAME ]]; then
-    if [[ ! -f doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg ]]; then
-        echo "Error: Config ""$SERVER_CONFIG_NAME requested but unknown!" >&2
-        exit 1
-    fi
-    cp doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg server.cfg
-    cp doi-config/texts/motd_"$SERVER_CONFIG_NAME".txt ../motd.txt
+	if [[ ! -f doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg ]]; then
+		echo "Error: Config ""$SERVER_CONFIG_NAME requested but unknown!" >&2
+		exit 1
+	fi
+	cp doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg server.cfg
+	cp doi-config/texts/motd_"$SERVER_CONFIG_NAME".txt ../motd.txt
 fi
 
 if [[ -n $RCON_PASSWORD ]]; then
-    echo "rcon_password \"$RCON_PASSWORD\"" > rcon.cfg
-    if ! grep -q "exec rcon.cfg" server.cfg; then
-        echo "exec rcon.cfg" >> server.cfg
-    fi
+	echo "rcon_password \"$RCON_PASSWORD\"" >rcon.cfg
+	if ! grep -q "exec rcon.cfg" server.cfg; then
+		echo "exec rcon.cfg" >>server.cfg
+	fi
 fi
 
 popd || exit
