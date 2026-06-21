@@ -13,7 +13,8 @@ files. For example, for the Coop Commando configuration set, your `server.cfg`
 might look like this:
 
 ```text
-hostname "MY-SERVER-NAME" rcon_password "MY-PASSWORD"
+hostname "MY-SERVER-NAME"
+rcon_password "MY-PASSWORD"
 
 exec doi-config/init-coop-commando.cfg
 ```
@@ -21,6 +22,12 @@ exec doi-config/init-coop-commando.cfg
 The included `prepare_server.sh` can be used to start up the server and perform
 most automatic tasks. It will update SourceMod, Metamod:Source, SourceBans, and
 etc., as well as install symbolic links to the Git folder where needed.
+
+If `prepare_server.sh` is being called with a second parameter, it will
+interpret that parameter as a server config (in the `texts` folder) should be
+used.
+By defining the `RCON_PASSWORD` environment variable, `prepare_server.sh` will
+also create an appropriate `rcon.cfg` and include it.
 
 Lastly, the appropriate workshop ID file in the `configs` folder for the server
 has to be passed on commandline to SRCDS via `sv_workshop_list_file`. It's not
@@ -42,7 +49,11 @@ The game server requires certain 32-bit libraries being installed on Linux.
 These are
 
 ```text
-glibc libgcc libstdc++ SDL2 zlib
+glibc
+libgcc
+libstdc++
+SDL2
+zlib
 ```
 
 It is possible to replace SDL2 with the `sdl2-compat` compatibility layer that
@@ -52,13 +63,18 @@ The Steam Client library has the following additional possible dependencies,
 which are however only loaded by client apps and not servers:
 
 ```text
-SDL3 libX11 PulseAudio (libpulse)
+SDL3
+libX11
+PulseAudio (libpulse)
 ```
 
 The game server binaries contain references to the following libraries as well:
 
 ```text
-OpenAL util-linux freetype2 fontconfig
+OpenAL
+util-linux
+freetype2
+fontconfig
 ```
 
 These libraries would only be loaded by the client code paths in `engine.so`,
