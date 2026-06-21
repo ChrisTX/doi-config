@@ -12,9 +12,11 @@ Afterwards, create a server config that loads the `init-<gamemode>.cfg` config
 files. For example, for the Coop Commando configuration set, your `server.cfg`
 might look like this:
 
-```text hostname "MY-SERVER-NAME" rcon_password "MY-PASSWORD"
+```text
+hostname "MY-SERVER-NAME" rcon_password "MY-PASSWORD"
 
-exec doi-config/init-coop-commando.cfg ```
+exec doi-config/init-coop-commando.cfg
+```
 
 The included `prepare_server.sh` can be used to start up the server and perform
 most automatic tasks. It will update SourceMod, Metamod:Source, SourceBans, and
@@ -39,7 +41,9 @@ might be necessary to add this to the server launch parameters.
 The game server requires certain 32-bit libraries being installed on Linux.
 These are
 
-```text glibc libgcc libstdc++ SDL2 zlib ```
+```text
+glibc libgcc libstdc++ SDL2 zlib
+```
 
 It is possible to replace SDL2 with the `sdl2-compat` compatibility layer that
 implements SDL2 atop SDL3.
@@ -47,11 +51,15 @@ implements SDL2 atop SDL3.
 The Steam Client library has the following additional possible dependencies,
 which are however only loaded by client apps and not servers:
 
-```text SDL3 libX11 PulseAudio (libpulse) ```
+```text
+SDL3 libX11 PulseAudio (libpulse)
+```
 
 The game server binaries contain references to the following libraries as well:
 
-```text OpenAL util-linux freetype2 fontconfig ```
+```text
+OpenAL util-linux freetype2 fontconfig
+```
 
 These libraries would only be loaded by the client code paths in `engine.so`,
 and thus if the game asks for any of them, there's something going wrong. In
@@ -86,8 +94,10 @@ restrictions.
 The admin menu `sm_admin` requires the keys 6 to 0 to be bound. Add the
 following to your client configuration (`config.cfg`):
 
-```text bind "6" "slot6" bind "7" "slot7" bind "8" "slot8" bind "9" "slot9" bind
-"0" "slot10" ```
+```text
+bind "6" "slot6" bind "7" "slot7" bind "8" "slot8" bind "9" "slot9" bind
+"0" "slot10"
+```
 
 ### GeoIP2 databases
 

@@ -10,9 +10,11 @@ an [Engine Hunk
 Overflow](https://developer.valvesoftware.com/wiki/Engine_Hunk_Overflow). Such
 an overflow causes the client to crash with an error message looking as follows:
 
-```text --------------------------- Engine Error --------------------------- Out
+```text
+--------------------------- Engine Error --------------------------- Out
 of memory! Attempted to allocate 127401984 bytes --------------------------- OK
---------------------------- ```
+---------------------------
+```
 
 Due to differences in memory limits between the 32-bit and 64-bit versions, this
 issue is practically only seen in the 32-bit game client or server. Thus, it's
