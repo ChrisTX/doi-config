@@ -17,7 +17,9 @@ find staging -type f -exec chmod 0640 {} \;
 find staging -type d -exec chmod 0750 {} \;
 
 rm -rf /srv/http/sourcebans.rev-crew.info/{templates_c,includes,pages,scripts}
-ln -sf /var/lib/GeoIP/GeoLite2-Country.mmdb staging/data/GeoLite2-Country.mmdb
+if [[ -f "/var/lib/GeoIP/GeoLite2-Country.mmdb" ]]; then
+    ln -sf /var/lib/GeoIP/GeoLite2-Country.mmdb staging/data/GeoLite2-Country.mmdb
+fi
 
 cp -a staging/. /srv/http/sourcebans.rev-crew.info/
 rm -rf staging
