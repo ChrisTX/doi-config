@@ -1,0 +1,6 @@
+[Unit]
+Description=Update the SourceBans web components
+After=network.target
+
+[Service]
+ExecStart=/opt/deploy_sourcebans.sh
