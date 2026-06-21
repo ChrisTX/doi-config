@@ -72,7 +72,8 @@ done
 
 # Update GeoIP databases
 if [[ -d "/var/lib/GeoIP" ]]; then
-    ln -sf /var/lib/GeoIP/GeoLite2-*.mmdb doi/addons/sourcemod/configs/geoip
+    rm doi/addons/sourcemod/configs/geoip/GeoLite2-*.mmdb
+    ln -sf /var/lib/GeoIP/GeoLite2-City.mmdb doi/addons/sourcemod/configs/geoip
 fi
 
 # Update sourcebans-pp
