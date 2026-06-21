@@ -70,6 +70,11 @@ for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
     ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
 done
 
+# Update GeoIP databases
+if [[ -d "/var/lib/GeoIP" ]]; then
+    ln -sf /var/lib/GeoIP/GeoLite2-*.mmdb doi/addons/sourcemod/configs/geoip
+fi
+
 # Update sourcebans-pp
 git clone https://github.com/sbpp/sourcebans-pp.git
 ./sourcebans-pp/game/addons/sourcemod/scripting/scripts/resolve-plugin-version.sh
