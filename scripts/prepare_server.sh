@@ -36,6 +36,9 @@ done
 ./doi/cfg/doi-config/scripts/wscache_deleter.py -p "$PWD" -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
 
 # Update metamod source and sourcemod
+# The secrets are provided in addons/sourcemod/configs/databases.cfg
+# They are deployed via the generic secrets deployment at the end of the systemd startup preparations
+# Included are database credentials for sourcemod, sourcebans and userprefs
 METAMOD_BRANCH="1.12"
 SOURCEMOD_BRANCH="1.12"
 
@@ -58,7 +61,7 @@ rm metamod.tgz
 rm sourcemod.tgz
 
 # Disable SourceMod gamedata update. We update all of SourceMod with this script every time.
-# This isn't supported yet via HTTPS either, according to the core.cfg comment.
+# This isn't supported yet via HTTPS either according to the core.cfg comment.
 sed -i -E "s/(\"DisableAutoUpdate\"\s+)\"no\"/\1\"yes\"/" doi/addons/sourcemod/configs/core.cfg
 
 # Link included sourcemod scripts
@@ -119,8 +122,9 @@ rm package-lin.tgz
 curl -L -o doi/addons/sourcemod/scripting/include/SteamWorks.inc https://github.com/KyleSanderson/SteamWorks/raw/refs/heads/master/Pawn/includes/SteamWorks.inc
 
 # Install the actual SourceBans++ discord-forward
+# The secrets are provided in cfg/sourcemod/sbpp_discord.cfg
+# They are deployed via the generic secrets deployment at the end of the systemd startup preparations
 curl -o doi/addons/sourcemod/scripting/sbpp_discord.sp https://raw.githubusercontent.com/sbpp/discord-forward/refs/heads/master/sbpp_discord.sp
-
 patch -N doi/addons/sourcemod/scripting/sbpp_discord.sp doi/cfg/doi-config/scripts/sbpp_discord.patch
 
 # Enable SQL admin plugins
