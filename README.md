@@ -95,8 +95,11 @@ The admin menu `sm_admin` requires the keys 6 to 0 to be bound. Add the
 following to your client configuration (`config.cfg`):
 
 ```text
-bind "6" "slot6" bind "7" "slot7" bind "8" "slot8" bind "9" "slot9" bind
-"0" "slot10"
+bind "6" "slot6"
+bind "7" "slot7"
+bind "8" "slot8"
+bind "9" "slot9"
+bind "0" "slot10"
 ```
 
 ### GeoIP2 databases
@@ -109,4 +112,3 @@ a free registration with MaxMind, but with that it will provide the latest and
 greated GeoIP2 databases in `/var/lib/GeoIP`. The `prepare_server.sh` and
 `deploy_sourcebans.sh` scripts include logic to symlink the GeoIP2 databases
 from that location if available.
-```
