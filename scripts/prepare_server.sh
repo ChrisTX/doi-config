@@ -131,7 +131,6 @@ curl -L -o doi/addons/sourcemod/scripting/include/SteamWorks.inc https://github.
 # The secrets are provided in cfg/sourcemod/sbpp_discord.cfg
 # They are deployed via the generic secrets deployment at the end of the systemd startup preparations
 curl -o doi/addons/sourcemod/scripting/sbpp_discord.sp https://raw.githubusercontent.com/sbpp/discord-forward/refs/heads/master/sbpp_discord.sp
-patch -N doi/addons/sourcemod/scripting/sbpp_discord.sp doi/cfg/doi-config/scripts/sbpp_discord.patch
 
 # Enable SQL admin plugins
 pushd doi/addons/sourcemod/plugins || exit
