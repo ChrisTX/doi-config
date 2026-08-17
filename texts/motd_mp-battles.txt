@@ -1,14 +1,14 @@
 Make sure you are subscribed to the Steam Workshop mods: Revival Vietnam and GOLDENROD. 
 
-1. Spawn is considered anywhere within a 5 second radius from where you spawn.
-2. Spawnkilling is forbidden with LMGs, MGs, launchable grenades/explosives. (TNT and Geballte Ladung are allowed)
-3. Spawnkilling is forbidden with officer call-ins.
-4. Spamming with PIAT/explosive launchers using ammo crates is forbidden. Supply packs may be used for grenades, but not for spawnkilling.
-5. Using exploits or ammo crates to leave the map is forbidden.
-6. Defenders may destroy their own radio.
-7. Attackers are allowed to destroy the enemy radio, but are encouraged to eliminate the remaining enemies.
-8. Bayonetting in restricted areas is allowed.
-9. Voice spamming with the intention to annoy other players is forbidden - it can reveal teammate positions.
+1.  Spawn is considered anywhere within a 5 second radius from where you spawn.
+2.  Spawnkilling is forbidden with LMGs, MGs, launchable grenades/explosives. (TNT and Geballte Ladung are allowed)
+3.  Spawnkilling is forbidden with officer call-ins.
+4.  Spamming with PIAT/explosive launchers using ammo crates is forbidden. Supply packs may be used for grenades, but not for spawnkilling.
+5.  Using exploits or ammo crates to leave the map is forbidden.
+6.  Defenders may destroy their own radio.
+7.  Attackers are allowed to destroy the enemy radio, but are encouraged to eliminate the remaining enemies.
+8.  Bayonetting in restricted areas is allowed.
+9.  Voice spamming with the intention to annoy other players is forbidden - it can reveal teammate positions.
 10. Using the voice for gameplay purposes (officer/radio call, baiting, etc.) is allowed.
 11. Racist or discriminatory language is forbidden and may result in a gag, or further punishment.
 12. Apologise for teamkills - intentional teamkills are forbidden. (As the officer, let your teammates know when you're making call-ins to avoid teamkills.)
