@@ -1583,7 +1583,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							}
 							iButtonsArray[client][iButtonsArrayIndex[client]] = buttons;
 
-							if (iButtonsArrayIndex[client]++ >= g_iButtonsArraySize) // Increment Array Index
+							if (++iButtonsArrayIndex[client] >= g_iButtonsArraySize) // Increment Array Index
 								iButtonsArrayIndex[client] = 0;
 
 						} else
@@ -2439,7 +2439,7 @@ bool CheckAdminImmunity(int client) // Check Admin Immunity
 
 		if (StrEqual(sFlags, "")) // No admin flags set
 			return true;
-		else if (iUserFlagBits & (ReadFlagString(sFlags)|ADMFLAG_ROOT) > 0) // Compare Flag Bits
+		else if ((iUserFlagBits & (ReadFlagString(sFlags)|ADMFLAG_ROOT)) != 0) // Compare Flag Bits
 			return true;
 	}
 	return false;
