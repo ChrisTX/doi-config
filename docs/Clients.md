@@ -24,8 +24,9 @@ crash practically only happens with the 32-bit game. Use the 64-bit game, or add
 
 SourceMod menus like the admin menu (`sm_admin`) use the keys 1 to 0 to pick
 an entry. The game only binds the keys 1 to 5, so the entries 6 to 10 can't be
-picked. To fix this, add the following lines to `client.cfg` in the `doi/cfg`
-folder of the game:
+picked. To fix this, add the following lines to `config.cfg` in the `doi/cfg`
+folder of the game, next to the other key bindings. The game rewrites the file
+when it quits, so edit it while the game isn't running:
 
 ```text
 bind "6" "slot6"

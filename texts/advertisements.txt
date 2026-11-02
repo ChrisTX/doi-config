@@ -27,7 +27,7 @@
     }
     "3"
     {
-        "hint"          "Join us for weekly team games on our Discord:\nhttps://discord.gg/MKNwv3RbMG"
+        "hint"          "Join us for team games on most days of the week on our Discord:\nhttps://discord.gg/MKNwv3RbMG"
     }
     "4"
     {
