@@ -73,7 +73,7 @@ enum AFKImmunity:
 // Arrays
 char AFKM_LogFile[PLATFORM_MAX_PATH];					// Log File
 int g_iPlayerUserID[MAXPLAYERS+1] =						{-1, ...}; // Player User ID
-Handle g_hAFKTimer[MAXPLAYERS+1] =						{INVALID_HANDLE, ...}; // AFK Timers
+Handle g_hAFKTimer[MAXPLAYERS+1] =						{null, ...}; // AFK Timers
 int g_iAFKTime[MAXPLAYERS+1] =							{-1, ...}; // Initial Time of AFK
 int g_iSpawnTime[MAXPLAYERS+1] =						{-1, ...}; // Time of Spawn
 int g_iPlayerTeam[MAXPLAYERS+1] =						{-1, ...}; // Player Team
@@ -118,10 +118,10 @@ int g_iSpec_Team =										1;
 
 // Handles
 // Forwards
-Handle g_FWD_hOnInitializePlayer =						INVALID_HANDLE;
-Handle g_FWD_hOnAFKEvent =								INVALID_HANDLE;
-Handle g_FWD_hOnClientAFK =								INVALID_HANDLE;
-Handle g_FWD_hOnClientBack =							INVALID_HANDLE;
+Handle g_FWD_hOnInitializePlayer =						null;
+Handle g_FWD_hOnAFKEvent =								null;
+Handle g_FWD_hOnClientAFK =								null;
+Handle g_FWD_hOnClientBack =							null;
 
 // AFK Manager Console Variables
 ConVar hCvarVersion =									null;
@@ -304,7 +304,7 @@ void PurgeOldLogs() // Purge Old Log Files
 #endif
 	char sLogPath[PLATFORM_MAX_PATH];
 	char buffer[256];
-	Handle hDirectory = INVALID_HANDLE;
+	DirectoryListing hDirectory = null;
 	FileType type = FileType_Unknown;
 
 	BuildPath(Path_SM, sLogPath, sizeof(sLogPath), LOG_FOLDER);
@@ -315,10 +315,10 @@ void PurgeOldLogs() // Purge Old Log Files
 	if ( DirExists(sLogPath) )
 	{
 		hDirectory = OpenDirectory(sLogPath);
-		if (hDirectory != INVALID_HANDLE)
+		if (hDirectory != null)
 		{
-			int iTimeOffset = GetTime() - ((SECONDS_IN_DAY * GetConVarInt(hCvarLogDays)) + 30);
-			while ( ReadDirEntry(hDirectory, buffer, sizeof(buffer), type) )
+			int iTimeOffset = GetTime() - ((SECONDS_IN_DAY * hCvarLogDays.IntValue) + 30);
+			while ( hDirectory.GetNext(buffer, sizeof(buffer), type) )
 			{
 				if (type == FileType_File)
 				{
@@ -338,11 +338,7 @@ void PurgeOldLogs() // Purge Old Log Files
 		}
 	}
 
-	if (hDirectory != INVALID_HANDLE)
-	{
-		CloseHandle(hDirectory);
-		hDirectory = INVALID_HANDLE;
-	}
+	delete hDirectory;
 }
 
 // Chat Functions
@@ -383,8 +379,8 @@ void AFK_PrintToChat(int client, const char[] sMessage, any ...)
 #if _DEBUG
 void LogDebug(bool Translation, const char[] text, any ...) // Debug Log Function
 {
-	if (hCvarLogDebug != INVALID_HANDLE)
-		if (!GetConVarBool(hCvarLogDebug))
+	if (hCvarLogDebug != null)
+		if (!hCvarLogDebug.BoolValue)
 			return;
 
 	char message[255];
@@ -452,10 +448,9 @@ void ResetAFKTimer(int index, bool Full = true)
 	LogDebug(false, "ResetAFKTimer - Client: %i Full: %i", index, Full);
 #endif
 
-	if (g_hAFKTimer[index] != INVALID_HANDLE) // Check for timers and destroy them?
+	if (g_hAFKTimer[index] != null) // Check for timers and destroy them?
 	{
-		CloseHandle(g_hAFKTimer[index]);
-		g_hAFKTimer[index] = INVALID_HANDLE;
+		delete g_hAFKTimer[index];
 	}
 	if (Full)
 		ResetPlayer(index);
@@ -528,7 +523,7 @@ void SetClientAFK(int client, bool Reset = true)
 
 void InitializeAFK(int index) // initialize AFK Features
 {
-	if (g_hAFKTimer[index] == INVALID_HANDLE)
+	if (g_hAFKTimer[index] == null)
 	{
 		g_iAFKTime[index] = GetTime();
 #if _DEBUG
@@ -613,8 +608,8 @@ int AFK_GetClientCount(bool inGameOnly = true)
 
 void CheckMinPlayers()
 {
-	int MoveMinPlayers = GetConVarInt(hCvarMinPlayersMove);
-	int KickMinPlayers = GetConVarInt(hCvarMinPlayersKick);
+	int MoveMinPlayers = hCvarMinPlayersMove.IntValue;
+	int KickMinPlayers = hCvarMinPlayersKick.IntValue;
 
 	int players = AFK_GetClientCount();
 
@@ -669,11 +664,11 @@ void ChangeButtonsArraySize(int size)
 }
 
 // Cvar Hooks
-public void CvarChange_Status(Handle cvar, const char[] oldvalue, const char[] newvalue) // Hook ConVar Status
+public void CvarChange_Status(ConVar cvar, const char[] oldvalue, const char[] newvalue) // Hook ConVar Status
 {
 #if _DEBUG
 	char sCvarName[64];
-	GetConVarName(cvar, sCvarName, sizeof(sCvarName));
+	cvar.GetName(sCvarName, sizeof(sCvarName));
 	LogDebug(false, "CvarChange_Status - ConVar: %s Old Value: %s New Value: %s", sCvarName, oldvalue, newvalue);
 #endif
 
@@ -732,15 +727,15 @@ public void CvarChange_Status(Handle cvar, const char[] oldvalue, const char[] n
 	}
 }
 
-public void CvarChange_Locked(Handle cvar, const char[] oldvalue, const char[] newvalue) // Lock ConVar
+public void CvarChange_Locked(ConVar cvar, const char[] oldvalue, const char[] newvalue) // Lock ConVar
 {
 #if _DEBUG
 	char sCvarName[64];
-	GetConVarName(cvar, sCvarName, sizeof(sCvarName));
+	cvar.GetName(sCvarName, sizeof(sCvarName));
 	LogDebug(false, "CvarChange_Locked - ConVar: %s Old Value: %s New Value: %s", sCvarName, oldvalue, newvalue);
 #endif
 	if ((cvar == hCvarVersion) && (strcmp(newvalue, AFKM_VERSION) != 0))
-		SetConVarString(cvar, AFKM_VERSION);
+		cvar.SetString(AFKM_VERSION);
 }
 
 void HookEvents() // Event Hook Registrations
@@ -770,7 +765,7 @@ void HookConVars() // ConVar Hook Registrations
 #endif
 	if (!bCvarIsHooked[CONVAR_VERSION])
 	{
-		HookConVarChange(hCvarVersion, CvarChange_Locked); // Hook Version Variable
+		hCvarVersion.AddChangeHook(CvarChange_Locked); // Hook Version Variable
 		bCvarIsHooked[CONVAR_VERSION] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Version variable.");
@@ -778,7 +773,7 @@ void HookConVars() // ConVar Hook Registrations
 	}
 	if (!bCvarIsHooked[CONVAR_ENABLED])
 	{
-		HookConVarChange(hCvarEnabled, CvarChange_Status); // Hook Enabled Variable
+		hCvarEnabled.AddChangeHook(CvarChange_Status); // Hook Enabled Variable
 		bCvarIsHooked[CONVAR_ENABLED] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Enable variable.");
@@ -786,7 +781,7 @@ void HookConVars() // ConVar Hook Registrations
 	}
 	if (!bCvarIsHooked[CONVAR_PREFIXSHORT])
 	{
-		HookConVarChange(hCvarPrefixShort, CvarChange_Status); // Hook Short Prefix Variable
+		hCvarPrefixShort.AddChangeHook(CvarChange_Status); // Hook Short Prefix Variable
 		bCvarIsHooked[CONVAR_PREFIXSHORT] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Short Prefix variable.");
@@ -798,7 +793,7 @@ void HookConVars() // ConVar Hook Registrations
 #if defined _colors_included
 	if (!bCvarIsHooked[CONVAR_PREFIXCOLORS])
 	{
-		HookConVarChange(hCvarPrefixColor, CvarChange_Status); // Hook Color Prefix Variable
+		hCvarPrefixColor.AddChangeHook(CvarChange_Status); // Hook Color Prefix Variable
 		bCvarIsHooked[CONVAR_PREFIXCOLORS] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Color Prefix variable.");
@@ -810,7 +805,7 @@ void HookConVars() // ConVar Hook Registrations
 #endif
 	if (!bCvarIsHooked[CONVAR_LANGUAGE])
 	{
-		HookConVarChange(hCvarLanguage, CvarChange_Status); // Hook Language Variable
+		hCvarLanguage.AddChangeHook(CvarChange_Status); // Hook Language Variable
 		bCvarIsHooked[CONVAR_LANGUAGE] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Language variable.");
@@ -820,18 +815,18 @@ void HookConVars() // ConVar Hook Registrations
 	}
 	if (!bCvarIsHooked[CONVAR_LOG_WARNINGS])
 	{
-		HookConVarChange(hCvarLogWarnings, CvarChange_Status); // Hook Warnings Variable
+		hCvarLogWarnings.AddChangeHook(CvarChange_Status); // Hook Warnings Variable
 		bCvarIsHooked[CONVAR_LOG_WARNINGS] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Warnings variable.");
 #endif
 
-		if (GetConVarBool(hCvarLogWarnings))
+		if (hCvarLogWarnings.BoolValue)
 			g_bLogWarnings = true;
 	}
 	if (!bCvarIsHooked[CONVAR_MINPLAYERSMOVE])
 	{
-		HookConVarChange(hCvarMinPlayersMove, CvarChange_Status); // Hook Minim Players to Move Variable
+		hCvarMinPlayersMove.AddChangeHook(CvarChange_Status); // Hook Minim Players to Move Variable
 		bCvarIsHooked[CONVAR_MINPLAYERSMOVE] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Minimum Players to Move variable.");
@@ -840,7 +835,7 @@ void HookConVars() // ConVar Hook Registrations
 	}
 	if (!bCvarIsHooked[CONVAR_MINPLAYERSKICK])
 	{
-		HookConVarChange(hCvarMinPlayersKick, CvarChange_Status); // Hook Minim Players to Kick Variable
+		hCvarMinPlayersKick.AddChangeHook(CvarChange_Status); // Hook Minim Players to Kick Variable
 		bCvarIsHooked[CONVAR_MINPLAYERSKICK] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Minimum Players to Kick variable.");
@@ -849,7 +844,7 @@ void HookConVars() // ConVar Hook Registrations
 	}
 	if (!bCvarIsHooked[CONVAR_ADMINS_IMMUNE])
 	{
-		HookConVarChange(hCvarAdminsImmune, CvarChange_Status); // Hook AdminsImmune Variable
+		hCvarAdminsImmune.AddChangeHook(CvarChange_Status); // Hook AdminsImmune Variable
 		bCvarIsHooked[CONVAR_ADMINS_IMMUNE] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked AdminsImmune variable.");
@@ -860,7 +855,7 @@ void HookConVars() // ConVar Hook Registrations
 
 	if (!bCvarIsHooked[CONVAR_TIMETOMOVE])
 	{
-		HookConVarChange(hCvarTimeToMove, CvarChange_Status); // Hook TimeToMove Variable
+		hCvarTimeToMove.AddChangeHook(CvarChange_Status); // Hook TimeToMove Variable
 		bCvarIsHooked[CONVAR_TIMETOMOVE] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked TimeToMove variable.");
@@ -869,7 +864,7 @@ void HookConVars() // ConVar Hook Registrations
 	}
 	if (!bCvarIsHooked[CONVAR_TIMETOKICK])
 	{
-		HookConVarChange(hCvarTimeToKick, CvarChange_Status); // Hook TimeToKick Variable
+		hCvarTimeToKick.AddChangeHook(CvarChange_Status); // Hook TimeToKick Variable
 		bCvarIsHooked[CONVAR_TIMETOKICK] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked TimeToKick variable.");
@@ -878,7 +873,7 @@ void HookConVars() // ConVar Hook Registrations
 	}
 	if (!bCvarIsHooked[CONVAR_EXCLUDEDEAD])
 	{
-		HookConVarChange(hCvarExcludeDead, CvarChange_Status); // Hook Exclude Dead Variable
+		hCvarExcludeDead.AddChangeHook(CvarChange_Status); // Hook Exclude Dead Variable
 		bCvarIsHooked[CONVAR_EXCLUDEDEAD] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Exclude Dead variable.");
@@ -889,7 +884,7 @@ void HookConVars() // ConVar Hook Registrations
 	}
 	if (!bCvarIsHooked[CONVAR_BUTTONSBUFFER])
 	{
-		HookConVarChange(hCvarButtonsBuffer, CvarChange_Status); // Hook Buttons Buffer Variable
+		hCvarButtonsBuffer.AddChangeHook(CvarChange_Status); // Hook Buttons Buffer Variable
 		bCvarIsHooked[CONVAR_BUTTONSBUFFER] = true;
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Buttons Buffer variable.");
@@ -906,7 +901,7 @@ void RegisterCvars() // Cvar Registrations
 	LogDebug(false, "RegisterCvars - Running");
 #endif
 	hCvarVersion = CreateConVar("sm_afkm_version", AFKM_VERSION, "Current version of the AFK Manager", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
-	SetConVarString(hCvarVersion, AFKM_VERSION);
+	hCvarVersion.SetString(AFKM_VERSION);
 	hCvarEnabled = CreateConVar("sm_afk_enable", "1", "Is the AFK Manager enabled or disabled? [0 = FALSE, 1 = TRUE, DEFAULT: 1]", FCVAR_NONE, true, 0.0, true, 1.0);
 	hCvarPrefixShort = CreateConVar("sm_afk_prefix_short", "0", "Should the AFK Manager use a short prefix? [0 = FALSE, 1 = TRUE, DEFAULT: 0]", FCVAR_NONE, true, 0.0, true, 1.0);
 #if defined _colors_included
@@ -1006,16 +1001,15 @@ public Action Command_Spec(int client, int args) // Admin Spectate Move Command
 		LogDebug(false, "Command_Spec - Moving client: %i to Spectator and killing timer.", target_list[i]);
 #endif
 		if (MoveAFKClient(target_list[i], false) == Plugin_Stop)
-			if (g_hAFKTimer[target_list[i]] != INVALID_HANDLE)
+			if (g_hAFKTimer[target_list[i]] != null)
 			{
-				CloseHandle(g_hAFKTimer[target_list[i]]);
-				g_hAFKTimer[target_list[i]] = INVALID_HANDLE;
+				delete g_hAFKTimer[target_list[i]];
 			}
 	}
 
 	if (tn_is_ml)
 	{
-		if (GetConVarBool(hCvarPrefixShort))
+		if (hCvarPrefixShort.BoolValue)
 			ShowActivity2(client, "[AFK] ", "%t", "Spectate_Force", target_name);
 		else
 			ShowActivity2(client, "[AFK Manager] ", "%t", "Spectate_Force", target_name);
@@ -1023,7 +1017,7 @@ public Action Command_Spec(int client, int args) // Admin Spectate Move Command
 	}
 	else
 	{
-		if (GetConVarBool(hCvarPrefixShort))
+		if (hCvarPrefixShort.BoolValue)
 			ShowActivity2(client, "[AFK] ", "%t", "Spectate_Force", "_s", target_name);
 		else
 			ShowActivity2(client, "[AFK Manager] ", "%t", "Spectate_Force", "_s", target_name);
@@ -1058,8 +1052,8 @@ public void OnPluginStart() // AFK Manager Plugin has started
 	RequireFeature(FeatureType_Capability, FEATURECAP_PLAYERRUNCMD_11PARAMS, "This plugin requires a newer version of SourceMod.");
 
 	RegisterCvars(); // Register Cvars
-	SetConVarInt(hCvarLogWarnings, 0);
-	SetConVarInt(hCvarEnabled, 0);
+	hCvarLogWarnings.IntValue = 0;
+	hCvarEnabled.IntValue = 0;
 
 	HookConVars(); // Hook ConVars
 	HookEvents(); // Hook Events
@@ -1068,8 +1062,8 @@ public void OnPluginStart() // AFK Manager Plugin has started
 
 	RegisterCmds(); // Register Commands
 
-	if (hCvarLogDays != INVALID_HANDLE)
-		if (GetConVarInt(hCvarLogDays) > 0)
+	if (hCvarLogDays != null)
+		if (hCvarLogDays.IntValue > 0)
 			PurgeOldLogs(); // Purge Old Log Files
 
 	if (g_bLateLoad) // Account for Late Loading
@@ -1083,8 +1077,8 @@ public void OnMapStart()
 #endif
 	BuildLogFilePath();
 
-	if (hCvarLogDays != INVALID_HANDLE)
-		if (GetConVarInt(hCvarLogDays) > 0)
+	if (hCvarLogDays != null)
+		if (hCvarLogDays.IntValue > 0)
 			PurgeOldLogs(); // Purge Old Log Files
 
 	AutoExecConfig(true, "afk_manager"); // Execute Config
@@ -1144,7 +1138,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		LogDebug(false, "OnPlayerRunCmd - Client: %i Mouse: %i %i", client, mouse[0], mouse[1]);
 #endif
 
-		if (g_hAFKTimer[client] != INVALID_HANDLE)
+		if (g_hAFKTimer[client] != null)
 		{
 			if ((mouse[0] != 0) || (mouse[1] != 0)) // Check if mouse has moved
 			{
@@ -1235,17 +1229,17 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 public Action OnClientSayCommand(int client, const char[] command, const char[] sArgs) // Player Chat
 {
 	if (g_bEnabled)
-		if (g_hAFKTimer[client] != INVALID_HANDLE)
+		if (g_hAFKTimer[client] != null)
 			ResetPlayer(client, false); // Reset timer once player has said something in chat.
 	return Plugin_Continue;
 }
 
 // Game Events
-public Action Event_PlayerDisconnectPost(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDisconnectPost(Event event, const char[] name, bool dontBroadcast)
 {
 	if (g_bEnabled)
 	{
-		int iUserID = GetEventInt(event, "userid");
+		int iUserID = event.GetInt("userid");
 		int iClient = GetClientOfUserId(iUserID);
 #if _DEBUG
 		LogDebug(false, "Event_PlayerDisconnectPost - Client: %i UserID: %i Disconnected", iClient, iUserID);
@@ -1262,18 +1256,18 @@ public Action Event_PlayerDisconnectPost(Handle event, const char[] name, bool d
 	return Plugin_Continue;
 }
 
-public Action Event_PlayerTeam(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerTeam(Event event, const char[] name, bool dontBroadcast)
 {
 	if (g_bEnabled)
 	{
-		int client = GetClientOfUserId(GetEventInt(event, "userid"));
+		int client = GetClientOfUserId(event.GetInt("userid"));
 
 		if (client > 0) // Check the client is not console/world?
 			if (IsValidClient(client))
 			{
-				if (g_hAFKTimer[client] != INVALID_HANDLE)
+				if (g_hAFKTimer[client] != null)
 				{
-					g_iPlayerTeam[client] = GetEventInt(event, "team");
+					g_iPlayerTeam[client] = event.GetInt("team");
 
 #if _DEBUG
 					LogDebug(false, "Event_PlayerTeam - Client: %i Joined Team: %i", client, g_iPlayerTeam[client]);
@@ -1289,11 +1283,11 @@ public Action Event_PlayerTeam(Handle event, const char[] name, bool dontBroadca
 	return Plugin_Continue;
 }
 
-public Action Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerSpawn(Event event, const char[] name, bool dontBroadcast)
 {
 	if (g_bEnabled)
 	{
-		int client = GetClientOfUserId(GetEventInt(event, "userid"));
+		int client = GetClientOfUserId(event.GetInt("userid"));
 
 #if _DEBUG
 		LogDebug(false, "Event_PlayerSpawn - Client: %i", client);
@@ -1301,7 +1295,7 @@ public Action Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadc
 		if (client > 0) // Check the client is not console/world?
 			if (IsValidClient(client)) // Check client is not a bot or otherwise fake player.
 			{
-				if (g_hAFKTimer[client] != INVALID_HANDLE)
+				if (g_hAFKTimer[client] != null)
 				{
 					if (g_iPlayerTeam[client] == 0) // Unassigned Team?
 						return Plugin_Continue;
@@ -1313,7 +1307,7 @@ public Action Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadc
 								ResetAttacker(client);
 								ResetObserver(client);
 
-								if (GetConVarFloat(hCvarSpawnTime) > 0.0) // Check if Spawn AFK is enabled.
+								if (hCvarSpawnTime.FloatValue > 0.0) // Check if Spawn AFK is enabled.
 								{
 									g_iSpawnTime[client] = GetTime();
 #if _DEBUG > 1
@@ -1327,11 +1321,11 @@ public Action Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadc
 	return Plugin_Continue;
 }
 
-public Action Event_PlayerDeathPost(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerDeathPost(Event event, const char[] name, bool dontBroadcast)
 {
 	if (g_bEnabled)
 	{
-		int client = GetClientOfUserId(GetEventInt(event,"userid"));
+		int client = GetClientOfUserId(event.GetInt("userid"));
 
 #if _DEBUG
 		LogDebug(false, "Event_PlayerDeathPost - Client: %i", client);
@@ -1339,9 +1333,9 @@ public Action Event_PlayerDeathPost(Handle event, const char[] name, bool dontBr
 		if (client > 0) // Check the client is not console/world?
 			if (IsValidClient(client)) // Check client is not a bot or otherwise fake player.
 			{
-				if (g_hAFKTimer[client] != INVALID_HANDLE)
+				if (g_hAFKTimer[client] != null)
 				{
-					iPlayerAttacker[client] = GetClientOfUserId(GetEventInt(event,"attacker"));
+					iPlayerAttacker[client] = GetClientOfUserId(event.GetInt("attacker"));
 
 
 					ResetSpawn(client);
@@ -1568,7 +1562,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 
 		if (g_iSpawnTime[client] > 0)
 		{
-			cvarSpawnTime = GetConVarInt(hCvarSpawnTime);
+			cvarSpawnTime = hCvarSpawnTime.IntValue;
 
 			if (cvarSpawnTime > 0)
 			{
@@ -1588,7 +1582,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #endif
 		if (g_iPlayerTeam[client] != g_iSpec_Team) // Check we are not on the Spectator team
 		{
-			if (GetConVarBool(hCvarMoveSpec))
+			if (hCvarMoveSpec.BoolValue)
 			{
 				if (bMovePlayers == true)
 				{
@@ -1610,7 +1604,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #endif
 										ResetSpawn(client);
 										if (g_iPlayerTeam[client] == 0) // Are we moving player from the Unassigned team AKA team 0?
-											return MoveAFKClient(client, GetConVarBool(hCvarWarnUnassigned)); // Are we warning unassigned players?
+											return MoveAFKClient(client, hCvarWarnUnassigned.BoolValue); // Are we warning unassigned players?
 										else
 											return MoveAFKClient(client);
 									}
@@ -1619,7 +1613,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #if _DEBUG > 1
 										LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Spawn Move Warning AFK Spawn Timeleft: %i", client, AFKSpawnTimeleft);
 #endif
-										if ((cvarSpawnTime - AFKSpawnTime) <= GetConVarInt(hCvarWarnSpawnTime))
+										if ((cvarSpawnTime - AFKSpawnTime) <= hCvarWarnSpawnTime.IntValue)
 											AFK_PrintToChat(client, "%t", "Spawn_Move_Warning", AFKSpawnTimeleft);
 									}
 									return Plugin_Continue;
@@ -1633,7 +1627,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 								LogDebug(false, "Timer_CheckPlayer - Client: %i Exceeded Move AFK Time", client);
 #endif
 								if (g_iPlayerTeam[client] == 0) // Are we moving player from the Unassigned team AKA team 0?
-									return MoveAFKClient(client, GetConVarBool(hCvarWarnUnassigned)); // Are we warning unassigned players?
+									return MoveAFKClient(client, hCvarWarnUnassigned.BoolValue); // Are we warning unassigned players?
 								else
 									return MoveAFKClient(client);
 							}
@@ -1642,7 +1636,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #if _DEBUG > 1
 								LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Move Warning", client);
 #endif
-								if ((g_iTimeToMove - AFKTime) <= GetConVarInt(hCvarWarnTimeToMove))
+								if ((g_iTimeToMove - AFKTime) <= hCvarWarnTimeToMove.IntValue)
 									AFK_PrintToChat(client, "%t", "Move_Warning", AFKMoveTimeleft);
 								return Plugin_Continue;
 							}
@@ -1653,7 +1647,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 			}
 		}
 
-		int iKickPlayers = GetConVarInt(hCvarKickPlayers);
+		int iKickPlayers = hCvarKickPlayers.IntValue;
 
 		if (iKickPlayers > 0)
 			if (bKickPlayers == true)
@@ -1683,7 +1677,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #if _DEBUG > 1
 											LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Spawn Kick Warning AFK Spawn Timeleft: %i", client, AFKSpawnTimeleft);
 #endif
-											if ((cvarSpawnTime - AFKSpawnTime) <= GetConVarInt(hCvarWarnSpawnTime))
+											if ((cvarSpawnTime - AFKSpawnTime) <= hCvarWarnSpawnTime.IntValue)
 												AFK_PrintToChat(client, "%t", "Spawn_Kick_Warning", AFKSpawnTimeleft);
 											return Plugin_Continue;
 										}
@@ -1699,7 +1693,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #if _DEBUG > 1
 									LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Kick Warning", client);
 #endif
-									if ((g_iTimeToKick - AFKTime) <= GetConVarInt(hCvarWarnTimeToKick))
+									if ((g_iTimeToKick - AFKTime) <= hCvarWarnTimeToKick.IntValue)
 										AFK_PrintToChat(client, "%t", "Kick_Warning", AFKKickTimeleft);
 									return Plugin_Continue;
 								}
@@ -1748,7 +1742,7 @@ Action MoveAFKClient(int client, bool Advertise=true) // Move AFK Client to Spec
 
 	if (Advertise) // Are we announcing the move to everyone?
 	{
-		int Announce = GetConVarInt(hCvarMoveAnnounce);
+		int Announce = hCvarMoveAnnounce.IntValue;
 
 		if (Announce == 0)
 			AFK_PrintToChat(client, "%t", "Move_Announce", f_Name);
@@ -1764,7 +1758,7 @@ Action MoveAFKClient(int client, bool Advertise=true) // Move AFK Client to Spec
 		}
 	}
 
-	if (GetConVarBool(hCvarLogMoves))
+	if (hCvarLogMoves.BoolValue)
 		LogToFile(AFKM_LogFile, "%T", "Move_Log", LANG_SERVER, client);
 
 	ChangeClientTeam(client, g_iSpec_Team); // Move AFK Player to Spectator
@@ -1794,7 +1788,7 @@ Action KickAFKClient(int client) // Kick AFK Client
 	LogDebug(false, "KickAFKClient - Kicking player %s for being AFK.", f_Name);
 #endif
 
-	int Announce = GetConVarInt(hCvarKickAnnounce);
+	int Announce = hCvarKickAnnounce.IntValue;
 	if (Announce == 1)
 		AFK_PrintToChat(0, "%t", "Kick_Announce", f_Name);
 	else if (Announce == 2)
@@ -1806,7 +1800,7 @@ Action KickAFKClient(int client) // Kick AFK Client
 						AFK_PrintToChat(i, "%t", "Kick_Announce", f_Name);
 	}
 
-	if (GetConVarBool(hCvarLogKicks))
+	if (hCvarLogKicks.BoolValue)
 		LogToFile(AFKM_LogFile, "%T", "Kick_Log", LANG_SERVER, client);
 
 	if (g_bForceLanguage)
@@ -1837,7 +1831,7 @@ bool CheckAdminImmunity(int client) // Check Admin Immunity
 	if (iUserFlagBits > 0) // Check if player is an admin
 	{
 		char sFlags[32];
-		GetConVarString(hCvarAdminsFlag, sFlags, sizeof(sFlags));
+		hCvarAdminsFlag.GetString(sFlags, sizeof(sFlags));
 
 		if (StrEqual(sFlags, "")) // No admin flags set
 			return true;
