@@ -15,7 +15,6 @@
 #if ((!defined _mutlicolors_included) && (!defined _colors_included))
 	#tryinclude <colors>
 #endif
-#tryinclude <updater>
 #define REQUIRE_PLUGIN
 
 #pragma newdecls required
@@ -88,10 +87,6 @@ stock TF2GameMode TF2_DetectGameMode()
 }
 
 // Defines
-#if defined _updater_included
-#define UPDATE_URL										"http://afkmanager.dawgclan.net/afkmanager4.txt"
-#endif
-
 #define AFKM_VERSION									"4.3.0"
 
 // TO DO:
@@ -206,7 +201,6 @@ Handle g_FWD_hOnClientBack =							INVALID_HANDLE;
 // AFK Manager Console Variables
 ConVar hCvarVersion =									null;
 ConVar hCvarEnabled =									null;
-ConVar hCvarAutoUpdate =								null;
 ConVar hCvarPrefixShort =								null;
 #if defined _colors_included
 ConVar hCvarPrefixColor =								null;
@@ -892,22 +886,6 @@ void ChangeButtonsArraySize(int size)
 	}
 }
 
-// Auto Update Functions
-#if defined _updater_included
-public Action Updater_OnPluginChecking()
-{
-	if (!GetConVarBool(hCvarAutoUpdate))
-		return Plugin_Handled;
-	return Plugin_Continue;
-}
-
-public void Updater_OnPluginUpdated()
-{
-	LogToFile(AFKM_LogFile, "AFK Manager has just been updated to a new version");
-	ReloadPlugin();
-}
-#endif
-
 // Cvar Hooks
 public void CvarChange_Status(Handle cvar, const char[] oldvalue, const char[] newvalue) // Hook ConVar Status
 {
@@ -1207,7 +1185,6 @@ void RegisterCvars() // Cvar Registrations
 	hCvarVersion = CreateConVar("sm_afkm_version", AFKM_VERSION, "Current version of the AFK Manager", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	SetConVarString(hCvarVersion, AFKM_VERSION);
 	hCvarEnabled = CreateConVar("sm_afk_enable", "1", "Is the AFK Manager enabled or disabled? [0 = FALSE, 1 = TRUE, DEFAULT: 1]", FCVAR_NONE, true, 0.0, true, 1.0);
-	hCvarAutoUpdate = CreateConVar("sm_afk_autoupdate", "1", "Is the AFK Manager automatic plugin update enabled or disabled? (Requires SourceMod Autoupdate plugin) [0 = FALSE, 1 = TRUE]", FCVAR_NONE, true, 0.0, true, 1.0);
 	hCvarPrefixShort = CreateConVar("sm_afk_prefix_short", "0", "Should the AFK Manager use a short prefix? [0 = FALSE, 1 = TRUE, DEFAULT: 0]", FCVAR_NONE, true, 0.0, true, 1.0);
 #if defined _colors_included
 	hCvarPrefixColor = CreateConVar("sm_afk_prefix_color", "1", "Should the AFK Manager use color for the prefix tag? [0 = DISABLED, 1 = ENABLED, DEFAULT: 1]", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -1458,22 +1435,6 @@ public void OnPluginStart() // AFK Manager Plugin has started
 		g_bWaitRound = false;
 }
 
-public void OnAllPluginsLoaded() // All Plugins have been loaded
-{
-#if defined _updater_included
-	if (LibraryExists("updater"))
-		Updater_AddPlugin(UPDATE_URL);
-#endif
-}
-
-public void OnLibraryAdded(const char[] name)
-{
-#if defined _updater_included
-	if (StrEqual(name, "updater"))
-		Updater_AddPlugin(UPDATE_URL);
-#endif
-}
-
 public void OnMapStart()
 {
 #if _DEBUG
@@ -1484,16 +1445,6 @@ public void OnMapStart()
 	if (hCvarLogDays != INVALID_HANDLE)
 		if (GetConVarInt(hCvarLogDays) > 0)
 			PurgeOldLogs(); // Purge Old Log Files
-
-	if (GetConVarBool(hCvarAutoUpdate))
-	{
-#if defined _updater_included
-		if (LibraryExists("updater") && !GetConVarBool(FindConVar("sv_lan")))
-		{
-			Updater_ForceUpdate();
-		}
-#endif
-	}
 
 	AutoExecConfig(true, "afk_manager"); // Execute Config
 
