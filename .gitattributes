@@ -1,0 +1,6 @@
+# The map files of the mods are copies of the game's own, CRLF included
+mods/** -text
+# Patches have to stay as they are, line endings included
+*.patch -text
+# The patched server binary
+*.so binary

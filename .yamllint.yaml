@@ -1,0 +1,10 @@
+# GitHub's YAML files: long lines are fine, and `on:` isn't a boolean
+extends: default
+rules:
+  document-start: disable
+  line-length: disable
+  truthy:
+    check-keys: false
+  # Dependabot writes the versions of the pinned actions with a single space
+  comments:
+    min-spaces-from-content: 1

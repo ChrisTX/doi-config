@@ -1,0 +1,39 @@
+# Formatting of the repository, also read by shfmt
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+# Read by shfmt only
+switch_case_indent = true
+
+[*.{py,sp}]
+indent_size = 4
+
+# shfmt's default, which the scripts have always used
+[*.sh]
+indent_style = tab
+
+# The game renders the MOTDs differently without their trailing whitespace
+[texts/motd_*.txt]
+trim_trailing_whitespace = false
+
+# The map files of the mods are copies of the game's own, kept as they are so they can be compared
+[mods/**]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+indent_style = unset
+indent_size = unset
+
+# Patches have to stay as they are, whitespace included
+[*.{patch,diff}]
+trim_trailing_whitespace = false
+insert_final_newline = unset
+end_of_line = unset
+indent_style = unset
+indent_size = unset

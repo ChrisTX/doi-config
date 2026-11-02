@@ -1,0 +1,7 @@
+# Caches of the linters and formatters of the git hooks
+.ruff_cache/
+.rumdl_cache/
+__pycache__/
+# Local files of Claude Code
+.claude/settings.local.json
+.claude/worktrees/
