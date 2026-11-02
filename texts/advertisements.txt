@@ -19,18 +19,18 @@
 {
     "1"
     {
-        "chat"			"{green}We run events most days of the week on this server. Join our discord at: {default}https://discord.gg/MKNwv3RbMG"
+        "chat"			"{green}We run events on most days of the week on this server. Join our Discord: {default}https://discord.gg/MKNwv3RbMG"
     }
     "2"
     {
-        "chat"			"{olive}If you encounter errors in the console run {green}retry {olive}in the console"
+        "chat"			"{olive}If you run into errors, type {green}retry {olive}in the console."
     }
     "3"
     {
-        "hint"          "Join us for weekly team games in our discord at\nhttps://discord.gg/MKNwv3RbMG"
+        "hint"          "Join us for weekly team games on our Discord:\nhttps://discord.gg/MKNwv3RbMG"
     }
     "4"
     {
-        "chat"			"{green}Please subscribe to Jim's mod Revival Vietnam, otherwise issues can arise."
+        "chat"			"{green}Please subscribe to Jim's mod Revival Vietnam, otherwise you may run into problems."
     }
 }
