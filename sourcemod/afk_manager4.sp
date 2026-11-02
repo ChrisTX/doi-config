@@ -35,7 +35,7 @@ enum AFKImmunity:
 };
 
 // Defines
-#define AFKM_VERSION									"4.3.0"
+#define AFKM_VERSION									"4.3.0-doi1"
 
 #define AFK_WARNING_INTERVAL							5
 #define AFK_CHECK_INTERVAL								1.0
@@ -163,7 +163,7 @@ public Plugin myinfo =
 	author = "Rothgar",
 	description = "Takes action on AFK players",
 	version = AFKM_VERSION,
-	url = "http://www.dawgclan.net"
+	url = "https://forums.alliedmods.net/showthread.php?p=708265"
 };
 
 // API
