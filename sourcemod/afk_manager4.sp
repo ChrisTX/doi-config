@@ -72,7 +72,6 @@ enum AFKImmunity:
 
 // Arrays
 char AFKM_LogFile[PLATFORM_MAX_PATH];					// Log File
-//Handle g_FWD_hPlugins =								INVALID_HANDLE; // Forward Plugin Handles
 int g_iPlayerUserID[MAXPLAYERS+1] =						{-1, ...}; // Player User ID
 Handle g_hAFKTimer[MAXPLAYERS+1] =						{INVALID_HANDLE, ...}; // AFK Timers
 int g_iAFKTime[MAXPLAYERS+1] =							{-1, ...}; // Initial Time of AFK
@@ -82,10 +81,8 @@ int iPlayerAttacker[MAXPLAYERS+1] =						{-1, ...}; // Player Attacker
 int iObserverMode[MAXPLAYERS+1] =						{-1, ...}; // Observer Mode
 int iObserverTarget[MAXPLAYERS+1] =						{-1, ...}; // Observer Target
 AFKImmunity g_iPlayerImmunity[MAXPLAYERS+1] =			{AFKImmunity_None, ...}; // Player Immunity
-//int iMouse[MAXPLAYERS+1[2];							// X = Verital, Y = Horizontal
 bool bPlayerAFK[MAXPLAYERS+1] =							{true, ...}; // Player AFK Status
 bool bPlayerDeath[MAXPLAYERS+1] =						{false, ...};
-//float fEyeAngles[MAXPLAYERS+1][3];					// X = Vertical, Y = Height, Z = Horizontal
 int g_iMapEndTime =										-1;
 
 #define BUTTONS_MAX_ARRAY								30
@@ -172,13 +169,10 @@ public Plugin myinfo =
 // API
 void API_Init()
 {
-	//CreateNative("AFKM_AddPlugin", Native_AddPlugin);
-	//CreateNative("AFKM_RemovePlugin", Native_RemovePlugin);
 	CreateNative("AFKM_SetClientImmunity", Native_SetClientImmunity);
 	CreateNative("AFKM_GetSpectatorTeam", Native_GetSpectatorTeam);
 	CreateNative("AFKM_IsClientAFK", Native_IsClientAFK);
 	CreateNative("AFKM_GetClientAFKTime", Native_GetClientAFKTime);
-	//g_FWD_hOnAFKEvent = CreateForward(ET_Event, Param_String, Param_Cell);
 	g_FWD_hOnInitializePlayer = CreateGlobalForward("AFKM_OnInitializePlayer", ET_Event, Param_Cell);
 	g_FWD_hOnAFKEvent = CreateGlobalForward("AFKM_OnAFKEvent", ET_Event, Param_String, Param_Cell);
 	g_FWD_hOnClientAFK = CreateGlobalForward("AFKM_OnClientAFK", ET_Ignore, Param_Cell);
@@ -186,17 +180,6 @@ void API_Init()
 }
 
 // Natives
-/*
-public int Native_AddPlugin(Handle plugin, int numParams) // native void AFKM_AddPlugin();
-{
-	AddPlugin(plugin);
-}
-
-public int Native_RemovePlugin(Handle plugin, int numParams) // native void AFKM_RemovePlugin();
-{
-	RemovePlugin(plugin);
-}
-*/
 
 public int Native_SetClientImmunity(Handle plugin, int numParams) // native void AFKM_SetClientImmunity(int client, AFKImmunity type);
 {
@@ -275,63 +258,6 @@ void Forward_OnClientBack(int client) // forward void AFKM_OnClientBack(int clie
 	Call_PushCell(client);
 	Call_Finish();
 }
-
-/*
-Action Forward_Event(const char[] name, int client) // Internal Function to Loop Forward_OnAFKEvent()
-{
-	Action result = Plugin_Continue;
-
-	int maxPlugins = GetMaxPlugins();
-	for (int i = 0; i < maxPlugins; i++)
-	{
-		result = Forward_OnAFKEvent(g_FWD_hPlugins[i], name, client);
-		if (result != Plugin_Continue)
-		{
-			char Action_Name[64];
-			switch (result)
-			{
-				case Plugin_Continue:
-					Action_Name = "Plugin_Continue";
-				case Plugin_Changed:
-					Action_Name = "Plugin_Changed";
-				case Plugin_Handled:
-					Action_Name = "Plugin_Handled";
-				case Plugin_Stop:
-					Action_Name = "Plugin_Stop";
-				default:
-					Action_Name = "Plugin_Error";
-			}
-			char Plugin_Name[256],
-			GetPluginInfo(g_FWD_hPlugins[i], PlInfo_Name, Plugin_Name, sizeof(Plugin_Name));
-			LogToFile(AFKM_LogFile, "AFK Manager Event: %s has been requested to: %s by Plugin: %s this action will affect the plugin/event outcome.", name, Action_Name, Plugin_Name);
-			return result;
-		}
-	}
-
-	return Plugin_Continue;
-}
-
-Action Forward_OnAFKEvent(Handle plugin, const char[] name, int client) // forward Action AFKM_OnAFKEvent(const char[] name, int client);
-{
-	Action result = Plugin_Continue;
-	Function func = GetFunctionByName(plugin, "AFKM_OnAFKEvent");
-
-	if (func != INVALID_FUNCTION)
-	{
-		if (AddToForward(g_FWD_hOnAFKEvent, plugin, func))
-		{
-			Call_StartForward(g_FWD_hOnAFKEvent); // Start Forward
-			Call_PushString(name);
-			Call_PushCell(client);
-			Call_Finish(result);
-			RemoveAllFromForward(g_FWD_hOnAFKEvent, plugin);
-		}
-	} else
-		RemovePlugin(plugin); // Function is Invalid Remove Plugin
-
-	return result;
-}
-*/
 
 Action Forward_OnAFKEvent(const char[] name, int client) // forward Action AFKM_OnAFKEvent(const char[] name, int client);
 {
@@ -484,79 +410,7 @@ void LogDebug(bool Translation, char[] text, any:...) // Debug Log Function
 }
 #endif
 
-#if _DEBUG
-public Action Command_Test(int client, int args)
-{
-	PrintToServer("RAWR");
-	PrintToConsole(client, "Team Num: %i", GetEntProp(client, Prop_Send, "m_iTeamNum"));
-	PrintToConsole(client, "Pending Team Num: %i", GetEntProp(client, Prop_Send, "m_iPendingTeamNum"));
-	//PrintToConsole(client, "Force Team: %f", GetEntPropFloat(client, Prop_Send, "m_fForceTeam"));
-	//PrintToConsole(client, "Initial Team Num: %i", GetEntProp(client, Prop_Data, "m_iInitialTeamNum"));
-	//PrintToConsole(client, "Move Done Time: %f", GetEntPropFloat(client, Prop_Data, "m_flMoveDoneTime"));
-	//PrintToConsole(client, "Class: %i", GetEntProp(client, Prop_Send, "m_iClass"));
-	PrintToConsole(client, "Force Team: %f", GetEntPropFloat(client, Prop_Data, "m_fForceTeam"));
-	PrintToConsole(client, "Player State: %i", GetEntProp(client, Prop_Send, "m_iPlayerState"));
-	//PrintToConsole(client, "Original Team Number: %i", GetEntProp(client, Prop_Send, "m_iOriginalTeamNumber"));
-
-	PrintToConsole(client, "Asherkin Magic #1: %i", FindSendPropInfo("CCSPlayer", "m_unMusicID") - 45);
-	PrintToConsole(client, "Asherkin Magic #2: %i", FindSendPropInfo("CCSPlayer", "m_nHeavyAssaultSuitCooldownRemaining") + 48);
-	PrintToConsole(client, "Asherkin Magic #3: %i", FindSendPropInfo("CCSPlayer", "m_unMusicID") - 21);
-	PrintToConsole(client, "Asherkin Magic #1 2: %i", GetEntData(client, FindSendPropInfo("CCSPlayer", "m_unMusicID") - 45, 1));
-	PrintToConsole(client, "Asherkin Magic #2 2: %i", GetEntData(client, FindSendPropInfo("CCSPlayer", "m_nHeavyAssaultSuitCooldownRemaining") + 48, 1));
-	PrintToConsole(client, "Asherkin Magic #3 2: %i", GetEntData(client, FindSendPropInfo("CCSPlayer", "m_unMusicID") - 21, 1));
-	//SetEntData(client, FindSendPropInfo("CCSPlayer", "m_unMusicID") - 45, 0, 1, true);
-	int g_iTeamOffset = FindSendPropInfo("CCSPlayerResource", "m_iTeam");
-	static iTeam[MAXPLAYERS+1];
-	GetEntDataArray(FindEntityByClassname(MaxClients+1, "cs_player_manager"), g_iTeamOffset, iTeam, MAXPLAYERS+1);
-	PrintToConsole(client, "Team: %i", iTeam[client]);
-	//int g_iAliveOffset = FindSendPropOffs("CCSPlayerResource", "m_bAlive");
-	//static iAlive[MAXPLAYERS+1];
-	//GetEntDataArray(FindEntityByClassname(MaxClients+1, "cs_player_manager"), g_iAliveOffset, iAlive, MAXPLAYERS+1);
-	//PrintToConsole(client, "Alive: %i", iAlive[client]);
-	//SetEntProp(client, Prop_Send, "m_iPendingTeamNum", 0);
-	//PrintToConsole(client, "Team Number: %i", GetEntData(client, Prop_Data, "m_nTeamNum"));
-	//PrintToConsole(client, "Blocked Team Number: %i", GetEntData(client, Prop_Data, "m_blockedTeamNumber"));
-
-	return Plugin_Handled;
-}
-
-public Action Command_Test2(int client, int args)
-{
-	PrintToServer("RAWR2");
-	//SetEntData(client, FindSendPropInfo("CCSPlayer", "m_nHeavyAssaultSuitCooldownRemaining") + 48, 0, 1, true); // Fix by Asherkin
-	SetEntData(client, FindSendPropInfo("CCSPlayer", "m_unMusicID") - 21, 0, 1, true);
-	PrintToConsole(client, "Asherkin: %i", GetEntData(client, FindSendPropInfo("CCSPlayer", "m_unMusicID") - 21, 1));
-	return Plugin_Handled;
-}
-
-#endif
-
 // Native Functions
-/*
-int GetMaxPlugins()
-{
-	return GetArraySize(g_FWD_hPlugins);
-}
-
-void AddPlugin(Handle plugin)
-{
-	int maxPlugins = GetMaxPlugins();
-	for (int i = 0; i < maxPlugins; i++)
-		if (plugin == GetArrayCell(g_FWD_hPlugins, i)) // Plugin Already Exists?
-			return;
-
-	PushArrayCell(g_FWD_hPlugins, plugin);
-}
-
-
-void RemovePlugin(Handle plugin)
-{
-	int maxPlugins = GetMaxPlugins();
-	for (int i = 0; i < maxPlugins; i++)
-		if (plugin == GetArrayCell(g_FWD_hPlugins, i))
-			RemoveFromArray(g_FWD_hPlugins, i);
-}
-*/
 
 
 // General Functions
@@ -1091,10 +945,6 @@ void RegisterCmds() // Command Hook & Registrations
 	LogDebug(false, "RegisterCmds - Running");
 #endif
 	RegAdminCmd("sm_afk_spec", Command_Spec, ADMFLAG_KICK, "sm_afk_spec <#userid|name>");
-#if _DEBUG
-	RegAdminCmd("sm_afk_test", Command_Test, ADMFLAG_ROOT);
-	RegAdminCmd("sm_afk_test2", Command_Test2, ADMFLAG_ROOT);
-#endif
 }
 
 void EnablePlugin() // Enable Plugin Function
@@ -1316,14 +1166,13 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 					else
 						iLastButtons = iButtonsArray[client][iButtonsArrayIndex[client]];
 
-					if (iLastButtons != buttons) // ( (angles[0] != fEyeAngles[client][0]) || (angles[1] != fEyeAngles[client][1]) || (angles[2] != fEyeAngles[client][2]) )
+					if (iLastButtons != buttons)
 					{
 						if (IsClientObserver(client))
 						{
 							if (iObserverMode[client] == -1) // Player has an Invalid Observer Mode
 							{
 								iButtonsArray[client][iButtonsArrayIndex[client]] = buttons;
-								//fEyeAngles[client] = angles;
 								return Plugin_Continue;
 							}
 							else if (iObserverMode[client] != 4) // Check Observer Mode in case it has changed
@@ -1337,12 +1186,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								return Plugin_Continue;
 							}
 
-							if (iLastButtons == buttons) // && ( (FloatAbs(FloatSub(angles[0],fEyeAngles[client][0])) < 2.0) && (FloatAbs(FloatSub(angles[1],fEyeAngles[client][1])) < 2.0) && (FloatAbs(FloatSub(angles[2],fEyeAngles[client][2])) < 2.0) )
+							if (iLastButtons == buttons)
 							{
-#if _DEBUG > 1
-//								LogDebug(false, "OnPlayerRunCmd - Client: %i Eye Angles within threshold: %f %f %f", client, FloatSub(angles[0],fEyeAngles[client][0]),FloatSub(angles[1],fEyeAngles[client][1]),FloatSub(angles[2],fEyeAngles[client][2]));
-#endif
-								//fEyeAngles[client] = angles;
 								return Plugin_Continue;
 							}
 						}
@@ -1379,7 +1224,6 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								Forward_OnClientBack(client);
 								bPlayerAFK[client] = false;
 							}
-						//ResetPlayer(client, false);
 					}
 				}
 			}
@@ -1499,8 +1343,6 @@ public Action Event_PlayerDeathPost(Handle event, const char[] name, bool dontBr
 				{
 					iPlayerAttacker[client] = GetClientOfUserId(GetEventInt(event,"attacker"));
 
-					//if (CSGO)
-					//	GetClientEyeAngles(client, fEyeAngles[client]);
 
 					ResetSpawn(client);
 					bPlayerDeath[client] = true;
@@ -1515,37 +1357,6 @@ public Action Event_PlayerDeathPost(Handle event, const char[] name, bool dontBr
 	}
 	return Plugin_Continue;
 }
-
-/*
-public Action Event_JointeamFailed(Handle event, const char[] name, bool dontBroadcast)
-{
-#if _DEBUG
-	LogDebug(false, "Event_JointeamFailed");
-#endif
-	if (g_bEnabled)
-	{
-		int iReason = GetEventInt(event, "reason");
-
-#if _DEBUG
-		LogDebug(false, "Event_JointeamFailed - Reason: %i", iReason);
-#endif
-
-		if (iReason == 0)
-			return Plugin_Handled;
-
-//0 "#Cstrike_TitlesTXT_Only_1_Team_Change"
-//1 "#Cstrike_TitlesTXT_All_Teams_Full"
-//2 "#Cstrike_TitlesTXT_Terrorists_Full"
-//3 "#Cstrike_TitlesTXT_CTs_Full"
-//4 "#Cstrike_TitlesTXT_Cannot_Be_Spectator"
-//5 "#Cstrike_TitlesTXT_Humans_Join_Team_T"
-//6 "#Cstrike_TitlesTXT_Humans_Join_Team_CT"
-//7 "#Cstrike_TitlesTXT_Too_Many_Terrorists"
-//8 "#Cstrike_TitlesTXT_Too_Many_CTs"
-	}
-	return Plugin_Continue;
-}
-*/
 
 
 // Timers
@@ -1590,10 +1401,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #endif
 				iObserverMode[client] = m_iObserverMode;
 
-				//if (CSGO)
-				//	GetClientEyeAngles(client, fEyeAngles[client]);
 
-				//g_iAFKTime[client]++;
 				return Plugin_Continue;
 			}
 			else if (iObserverMode[client] != m_iObserverMode) // Player changed Observer Mode
@@ -1611,8 +1419,6 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 					if (iObserverMode[client] != OBS_MODE_ROAMING)
 						iObserverTarget[client] = GetEntPropEnt(client, Prop_Send, "m_hObserverTarget");
 
-					//if (CSGO)
-					//	GetClientEyeAngles(client, fEyeAngles[client]);
 
 					return Plugin_Continue;
 				}
@@ -1626,8 +1432,6 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 					if (iObserverMode[client] != OBS_MODE_ROAMING)
 						iObserverTarget[client] = GetEntPropEnt(client, Prop_Send, "m_hObserverTarget");
 
-					//if (CSGO)
-					//	GetClientEyeAngles(client, fEyeAngles[client]);
 
 					return Plugin_Continue;
 				}
@@ -1769,8 +1573,6 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 			if (cvarSpawnTime > 0)
 			{
 				AFKSpawnTime = Time - g_iSpawnTime[client];
-				//if (AFKSpawnTime <= 1)
-				//	AFKSpawnTimeleft = cvarSpawnTime;
 				//else
 				AFKSpawnTimeleft = cvarSpawnTime - AFKSpawnTime;
 #if _DEBUG
@@ -1798,57 +1600,54 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #if _DEBUG
 							LogDebug(false, "Timer_CheckPlayer - Client: %i AFK Time: %i Move Timeleft: %i", client, AFKTime, AFKMoveTimeleft);
 #endif
-							//if (AFKMoveTimeleft >= 0)
-							//{
-								if (AFKSpawnTimeleft >= 0)
-									if (AFKSpawnTimeleft < AFKMoveTimeleft) // Spawn time left is less than total AFK time left
+							if (AFKSpawnTimeleft >= 0)
+								if (AFKSpawnTimeleft < AFKMoveTimeleft) // Spawn time left is less than total AFK time left
+								{
+									if (AFKSpawnTime >= cvarSpawnTime) // Take Action on AFK Spawn Player
 									{
-										if (AFKSpawnTime >= cvarSpawnTime) // Take Action on AFK Spawn Player
-										{
 #if _DEBUG
-											LogDebug(false, "Timer_CheckPlayer - Client: %i Exceeded Spawn Move AFK Time", client);
+										LogDebug(false, "Timer_CheckPlayer - Client: %i Exceeded Spawn Move AFK Time", client);
 #endif
-											ResetSpawn(client);
-											if (g_iPlayerTeam[client] == 0) // Are we moving player from the Unassigned team AKA team 0?
-												return MoveAFKClient(client, GetConVarBool(hCvarWarnUnassigned)); // Are we warning unassigned players?
-											else
-												return MoveAFKClient(client);
-										}
-										else if (AFKSpawnTime%AFK_WARNING_INTERVAL == 0) // Warn AFK Spawn Player
-										{
-#if _DEBUG > 1
-											LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Spawn Move Warning AFK Spawn Timeleft: %i", client, AFKSpawnTimeleft);
-#endif
-											if ((cvarSpawnTime - AFKSpawnTime) <= GetConVarInt(hCvarWarnSpawnTime))
-												AFK_PrintToChat(client, "%t", "Spawn_Move_Warning", AFKSpawnTimeleft);
-										}
-										return Plugin_Continue;
+										ResetSpawn(client);
+										if (g_iPlayerTeam[client] == 0) // Are we moving player from the Unassigned team AKA team 0?
+											return MoveAFKClient(client, GetConVarBool(hCvarWarnUnassigned)); // Are we warning unassigned players?
+										else
+											return MoveAFKClient(client);
 									}
+									else if (AFKSpawnTime%AFK_WARNING_INTERVAL == 0) // Warn AFK Spawn Player
+									{
 #if _DEBUG > 1
-								LogDebug(false, "Timer_CheckPlayer - Client: %i AFK Time: %i ConVar Move Time: %i", client, AFKTime, g_iTimeToMove);
+										LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Spawn Move Warning AFK Spawn Timeleft: %i", client, AFKSpawnTimeleft);
 #endif
-								if (AFKTime >= g_iTimeToMove) // Take Action on AFK Player
-								{
-#if _DEBUG
-									LogDebug(false, "Timer_CheckPlayer - Client: %i Exceeded Move AFK Time", client);
-#endif
-									if (g_iPlayerTeam[client] == 0) // Are we moving player from the Unassigned team AKA team 0?
-										return MoveAFKClient(client, GetConVarBool(hCvarWarnUnassigned)); // Are we warning unassigned players?
-									else
-										return MoveAFKClient(client);
-								}
-								else if (AFKTime%AFK_WARNING_INTERVAL == 0) // Warn AFK Player
-								{
-#if _DEBUG > 1
-									LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Move Warning", client);
-#endif
-									if ((g_iTimeToMove - AFKTime) <= GetConVarInt(hCvarWarnTimeToMove))
-										AFK_PrintToChat(client, "%t", "Move_Warning", AFKMoveTimeleft);
+										if ((cvarSpawnTime - AFKSpawnTime) <= GetConVarInt(hCvarWarnSpawnTime))
+											AFK_PrintToChat(client, "%t", "Spawn_Move_Warning", AFKSpawnTimeleft);
+									}
 									return Plugin_Continue;
 								}
-								return Plugin_Continue; // Fix for AFK Spawn Kick Notifications
+#if _DEBUG > 1
+							LogDebug(false, "Timer_CheckPlayer - Client: %i AFK Time: %i ConVar Move Time: %i", client, AFKTime, g_iTimeToMove);
+#endif
+							if (AFKTime >= g_iTimeToMove) // Take Action on AFK Player
+							{
+#if _DEBUG
+								LogDebug(false, "Timer_CheckPlayer - Client: %i Exceeded Move AFK Time", client);
+#endif
+								if (g_iPlayerTeam[client] == 0) // Are we moving player from the Unassigned team AKA team 0?
+									return MoveAFKClient(client, GetConVarBool(hCvarWarnUnassigned)); // Are we warning unassigned players?
+								else
+									return MoveAFKClient(client);
 							}
-						//}
+							else if (AFKTime%AFK_WARNING_INTERVAL == 0) // Warn AFK Player
+							{
+#if _DEBUG > 1
+								LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Move Warning", client);
+#endif
+								if ((g_iTimeToMove - AFKTime) <= GetConVarInt(hCvarWarnTimeToMove))
+									AFK_PrintToChat(client, "%t", "Move_Warning", AFKMoveTimeleft);
+								return Plugin_Continue;
+							}
+							return Plugin_Continue; // Fix for AFK Spawn Kick Notifications
+						}
 					}
 				}
 			}
@@ -2025,13 +1824,6 @@ void ChangeImmunity(int type) // Change Immunity Type for all Admins
 		if (IsValidClient(i))
 			if (CheckAdminImmunity(i))
 				SetPlayerImmunity(i, type);
-/*
-	for (int i = 1; i <= MaxClients; i++)
-		if (IsClientConnected(i))
-			if (IsClientInGame(i))
-				if (CheckAdminImmunity(i))
-					SetPlayerImmunity(i, type);
-*/
 }
 
 bool CheckAdminImmunity(int client) // Check Admin Immunity

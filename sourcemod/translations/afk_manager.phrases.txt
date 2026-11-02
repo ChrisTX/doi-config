@@ -1,10 +1,5 @@
 "Phrases"
 {
-	// Mod Detection (Debug Messages)
-
-	// Debug Messages
-
-
 	// Plugin Messages
 	"Spectate_Force"
 	{
