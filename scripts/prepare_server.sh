@@ -69,6 +69,10 @@ for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
 	smscript_file="${smscript##*/}"
 	ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
 done
+for smtranslation in doi/cfg/doi-config/sourcemod/translations/*.txt; do
+	smtranslation_file="${smtranslation##*/}"
+	ln -sf ../../../cfg/doi-config/sourcemod/translations/"$smtranslation_file" doi/addons/sourcemod/translations/"$smtranslation_file"
+done
 
 # Update GeoIP databases
 if [[ -f "/var/lib/GeoIP/GeoLite2-City.mmdb" ]]; then
@@ -106,23 +110,10 @@ ln -sf ../../../cfg/doi-config/texts/advertisements.txt doi/addons/sourcemod/con
 
 # Update AFK Manager
 ln -sf ../doi-config/configs/afk_manager.cfg doi/cfg/sourcemod/afk_manager.cfg
-# afkmanager.dawgclan.net is gone, HugoJF/afk_manager4 mirrors version 4.3.0 of the AlliedModders thread
-# (https://forums.alliedmods.net/showthread.php?p=708265). Pinned to a commit and checked against its hashes.
-AFK_MANAGER_URL="https://raw.githubusercontent.com/HugoJF/afk_manager4/efbc68c125cc8b04543ebc8ef19a59e7352afd52"
-curl -fsSL -o doi/addons/sourcemod/scripting/afk_manager4.sp "$AFK_MANAGER_URL/scripting/afk_manager4.sp"
-curl -fsSL -o doi/addons/sourcemod/translations/afk_manager.phrases.txt "$AFK_MANAGER_URL/translations/afk_manager.phrases.txt"
-if ! sha512sum --check --quiet <<'EOF'
-d9843e1d44289dca9003ea6f7c35b3d0403e9ce4dacbdf341ef290c53d5fd6e043877ceabe6bfbfdfaec93c420f20bb867d4200da9ac901cc984547c97a12901  doi/addons/sourcemod/scripting/afk_manager4.sp
-4f360676b7951fa547021e251eba737480b7520c8e949b1be0b49d750e2b9be464e3c372d3bb485128f0af127648f5376f9027d9883a8c4029ca5487c1f626ee  doi/addons/sourcemod/translations/afk_manager.phrases.txt
-EOF
-then
-	echo "Error: AFK Manager doesn't match its checksums!" >&2
-	exit 1
-fi
+# AFK Manager itself is part of the included sourcemod scripts
 git clone https://github.com/Bara/Multi-Colors.git
 cp -r Multi-Colors/addons/sourcemod/scripting/include doi/addons/sourcemod/scripting/include
 rm -rf Multi-Colors
-patch -N doi/addons/sourcemod/scripting/afk_manager4.sp doi/cfg/doi-config/scripts/afkmanager.patch
 
 # Add SMJansson, SteamWorks for SourceBans++ Discord integration
 # See https://sbpp.github.io/integrations/discord-forward-setup/

@@ -39,9 +39,11 @@ scripts/prepare_server.sh <server folder> [<config>]
 
 It installs or updates the game with SteamCMD, clones or pulls this repository
 into `doi/cfg/doi-config`, and installs the latest Metamod:Source and SourceMod
-together with the plugins the configuration uses (SourceBans++, Advertisements,
-AFK Manager and their dependencies). It then links the mods, game mode configs
-and plugins of this repository into the server and compiles the plugins.
+together with the plugins the configuration uses (SourceBans++, Advertisements
+and their dependencies). It then links the mods, game mode configs and plugins
+of this repository into the server and compiles the plugins. AFK Manager, which
+is no longer maintained upstream, is kept in this repository's `sourcemod`
+folder.
 
 `<config>` names one of the server configs in the `texts` folder, e.g.
 `coop-commando` for `texts/server_coop-commando.cfg`. That config becomes the

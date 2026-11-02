@@ -498,7 +498,7 @@ void PurgeOldLogs() // Purge Old Log Files
 }
 
 // Chat Functions
-void AFK_PrintToChat(int client, const char[] sMessage, any:...)
+void AFK_PrintToChat(int client, const char[] sMessage, any ...)
 {
 	int iStart = client;
 	int iEnd = MaxClients;
@@ -638,7 +638,7 @@ void RemovePlugin(Handle plugin)
 
 
 // General Functions
-char ActionToString(Action action)
+char[] ActionToString(Action action)
 {
 	char Action_Name[32];
 	switch (action)
@@ -901,7 +901,7 @@ public Action Updater_OnPluginChecking()
 	return Plugin_Continue;
 }
 
-public int Updater_OnPluginUpdated()
+public void Updater_OnPluginUpdated()
 {
 	LogToFile(AFKM_LogFile, "AFK Manager has just been updated to a new version");
 	ReloadPlugin();
