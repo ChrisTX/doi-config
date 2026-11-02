@@ -1,5 +1,7 @@
 # Day of Infamy Open Configuration
 
+[![Checks](https://github.com/ChrisTX/doi-config/actions/workflows/check.yml/badge.svg)](https://github.com/ChrisTX/doi-config/actions/workflows/check.yml)
+
 This is the configuration for the Kim Jong Un servers.
 
 ## Usage

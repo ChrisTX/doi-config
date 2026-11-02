@@ -1,0 +1,36 @@
+# Runs the checks of .pre-commit-config.yaml, which the git hooks run before each commit
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: prek run --all-files
+    runs-on: ubuntu-latest
+    container: archlinux:base
+    timeout-minutes: 15
+    steps:
+      # Before the checkout, which only makes a git repository with git installed
+      - name: Install the tools of the checks
+        run: >-
+          pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint
+          rumdl editorconfig-checker
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The container runs as root, a different user than the owner of the checkout
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Run the checks
+        run: prek run --all-files --show-diff-on-failure

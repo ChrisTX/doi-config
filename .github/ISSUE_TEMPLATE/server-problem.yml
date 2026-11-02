@@ -1,0 +1,35 @@
+name: Server problem
+description: A server doesn't start, crashes, a script fails, or something in the game doesn't work as configured
+labels: [bug]
+body:
+  - type: dropdown
+    id: config
+    attributes:
+      label: Configuration
+      description: The configuration set of the server
+      options:
+        - coop-commando
+        - mp-battles
+        - private-mp
+        - my own, loading an init-*.cfg
+        - not about a server (scripts, monitor, …)
+    validations:
+      required: true
+  - type: input
+    id: map
+    attributes:
+      label: Map and game mode
+      description: If it's about a map, e.g. ardennes, invasion
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: The console output of the server, or the output of the failing script or unit (`journalctl --user -u doi-server@<name>`)
+      render: text

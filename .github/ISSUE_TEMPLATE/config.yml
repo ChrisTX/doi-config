@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Problems of the game, SourceMod or plugins
+    url: https://github.com/ChrisTX/doi-config/blob/main/CONTRIBUTING.md#reporting-problems
+    about: Bugs that aren't caused by this configuration belong upstream, e.g. to the game, SourceMod or the plugin's author.
