@@ -381,7 +381,7 @@ void AFK_PrintToChat(int client, const char[] sMessage, any ...)
 
 // Debug Functions
 #if _DEBUG
-void LogDebug(bool Translation, char[] text, any:...) // Debug Log Function
+void LogDebug(bool Translation, const char[] text, any ...) // Debug Log Function
 {
 	if (hCvarLogDebug != INVALID_HANDLE)
 		if (!GetConVarBool(hCvarLogDebug))
@@ -1175,13 +1175,13 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 								iButtonsArray[client][iButtonsArrayIndex[client]] = buttons;
 								return Plugin_Continue;
 							}
-							else if (iObserverMode[client] != 4) // Check Observer Mode in case it has changed
+							else if (iObserverMode[client] != OBS_MODE_IN_EYE) // Check Observer Mode in case it has changed
 								iObserverMode[client] = GetEntProp(client, Prop_Send, "m_iObserverMode");
 
-							if ((iObserverMode[client] == 4) && (iLastButtons == buttons))
+							if ((iObserverMode[client] == OBS_MODE_IN_EYE) && (iLastButtons == buttons))
 							{
 #if _DEBUG > 1
-								LogDebug(false, "OnPlayerRunCmd - Client: %i in chase cam and buttons have not changed.", client);
+								LogDebug(false, "OnPlayerRunCmd - Client: %i in first person spectator view and buttons have not changed.", client);
 #endif
 								return Plugin_Continue;
 							}
@@ -1561,7 +1561,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 		if ((g_iSpawnTime[client] > 0) && (!IsPlayerAlive(client))) // Check Spawn Time and Player Alive
 		{
 #if _DEBUG
-			LogDebug(false, "Timer_CheckPlayer - Client: %i AFK Spawn Time: %i Player has died", client, AFKSpawnTime);
+			LogDebug(false, "Timer_CheckPlayer - Client: %i Spawn Time: %i Player has died", client, g_iSpawnTime[client]);
 #endif
 			ResetSpawn(client);
 		}
