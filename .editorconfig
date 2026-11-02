@@ -37,3 +37,7 @@ insert_final_newline = unset
 end_of_line = unset
 indent_style = unset
 indent_size = unset
+
+# AFK Manager, vendored from version 4.3.0, indents with tabs
+[sourcemod/{afk_manager4.sp,translations/afk_manager.phrases.txt}]
+indent_style = tab
