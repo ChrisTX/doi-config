@@ -1,10 +1,6 @@
 #include <sourcemod>
 #include <sdktools>
 
-#undef REQUIRE_EXTENSIONS
-#include <tf2>
-#define REQUIRE_EXTENSIONS
-
 #pragma semicolon 1
 
 #undef REQUIRE_PLUGIN
@@ -19,17 +15,13 @@
 
 #pragma newdecls required
 
-// Observer Modes
-#define OBS_MODE_NONE 		0
-#define	OBS_MODE_DEATHCAM 	1
+// Observer Modes (m_iObserverMode)
+#define OBS_MODE_NONE		0
+#define OBS_MODE_DEATHCAM	1
 #define OBS_MODE_FREEZECAM	2
-/*
-OBS_MODE_FIXED = 3
-OBS_MODE_IN_EYE = 4
-OBS_MODE_CHASE = 5
-OBS_MODE_POI = 6
-*/
-int	OBS_MODE_ROAMING =		6;
+#define OBS_MODE_IN_EYE		4 // First person view of the observer target
+// Free roaming camera. Upstream picked it by engine (5, 6 or 7); Day of Infamy always got the default of 6.
+#define OBS_MODE_ROAMING	6
 
 /**
  * Specifies AFK immunity types.
@@ -42,58 +34,8 @@ enum AFKImmunity:
 	AFKImmunity_Full = 3,
 };
 
-
-// Arena Check Code from controlpoints.inc made by Powerlord
-enum
-{
-	TF2GameType_Unknown,
-	TF2GameType_CTF,
-	TF2GameType_CP,
-	TF2GameType_PL,
-	TF2GameType_Arena,
-}
-
-
-enum TF2GameMode:
-{
-	TF2GameMode_Unknown,		/**< Unknown type, unknown mode */
-	TF2GameMode_CTF,			/**< General CTF */
-	TF2GameMode_CP_AD,			/**< Attack/Defense Control Points */
-	TF2GameMode_CP_Symmetric,	/**< 5CP or unknown Control Points */
-	TF2GameMode_TC,				/**< Territory Control CP */
-	TF2GameMode_PL,				/**< General Payload */
-	TF2GameMode_Arena,			/**< Arena */
-	TF2GameMode_ItemTest,		/**< Unknown type, Item Test mode */
-	TF2GameMode_Koth,			/**< KOTH Control Points */
-	TF2GameMode_HybridCTFCP,	/**< Hybrid CTF/CP mode */
-	TF2GameMode_PLR,			/**< Payload Race, 2 team payload */
-	TF2GameMode_Training,		/**< Unknown type, training mode */
-	TF2GameMode_SD,				/**< CTF, Special Delivery */
-	TF2GameMode_MvM,			/**< CTF, Mann Vs. Machine */
-	TF2GameMode_RD,				/**< CTF, Robot Destruction */
-}
-
-
-stock TF2GameMode TF2_DetectGameMode()
-{
-	int gameType = GameRules_GetProp("m_nGameType");
-
-	switch (gameType)
-	{
-		case TF2GameType_Arena:
-			return TF2GameMode_Arena;
-	}
-	return TF2GameMode_Unknown;
-}
-
 // Defines
 #define AFKM_VERSION									"4.3.0"
-
-// TO DO:
-// Fix WFP Events
-// Add Sound?
-// Add AFK Menu?
-// Check ND Support?
 
 #define AFK_WARNING_INTERVAL							5
 #define AFK_CHECK_INTERVAL								1.0
@@ -115,20 +57,18 @@ stock TF2GameMode TF2_DetectGameMode()
 // ConVar Defines
 #define CONVAR_VERSION									0
 #define CONVAR_ENABLED									1
-#define CONVAR_MOD_AFK									2
-#define CONVAR_PREFIXSHORT								3
-#define CONVAR_PREFIXCOLORS								4
-#define CONVAR_LANGUAGE									5
-#define CONVAR_LOG_WARNINGS								6
-#define CONVAR_MINPLAYERSMOVE							7
-#define CONVAR_MINPLAYERSKICK							8
-#define CONVAR_ADMINS_IMMUNE							9
-#define CONVAR_TIMETOMOVE								10
-#define CONVAR_TIMETOKICK								11
-#define CONVAR_EXCLUDEDEAD								12
-#define CONVAR_TF2_ARENAMODE							13
-#define CONVAR_BUTTONSBUFFER							14
-#define CONVAR_ARRAY_SIZE								15
+#define CONVAR_PREFIXSHORT								2
+#define CONVAR_PREFIXCOLORS								3
+#define CONVAR_LANGUAGE									4
+#define CONVAR_LOG_WARNINGS								5
+#define CONVAR_MINPLAYERSMOVE							6
+#define CONVAR_MINPLAYERSKICK							7
+#define CONVAR_ADMINS_IMMUNE							8
+#define CONVAR_TIMETOMOVE								9
+#define CONVAR_TIMETOKICK								10
+#define CONVAR_EXCLUDEDEAD								11
+#define CONVAR_BUTTONSBUFFER							12
+#define CONVAR_ARRAY_SIZE								13
 
 // Arrays
 char AFKM_LogFile[PLATFORM_MAX_PATH];					// Log File
@@ -166,7 +106,6 @@ bool g_bPrefixColors =									false;
 bool g_bForceLanguage =									false;
 bool g_bLogWarnings =									false;
 bool g_bExcludeDead =									false;
-bool g_bTF2Arena =										false;
 int g_iAdminsImmunue =									-1;
 int g_iTimeToMove =										-1;
 int g_iTimeToKick =										-1;
@@ -179,17 +118,6 @@ bool g_bWaitRound =										true;
 
 // Spectator Related Variables
 int g_iSpec_Team =										1;
-
-// Mod Detection Variables
-bool Synergy =											false;
-bool TF2 =												false;
-bool CSTRIKE =											false;
-bool CSGO =												false;
-bool GESOURCE =											false;
-
-// Mod Based Console Variables
-ConVar hCvarAFK =										null;
-ConVar hCvarTF2Arena =									null;
 
 // Handles
 // Forwards
@@ -925,8 +853,6 @@ public void CvarChange_Status(Handle cvar, const char[] oldvalue, const char[] n
 				g_sPrefix = "AFK";
 			else if (cvar == hCvarExcludeDead)
 				g_bExcludeDead = true;
-			else if (cvar == hCvarTF2Arena)
-				g_bTF2Arena = true;
 #if defined _colors_included
 			else if (cvar == hCvarPrefixColor)
 				g_bPrefixColors = true;
@@ -944,8 +870,6 @@ public void CvarChange_Status(Handle cvar, const char[] oldvalue, const char[] n
 				g_sPrefix = "AFK Manager";
 			else if (cvar == hCvarExcludeDead)
 				g_bExcludeDead = false;
-			else if (cvar == hCvarTF2Arena)
-				g_bTF2Arena = false;
 #if defined _colors_included
 			else if (cvar == hCvarPrefixColor)
 				g_bPrefixColors = false;
@@ -963,8 +887,6 @@ public void CvarChange_Locked(Handle cvar, const char[] oldvalue, const char[] n
 #endif
 	if ((cvar == hCvarVersion) && (strcmp(newvalue, AFKM_VERSION) != 0))
 		SetConVarString(cvar, AFKM_VERSION);
-	else if ((cvar == hCvarAFK) && (StringToInt(newvalue) != 0))
-		SetConVarInt(cvar, 0);
 }
 
 void HookEvents() // Event Hook Registrations
@@ -985,28 +907,6 @@ void HookEvents() // Event Hook Registrations
 #if _DEBUG
 	LogDebug(false, "HookEvents - Hooked Player Death Event.");
 #endif
-	if (TF2)
-	{
-		HookEvent("teamplay_round_win", Event_TeamplayRoundWin);
-#if _DEBUG
-		LogDebug(false, "HookEvents - Hooked Teamplay Round Win Event.");
-#endif
-		HookEvent("arena_round_start", Event_ArenaRoundStart);
-#if _DEBUG
-		LogDebug(false, "HookEvents - Hooked Arena Round Start Event.");
-#endif
-	}
-	else if (CSTRIKE || CSGO)
-	{
-		HookEvent("round_start",Event_RoundStart);
-#if _DEBUG
-		LogDebug(false, "HookEvents - Hooked Round Start Event.");
-#endif
-		HookEvent("round_freeze_end",Event_RoundFreezeEnd);
-#if _DEBUG
-		LogDebug(false, "HookEvents - Hooked Round Freeze End Event.");
-#endif
-	}
 }
 
 void HookConVars() // ConVar Hook Registrations
@@ -1029,18 +929,6 @@ void HookConVars() // ConVar Hook Registrations
 #if _DEBUG
 		LogDebug(false, "HookConVars - Hooked Enable variable.");
 #endif
-	}
-	if (hCvarAFK != INVALID_HANDLE)
-	{
-		if (!bCvarIsHooked[CONVAR_MOD_AFK])
-		{
-			HookConVarChange(hCvarAFK, CvarChange_Locked); // Hook AFK Variable
-			bCvarIsHooked[CONVAR_MOD_AFK] = true;
-			SetConVarInt(hCvarAFK, 0);
-#if _DEBUG
-			LogDebug(false, "HookConVars - Hooked Mod Based AFK variable.");
-#endif
-		}
 	}
 	if (!bCvarIsHooked[CONVAR_PREFIXSHORT])
 	{
@@ -1144,25 +1032,6 @@ void HookConVars() // ConVar Hook Registrations
 
 		if (hCvarExcludeDead.BoolValue)
 			g_bExcludeDead = true;
-	}
-
-
-	if (TF2)
-	{
-		if (hCvarTF2Arena != INVALID_HANDLE)
-		{
-			if (!bCvarIsHooked[CONVAR_TF2_ARENAMODE])
-			{
-				HookConVarChange(hCvarTF2Arena, CvarChange_Status); // Hook TF2 Arena Variable
-				bCvarIsHooked[CONVAR_TF2_ARENAMODE] = true;
-#if _DEBUG
-				LogDebug(false, "HookConVars - Hooked TF2 Arena variable.");
-#endif
-
-				if (hCvarTF2Arena.BoolValue)
-					g_bTF2Arena = true;
-			}
-		}
 	}
 	if (!bCvarIsHooked[CONVAR_BUTTONSBUFFER])
 	{
@@ -1322,7 +1191,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 #if defined _colors_included
 	MarkNativeAsOptional("GetUserMessageType");
 #endif
-	MarkNativeAsOptional("GetEngineVersion");
 	return APLRes_Success;
 }
 
@@ -1337,84 +1205,7 @@ public void OnPluginStart() // AFK Manager Plugin has started
 	LoadTranslations("common.phrases");
 	LoadTranslations("afk_manager.phrases");
 
-	// Initialize Arrays
-	//g_FWD_hPlugins = CreateArray();
-
-	// Game Engine Detection
-	if ( CanTestFeatures() && (GetFeatureStatus(FeatureType_Native, "GetEngineVersion") == FeatureStatus_Available) )
-	{
-		EngineVersion g_EngineVersion = Engine_Unknown;
-
-		g_EngineVersion = GetEngineVersion();
-
-		switch (g_EngineVersion)
-		{
-			case Engine_Original: // Original Source Engine (used by The Ship)
-				OBS_MODE_ROAMING = 5;
-			case Engine_SourceSDK2006: // Episode 1 Source Engine (second major SDK)
-				OBS_MODE_ROAMING = 5;
-			case Engine_DarkMessiah: // Dark Messiah Multiplayer (based on original engine)
-				OBS_MODE_ROAMING = 5;
-			case Engine_CSS: // Counter-Strike: Source
-				OBS_MODE_ROAMING = 7;
-			case Engine_HL2DM: // Half-Life 2 Deathmatch
-				OBS_MODE_ROAMING = 7;
-			case Engine_DODS: // Day of Defeat: Source
-				OBS_MODE_ROAMING = 7;
-			case Engine_TF2: // Team Fortress 2
-				OBS_MODE_ROAMING = 7;
-			case Engine_SDK2013: // Source SDK 2013
-				OBS_MODE_ROAMING = 7;
-			default:
-				OBS_MODE_ROAMING = 6;
-		}
-
-#if _DEBUG
-		LogDebug(false, "OnPluginStart - Engine Version: %i OBS_MODE_ROAMING: %i", g_EngineVersion, OBS_MODE_ROAMING);
-#endif
-
-	}
-
 	RequireFeature(FeatureType_Capability, FEATURECAP_PLAYERRUNCMD_11PARAMS, "This plugin requires a newer version of SourceMod.");
-
-	// Check Game Mod
-	char game_mod[32];
-	GetGameFolderName(game_mod, sizeof(game_mod));
-
-	if (strcmp(game_mod, "synergy", false) == 0)
-	{
-		LogAction(0, -1, "[AFK Manager] %T", "Synergy", LANG_SERVER);
-		Synergy = true;
-	}
-	else if (strcmp(game_mod, "tf", false) == 0)
-	{
-		LogAction(0, -1, "[AFK Manager] %T", "TF2", LANG_SERVER);
-		TF2 = true;
-
-		hCvarAFK = FindConVar("mp_idledealmethod"); // Hook AFK Convar
-		hCvarTF2Arena = FindConVar("tf_gamemode_arena");
-		//hCvarTF2WFPTime = FindConVar("mp_waitingforplayers_time");
-	}
-	else if (strcmp(game_mod, "csgo", false) == 0)
-	{
-		LogAction(0, -1, "[AFK Manager] %T", "CSGO", LANG_SERVER);
-		CSGO = true;
-		hCvarAFK = FindConVar("mp_autokick"); // Hook AFK Convar
-	}
-	else if (strcmp(game_mod, "cstrike", false) == 0)
-	{
-		LogAction(0, -1, "[AFK Manager] %T", "CSTRIKE", LANG_SERVER);
-		CSTRIKE = true;
-
-		hCvarAFK = FindConVar("mp_autokick"); // Hook AFK Convar
-	}
-	else if (strcmp(game_mod, "gesource", false) == 0)
-	{
-		LogAction(0, -1, "[AFK Manager] %T", "GESOURCE", LANG_SERVER);
-		GESOURCE = true;
-
-		//hCvarAFK = FindConVar("mp_autokick"); // Hook AFK Convar
-	}
 
 	RegisterCvars(); // Register Cvars
 	SetConVarInt(hCvarLogWarnings, 0);
@@ -1458,20 +1249,7 @@ public void OnMapStart()
 		g_iMapEndTime = -1;
 	}
 
-	if (TF2) // Check TF2 Game Mode
-	{
-		if (TF2_DetectGameMode() == TF2GameMode_Arena) // Arena Mode
-		{
-#if _DEBUG
-			LogDebug(false, "OnMapStart - Detected TF2 Arena Game Mode");
-#endif
-			g_bTF2Arena = true;
-		}
-		if (!g_bTF2Arena)
-			g_bWaitRound = false; // Un-Pause Plugin on Map Start
-	}
-	else
-		g_bWaitRound = false; // Un-Pause Plugin on Map Start
+	g_bWaitRound = false; // Un-Pause Plugin on Map Start
 }
 
 public void OnMapEnd()
@@ -1618,29 +1396,6 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 	return Plugin_Continue;
 }
 
-#if defined _tf2_included
-public void TF2_OnWaitingForPlayersStart()
-{
-#if _DEBUG
-	LogDebug(false, "TF2_OnWaitingForPlayersStart");
-#endif
-	if (g_bEnabled)
-		if (TF2)
-			g_bWaitRound = true;
-}
-
-public void TF2_OnWaitingForPlayersEnd()
-{
-#if _DEBUG
-	LogDebug(false, "TF2_OnWaitingForPlayersEnd");
-#endif
-	if (g_bEnabled)
-		if (TF2)
-			g_bWaitRound = false;
-}
-#endif
-
-
 // Game Events
 public Action Event_PlayerDisconnectPost(Handle event, const char[] name, bool dontBroadcast)
 {
@@ -1704,7 +1459,7 @@ public Action Event_PlayerSpawn(Handle event, const char[] name, bool dontBroadc
 			{
 				if (g_hAFKTimer[client] != INVALID_HANDLE)
 				{
-					if ((!Synergy) && (g_iPlayerTeam[client] == 0)) // Unassigned Team? Fires in CSTRIKE?
+					if (g_iPlayerTeam[client] == 0) // Unassigned Team?
 						return Plugin_Continue;
 
 					if (!IsClientObserver(client)) // Client is not an Observer/Spectator?
@@ -1758,94 +1513,6 @@ public Action Event_PlayerDeathPost(Handle event, const char[] name, bool dontBr
 				}
 			}
 	}
-	return Plugin_Continue;
-}
-
-public Action Event_TeamplayRoundWin(Handle event, const char[] name, bool dontBroadcast)
-{
-#if _DEBUG
-	LogDebug(false, "Event_TeamplayRoundWin");
-#endif
-	if (g_bEnabled)
-		if ((TF2) && (g_bTF2Arena))
-			g_bWaitRound = true;
-	return Plugin_Continue;
-}
-
-public Action Event_ArenaRoundStart(Handle event, const char[] name, bool dontBroadcast)
-{
-#if _DEBUG
-	LogDebug(false, "Event_ArenaRoundStart");
-#endif
-	if (g_bEnabled)
-		if ((TF2) && (g_bTF2Arena))
-		{
-			for(int i = 1; i <= MaxClients; i++)
-				if (IsValidClient(i))
-					if (g_hAFKTimer[i] != INVALID_HANDLE)
-						if (g_iPlayerTeam[i] > 1) // Client is not Unassigned or on Spectator Team
-							if (IsPlayerAlive(i))
-								if (GetConVarFloat(hCvarSpawnTime) > 0.0)
-									if (g_iSpawnTime[i] != -1)
-										g_iSpawnTime[i] = GetTime();
-
-			g_bWaitRound = false;
-		}
-	return Plugin_Continue;
-}
-
-public Action Event_RoundStart(Handle event, const char[] name, bool dontBroadcast)
-{
-#if _DEBUG
-	LogDebug(false, "Event_RoundStart");
-#endif
-	if (g_bEnabled)
-		if (CSGO)
-		{
-#if _DEBUG
-			LogDebug(false, "Event_RoundStart - CSGO - Freeze Time: %i Warmup Period: %i", GetConVarInt(FindConVar("mp_freezetime")), GameRules_GetProp("m_bWarmupPeriod"));
-#endif
-			if (GameRules_GetProp("m_bWarmupPeriod") == 1)
-				g_bWaitRound = true;
-			else if (GameRules_GetProp("m_bWarmupPeriod") == 0)
-				if (GetConVarInt(FindConVar("mp_freezetime")) > 0)
-					g_bWaitRound = true;
-				else
-					g_bWaitRound = false;
-		}
-		else if ((CSTRIKE) && (GetConVarInt(FindConVar("mp_freezetime")) > 0))
-		{
-#if _DEBUG
-			LogDebug(false, "Event_RoundStart - Freeztime Pausing AFK");
-#endif
-			g_bWaitRound = true;
-		}
-
-	return Plugin_Continue;
-}
-
-public Action Event_RoundFreezeEnd(Handle event, const char[] name, bool dontBroadcast)
-{
-#if _DEBUG
-	LogDebug(false, "Event_RoundFreezeEnd");
-#endif
-	if (g_bEnabled)
-		if (CSGO)
-		{
-#if _DEBUG
-			LogDebug(false, "Event_RoundFreezeEnd - CSGO - Freeze Time: %i Warmup Period: %i", GetConVarInt(FindConVar("mp_freezetime")), GameRules_GetProp("m_bWarmupPeriod"));
-#endif
-			if (GetConVarInt(FindConVar("mp_freezetime")) > 0)
-				if (GameRules_GetProp("m_bWarmupPeriod") == 0)
-					g_bWaitRound = false;
-		}
-		else if ((CSTRIKE) && (GetConVarInt(FindConVar("mp_freezetime")) > 0))
-		{
-#if _DEBUG
-			LogDebug(false, "Event_RoundFreezeEnd - Freeztime Unpausing AFK");
-#endif
-			g_bWaitRound = false;
-		}
 	return Plugin_Continue;
 }
 
@@ -2060,13 +1727,6 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 			return Plugin_Continue;
 		}
 
-		if ((TF2) && (g_bTF2Arena))
-			if ((g_iPlayerTeam[client] == g_iSpec_Team) && (GetEntProp(client, Prop_Send, "m_bArenaSpectator") == 0)) // Arena Waiting Mode
-			{
-				g_iAFKTime[client]++;
-				return Plugin_Continue;
-			}
-
 		if ((bMovePlayers == false) && (bKickPlayers == false)) // Do we have enough players to start taking action
 		{
 			g_iAFKTime[client]++;
@@ -2079,7 +1739,7 @@ public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 #if _DEBUG > 1
 		LogDebug(false, "Timer_CheckPlayer - Client: %i Team: %i", client, g_iPlayerTeam[client]);
 #endif
-		if ((Synergy) || ((g_iPlayerTeam[client] != 0) && (g_iPlayerTeam[client] != g_iSpec_Team))) // Make sure player is not Unassigned or Spectator
+		if ((g_iPlayerTeam[client] != 0) && (g_iPlayerTeam[client] != g_iSpec_Team)) // Make sure player is not Unassigned or Spectator
 			if (!IsPlayerAlive(client) && (g_bExcludeDead)) // Excluding Dead players
 			{
 #if _DEBUG
@@ -2308,59 +1968,9 @@ Action MoveAFKClient(int client, bool Advertise=true) // Move AFK Client to Spec
 	if (GetConVarBool(hCvarLogMoves))
 		LogToFile(AFKM_LogFile, "%T", "Move_Log", LANG_SERVER, client);
 
-	if ((CSTRIKE) || (CSGO) || GESOURCE) // Kill Player so round ends properly, this is Valve's normal method.
-	{
-		if (g_iPlayerTeam[client] == 0)
-			FakeClientCommand(client, "joingame");
-		else
-			ForcePlayerSuicide(client);
-	}
-	else if (GESOURCE)
-		ForcePlayerSuicide(client);
+	ChangeClientTeam(client, g_iSpec_Team); // Move AFK Player to Spectator
 
-	if (TF2)
-	{
-		// Fix for TF2 Intelligence
-		int iEnt = -1;
-		while ((iEnt = FindEntityByClassname(iEnt, "item_teamflag")) > -1) {
-			if (IsValidEntity(iEnt))
-			{
-				if (GetEntPropEnt(iEnt, Prop_Data, "m_hMoveParent") == client)
-				{
-					AcceptEntityInput(iEnt, "ForceDrop");
-				}
-			}
-		}
-
-		if (g_bTF2Arena)
-		{
-			ForcePlayerSuicide(client);
-			// Arena Spectator Fix by Rothgar
-			//SetEntProp(client, Prop_Send, "m_nNextThinkTick", -1);
-			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", 0);
-			SetEntProp(client, Prop_Send, "m_bArenaSpectator", 1);
-			ChangeClientTeam(client, g_iSpec_Team);
-/*
-			if (GetConVarBool(FindConVar("tf_arena_use_queue")))
-				FakeClientCommand(client,"jointeam %d", "spectatearena");
-			else
-				FakeClientCommand(client,"jointeam %d", g_iSpec_Team);
-*/
-		} else {
-			ForcePlayerSuicide(client);
-			ChangeClientTeam(client, g_iSpec_Team); // Move AFK Player to Spectator
-		}
-	}
-	else
-		ChangeClientTeam(client, g_iSpec_Team); // Move AFK Player to Spectator
-
-	if (CSGO)
-	{
-		SetEntData(client, FindSendPropInfo("CCSPlayer", "m_unMusicID") - 45, 0, 1, true); // Fix by Asherkin
-		//SetEntData(client, FindSendPropInfo("CCSPlayer", "m_unMusicID") - 21, 0, 1, true); // Fix by Asherkin
-	}
-
-	return Plugin_Continue; // Check This?
+	return Plugin_Continue;
 }
 
 Action KickAFKClient(int client) // Kick AFK Client
