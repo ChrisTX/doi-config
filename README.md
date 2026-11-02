@@ -2,17 +2,21 @@
 
 [![Checks](https://github.com/ChrisTX/doi-config/actions/workflows/check.yml/badge.svg)](https://github.com/ChrisTX/doi-config/actions/workflows/check.yml)
 
-This is the configuration for the Kim Jong Un servers.
+The configuration of the Kim Jong Un Day of Infamy servers: the game and
+SourceMod settings of each game mode, the MOTDs, the scripts that install and
+update a server, and the systemd units that run and monitor it.
+
+For players, [docs/Clients.md](docs/Clients.md) covers the client settings the
+servers need.
 
 ## Usage
 
-In order to use this configuration, clone it in your `doi/cfg` folder, i.e. as
-`doi/cfg/doi-config`. It's not possible in Source configs to handle paths
-dynamically, thus the location cannot be changed.
+Clone this repository into the `doi/cfg` folder of the server, as
+`doi/cfg/doi-config`. Source configs can't resolve paths dynamically, so the
+configuration only works at that location.
 
-Afterwards, create a server config that loads the `init-<gamemode>.cfg` config
-files. For example, for the Coop Commando configuration set, your `server.cfg`
-might look like this:
+Then create a `server.cfg` that sets the server's name and runs one of the
+`init-<config>.cfg` files. For the Coop Commando configuration, for example:
 
 ```text
 hostname "MY-SERVER-NAME"
@@ -21,34 +25,67 @@ rcon_password "MY-PASSWORD"
 exec doi-config/init-coop-commando.cfg
 ```
 
-The included `prepare_server.sh` can be used to start up the server and perform
-most automatic tasks. It will update SourceMod, Metamod:Source, SourceBans, and
-etc., as well as install symbolic links to the Git folder where needed.
+The workshop ID file of the configuration in the `configs` folder has to be
+passed to SRCDS on the command line with `sv_workshop_list_file`, as it can't be
+changed once the server is running.
 
-If `prepare_server.sh` is being called with a second parameter, it will
-interpret that parameter as a server config (in the `texts` folder) should be
-used.
-By defining the `RCON_PASSWORD` environment variable, `prepare_server.sh` will
-also create an appropriate `rcon.cfg` and include it.
+### `prepare_server.sh`
 
-Lastly, the appropriate workshop ID file in the `configs` folder for the server
-has to be passed on commandline to SRCDS via `sv_workshop_list_file`. It's not
-possible to set this dynamically after launch, unfortunately.
+`scripts/prepare_server.sh` sets up or updates a server before it starts:
+
+```bash
+scripts/prepare_server.sh <server folder> [<config>]
+```
+
+It installs or updates the game with SteamCMD, clones or pulls this repository
+into `doi/cfg/doi-config`, and installs the latest Metamod:Source and SourceMod
+together with the plugins the configuration uses (SourceBans++, Advertisements,
+AFK Manager and their dependencies). It then links the mods, game mode configs
+and plugins of this repository into the server and compiles the plugins.
+
+`<config>` names one of the server configs in the `texts` folder, e.g.
+`coop-commando` for `texts/server_coop-commando.cfg`. That config becomes the
+server's `server.cfg`, and the matching `texts/motd_<config>.txt` its MOTD. The
+`SERVER_CONFIG_NAME` environment variable can name the config instead. Without
+either, the server needs a `server.cfg` of its own, as described above.
+
+If the `RCON_PASSWORD` environment variable is set, the script writes it to
+`rcon.cfg` and runs that from `server.cfg`.
+
+### Running with systemd
+
+The `systemd` folder has user units for running the servers, one instance per
+config:
+
+- `doi-server@<config>.service` runs the server in
+  `~/servers/dayofinfamy-<config>`, after running `prepare_server.sh` from this
+  repository in `~/doi-config`. Its ports, startup map, workshop ID file, theater
+  and password come from `~/.config/systemd/user/doi-server@<config>.env`
+  (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`, `STARTUP_MAP`, `WORKSHOP_IDS_FILE`,
+  `THEATER`, `SERVER_PASSWORD`). The contents of `~/doi-secrets`, like the
+  database credentials of SourceMod and SourceBans++, are copied into the
+  server's `doi` folder before it starts.
+- `doi-server-restart@<config>.timer` restarts the server every day at 06:00,
+  which also updates it.
+- `check_srcds_monitor@<config>.service` queries the server every 30 seconds and
+  restarts it once it stops answering. Its settings come from
+  `~/.config/systemd/user/check_srcds_monitor@<config>.env`, see
+  `monitor/check_srcds_monitor@coop-commando.env` for an example.
+
+## Server notes
 
 ### Engine hunk overflow
 
-The configuration includes a setting of `r_hunkalloclightmaps 0` to prevent
-crashes with large maps like `ardennes`. Community made maps of that size
-contain significant lightmap data, and will otherwise experience what's known
-as an [Engine Hunk
-Overflow](https://developer.valvesoftware.com/wiki/Engine_Hunk_Overflow). Under
-certain circumstances, like loading such a map as the default server map, it
-might be necessary to add this to the server launch parameters.
+The configuration sets `r_hunkalloclightmaps 0`, which prevents crashes on large
+maps like `ardennes`. Community maps of that size contain a lot of lightmap data
+and otherwise crash the server with an [Engine Hunk
+Overflow](https://developer.valvesoftware.com/wiki/Engine_Hunk_Overflow). In
+some cases, like when such a map is the server's startup map, the setting also
+has to be passed on the server's command line, as `doi-server@.service` does.
 
 ### Libraries (Linux)
 
-The game server requires certain 32-bit libraries being installed on Linux.
-These are
+The game server needs the following 32-bit libraries on Linux:
 
 ```text
 glibc
@@ -58,11 +95,12 @@ SDL2
 zlib
 ```
 
-It is possible to replace SDL2 with the `sdl2-compat` compatibility layer that
-implements SDL2 atop SDL3.
+SDL2 can be replaced with `sdl2-compat`, which implements SDL2 on top of SDL3.
+`prepare_server.sh` removes the outdated copies of libgcc, libstdc++, libogg and
+libvorbis that come with the game, so the system's libraries are used instead.
 
-The Steam Client library has the following additional possible dependencies,
-which are however only loaded by client apps and not servers:
+The Steam client library can load these libraries as well, but only in the game
+client, not in a server:
 
 ```text
 SDL3
@@ -70,7 +108,7 @@ libX11
 PulseAudio (libpulse)
 ```
 
-The game server binaries contain references to the following libraries as well:
+The game server binaries also reference these libraries:
 
 ```text
 OpenAL
@@ -79,54 +117,39 @@ freetype2
 fontconfig
 ```
 
-These libraries would only be loaded by the client code paths in `engine.so`,
-and thus if the game asks for any of them, there's something going wrong. In
-particular, this happened when BattlEye got removed from the game with [in
-2025](https://steamdb.info/depot/462311/history/?changeid=M:9106077001589815964)
-until resolved the next day in [a second
-update](https://steamdb.info/depot/462311/history/?changeid=M:1007577009454669389).
+Only the client code paths in `engine.so` load them, so if a server asks for any
+of them, something is wrong. This happened when an update removed BattlEye from
+the game [in
+2025](https://steamdb.info/depot/462311/history/?changeid=M:9106077001589815964),
+until [a second
+update](https://steamdb.info/depot/462311/history/?changeid=M:1007577009454669389)
+fixed it the next day.
 
 ### Tickrate
 
-The tickrate for Day of Infamy should not be changed. While it's possible to run
-with 128 tick, the game never supported this properly. In particular, at 128
-tick, throwables like grenades will start to bounce excessively. Effectively,
-the game physics break down, even if the game otherwise runs fine.
+Don't change the tickrate of Day of Infamy. The game can run at 128 tick, but
+never supported it properly: throwables like grenades start to bounce
+excessively, and the game's physics break down in general, even if everything
+else seems fine.
 
 ### Difficulty scaler
 
-Included is a SourceMod plugin that automatically adjusts the bot count
-depending on the amount of players, independent from map scripting. For this to
-work, the currently active game mode needs to have a `server_<gamemode>.cfg` as
-it should have from the `gamemodes` folder.
+The `doi_difficulty_scaler` SourceMod plugin adjusts the number of bots to the
+number of players, independently of the map's scripting. For this to work, the
+active game mode needs its `server_<gamemode>.cfg` from the `configs/gamemodes`
+folder, which `prepare_server.sh` links into the server.
 
 ### Server patch
 
-In order to enable stats with custom content and the playlist restrictions not
-to apply, the provided `engine_srv.so` in the `server-patch` directory has to be
-copied into `doi/bin`. It has been modified to not enforce the aforementioned
-restrictions.
-
-### SourceMod keybinds
-
-The admin menu `sm_admin` requires the keys 6 to 0 to be bound. Add the
-following to your client configuration (`config.cfg`):
-
-```text
-bind "6" "slot6"
-bind "7" "slot7"
-bind "8" "slot8"
-bind "9" "slot9"
-bind "0" "slot10"
-```
+`server-patch/server_srv.so` is a modified game server library that enables
+stats with custom content and lifts the playlist restrictions.
+`prepare_server.sh` copies it into `doi/bin`.
 
 ### GeoIP2 databases
 
-Both SourceMod and the SourceBans web components use the MaxMindDB GeoIP2
-databases for some functionality. The packages of each include such MMDB files,
-but they've not been updated in years. A much cleaner solution is to install and
-configure [geoipupdate](https://github.com/maxmind/geoipupdate). This tool needs
-a free registration with MaxMind, but with that it will provide the latest and
-greated GeoIP2 databases in `/var/lib/GeoIP`. The `prepare_server.sh` and
-`deploy_sourcebans.sh` scripts include logic to symlink the GeoIP2 databases
-from that location if available.
+SourceMod and the SourceBans++ web panel both use MaxMind's GeoIP2 databases.
+Both ship MMDB files, but those haven't been updated in years. Instead, install
+and configure [geoipupdate](https://github.com/maxmind/geoipupdate), which needs
+a free MaxMind account and keeps current databases in `/var/lib/GeoIP`.
+`prepare_server.sh` and `deploy_sourcebans.sh` link the databases from there
+when they exist.

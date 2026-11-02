@@ -1,14 +1,14 @@
 # Day of Infamy client configuration
 
-## Client issues
+Settings for players of the servers, to fix crashes on large maps and to make
+SourceMod's menus work.
 
-### Engine hunk overflow
+## Engine hunk overflow
 
-Modder created maps, especially large ones like `ardennes`, can crash the game
-due to their size. This is due to an ancient Source game engine problem called
-an [Engine Hunk
-Overflow](https://developer.valvesoftware.com/wiki/Engine_Hunk_Overflow). Such
-an overflow causes the client to crash with an error message looking as follows:
+Community maps, especially large ones like `ardennes`, can crash the game when
+loading. This is an old Source engine problem known as an [Engine Hunk
+Overflow](https://developer.valvesoftware.com/wiki/Engine_Hunk_Overflow), and
+the crash looks like this:
 
 ```text
 --------------------------- Engine Error ---------------------------
@@ -16,17 +16,16 @@ Out of memory! Attempted to allocate 127401984 bytes
 --------------------------- OK ---------------------------
 ```
 
-Due to differences in memory limits between the 32-bit and 64-bit versions, this
-issue is practically only seen in the 32-bit game client or server. Thus, it's
-recommended to use the 64-bit game client or add `+r_hunkalloclightmaps 0` to
-your game launch options.
+The 64-bit game has much more memory available than the 32-bit one, so the
+crash practically only happens with the 32-bit game. Use the 64-bit game, or add
+`+r_hunkalloclightmaps 0` to the game's launch options in Steam.
 
-## Slot keybinds for menus
+## Keys for SourceMod menus
 
-SourceMod menus, like `sm_admin` require the keys 6 to 0 to be bound to
-commands. By default, the game only binds the keys 1 to 5 to slot commands, thus
-the menus will not work properly. Edit your `client.cfg` in the `doi/cfg` folder
-and add the following block
+SourceMod menus like the admin menu (`sm_admin`) use the keys 1 to 0 to pick
+an entry. The game only binds the keys 1 to 5, so the entries 6 to 10 can't be
+picked. To fix this, add the following lines to `client.cfg` in the `doi/cfg`
+folder of the game:
 
 ```text
 bind "6" "slot6"
