@@ -9,16 +9,18 @@
 # If the dbus Python bindings are not available, the script will fall back to systemctl.
 
 import argparse
-import os
-import time
-import subprocess
-import a2s
-import sys
 import bisect
+import importlib.util
+import os
 import socket
+import subprocess
+import sys
+import time
 from datetime import datetime
 from enum import Enum
-from typing import List, Tuple, Any
+from typing import Any
+
+import a2s
 
 
 class UnitScope(Enum):
@@ -32,11 +34,7 @@ class RestartFailed(Exception):
 
 def _have_dbus() -> bool:
     """Return True if python-dbus is available."""
-    try:
-        import dbus  # type: ignore
-    except Exception as e:
-        return False
-    return True
+    return importlib.util.find_spec("dbus") is not None
 
 
 class Monitor:
@@ -71,7 +69,7 @@ class Monitor:
         # per-monitor private state
         self._consecutive_failures = 0
         # monotonic timestamps of restart/start attempts (sorted ascending)
-        self._restart_timestamps_monotonic: List[float] = []
+        self._restart_timestamps_monotonic: list[float] = []
         # flag remembering whether the currently started process ever responded
         # this is used to ensure the server isn't still busy starting, for example downloading Workshop content
         self._proc_responded_after_start = False
@@ -86,22 +84,24 @@ class Monitor:
             raise ValueError("interval must be a positive number (seconds)")
         if not isinstance(self.timeout, (int, float)) or self.timeout <= 0:
             raise ValueError("timeout must be a positive number (seconds)")
-        if not isinstance(self.failure_threshold,
-                          int) or self.failure_threshold < 1:
+        if not isinstance(self.failure_threshold, int) or self.failure_threshold < 1:
             raise ValueError("failure_threshold must be an integer >= 1")
-        if not isinstance(self.restart_cooldown,
-                          (int, float)) or self.restart_cooldown < 0:
-            raise ValueError(
-                "restart_cooldown must be a non-negative number (seconds)")
-        if not isinstance(self.max_restarts_per_hour,
-                          int) or self.max_restarts_per_hour < 0:
+        if (
+            not isinstance(self.restart_cooldown, (int, float))
+            or self.restart_cooldown < 0
+        ):
+            raise ValueError("restart_cooldown must be a non-negative number (seconds)")
+        if (
+            not isinstance(self.max_restarts_per_hour, int)
+            or self.max_restarts_per_hour < 0
+        ):
             raise ValueError(
                 "max_restarts_per_hour must be an integer >= 0 (0 means unlimited)"
             )
         if not self.systemd_unit:
             raise ValueError("systemd_unit must be provided and non-empty")
         if not isinstance(self.unit_scope, UnitScope):
-            raise ValueError("unit_scope must be a UnitScope enum value")
+            raise TypeError("unit_scope must be a UnitScope enum value")
 
     def _log(self, *parts) -> None:
         """Log with local timezone-aware ISO timestamp prefixed."""
@@ -112,80 +112,88 @@ class Monitor:
     def _get_dbus_bus(self) -> Any:
         """Return the appropriate bus instance based on unit_scope."""
         import dbus
-        bus = dbus.SessionBus(
-        ) if self.unit_scope == UnitScope.USER else dbus.SystemBus()
+
+        bus = (
+            dbus.SessionBus() if self.unit_scope == UnitScope.USER else dbus.SystemBus()
+        )
         return bus
 
     def _get_systemd_manager(self) -> Any:
         """Return the appropriate systemd Manager instance based on unit_scope."""
+        import dbus
+
         try:
-            import dbus
             bus = self._get_dbus_bus()
-            systemd_obj = bus.get_object("org.freedesktop.systemd1",
-                                         "/org/freedesktop/systemd1")
-            return dbus.Interface(systemd_obj,
-                                  "org.freedesktop.systemd1.Manager")
-        except Exception as e:
+            systemd_obj = bus.get_object(
+                "org.freedesktop.systemd1", "/org/freedesktop/systemd1"
+            )
+            return dbus.Interface(systemd_obj, "org.freedesktop.systemd1.Manager")
+        except dbus.exceptions.DBusException as e:
             raise RestartFailed(
-                f"Error acquiring systemd Manager via D-Bus: {e}")
+                f"Error acquiring systemd Manager via D-Bus: {e}"
+            ) from e
 
     def _get_systemd_unit(self) -> Any:
         """Return the appropriate systemd Unit instance based on unit_scope."""
+        import dbus
+
         try:
             bus = self._get_dbus_bus()
             manager = self._get_systemd_manager()
             unit_path = manager.GetUnit(self.systemd_unit)
             return bus.get_object("org.freedesktop.systemd1", unit_path)
-        except Exception as e:
-            raise RestartFailed(f"Error acquiring systemd Unit via D-Bus: {e}")
+        except dbus.exceptions.DBusException as e:
+            raise RestartFailed(f"Error acquiring systemd Unit via D-Bus: {e}") from e
 
     # --- Unit properties via D-Bus and systemctl --- #
-    def _unit_properties_via_dbus(self, properties: List[str]) -> dict:
+    def _unit_properties_via_dbus(self, properties: list[str]) -> dict:
         """Return a dictionary of properties of the systemd Unit via DBus."""
         if len(properties) == 0:
             # We can fast fail in this case, as this can only happen in case of a serious bug
-            print("Error: Program requested an empty list of properties",
-                  file=sys.stderr)
+            print(
+                "Error: Program requested an empty list of properties", file=sys.stderr
+            )
             sys.exit(1)
+        import dbus
+
         try:
-            import dbus
             unit_obj = self._get_systemd_unit()
-            props_iface = dbus.Interface(unit_obj,
-                                         "org.freedesktop.DBus.Properties")
+            props_iface = dbus.Interface(unit_obj, "org.freedesktop.DBus.Properties")
             props_values = {}
             for prop in properties:
                 props_values[prop] = props_iface.Get(
-                    "org.freedesktop.systemd1.Unit", prop)
+                    "org.freedesktop.systemd1.Unit", prop
+                )
             return props_values
-        except Exception as e:
-            raise RestartFailed(f"Error querying properties via D-Bus: {e}")
+        except dbus.exceptions.DBusException as e:
+            raise RestartFailed(f"Error querying properties via D-Bus: {e}") from e
 
-    def _unit_properties_via_systemctl(self, properties: List[str]) -> dict:
+    def _unit_properties_via_systemctl(self, properties: list[str]) -> dict:
         """Return a dictionary of properties of the systemd Unit via systemctl."""
         if len(properties) == 0:
             # We can fast fail in this case, as this can only happen in case of a serious bug
-            print("Error: Program requested an empty list of properties",
-                  file=sys.stderr)
+            print(
+                "Error: Program requested an empty list of properties", file=sys.stderr
+            )
             sys.exit(1)
         cmd_base = ["systemctl"]
         if self.unit_scope == UnitScope.USER:
             cmd_base += ["--user"]
-        cmd_base += ["show", "-p"]
+        # --value prints the bare value instead of Property=value
+        cmd_base += ["show", "--value", "-p"]
         props_values = {}
         for prop in properties:
             cmd = cmd_base + [prop, self.systemd_unit]
-            proc = subprocess.run(cmd,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
+            proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
             if proc.returncode != 0:
                 raise RestartFailed(
-                    proc.stderr.strip() or
-                    f"Error checking unit state via systemctl: {proc.returncode}"
+                    proc.stderr.strip()
+                    or f"Error checking unit state via systemctl: {proc.returncode}"
                 )
             props_values[prop] = proc.stdout.strip()
         return props_values
 
-    def get_unit_properties(self, properties: List[str]) -> dict:
+    def get_unit_properties(self, properties: list[str]) -> dict:
         """Retrieve unit properties using D-Bus if possible, otherwise fallback to systemctl."""
         if _have_dbus():
             return self._unit_properties_via_dbus(properties)
@@ -199,11 +207,13 @@ class Monitor:
     # --- Restart via D-Bus and systemctl --- #
     def _restart_unit_via_dbus(self) -> None:
         """Restart unit using D-Bus RestartUnit."""
+        import dbus
+
         try:
             manager = self._get_systemd_manager()
             manager.RestartUnit(self.systemd_unit, "replace")
-        except Exception as e:
-            raise RestartFailed(f"Error starting unit via D-Bus: {e}")
+        except dbus.exceptions.DBusException as e:
+            raise RestartFailed(f"Error starting unit via D-Bus: {e}") from e
 
     def _restart_unit_via_systemctl(self) -> None:
         """Fallback to systemctl start; raise RestartFailed on error."""
@@ -212,16 +222,14 @@ class Monitor:
             cmd += ["--user"]
         cmd += ["restart", self.systemd_unit]
 
-        proc = subprocess.run(cmd,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE,
-                              text=True,
-                              check=False,
-                              timeout=30)
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, check=False, timeout=30
+        )
         if proc.returncode != 0:
             raise RestartFailed(
                 proc.stderr.strip()
-                or f"Error restarting unit via systemctl: {proc.returncode}")
+                or f"Error restarting unit via systemctl: {proc.returncode}"
+            )
 
     def _restart_unit(self) -> None:
         """Start the unit via D-Bus if available, or via systemctl otherwise.
@@ -247,9 +255,10 @@ class Monitor:
         idx = bisect.bisect_left(self._restart_timestamps_monotonic, cutoff)
         if idx:
             self._restart_timestamps_monotonic[:] = self._restart_timestamps_monotonic[
-                idx:]
+                idx:
+            ]
 
-    def is_restart_allowed(self) -> Tuple[bool, str]:
+    def is_restart_allowed(self) -> tuple[bool, str]:
         """Return (True, reason) if allowed to restart now, otherwise (False, reason)."""
         self.prune_restart_timestamps()
 
@@ -263,22 +272,34 @@ class Monitor:
             case "activating" | "deactivating" | "refreshing" | "reloading":
                 return False, f"unit is in a transitional state {active_state}"
             case "maintenance":
-                return False, f"unit is in maintenance"
+                return False, "unit is in maintenance"
             case "active":
                 if not self._proc_responded_after_start:
-                    return False, "current unit process has not responded yet; likely in startup"
+                    return (
+                        False,
+                        "current unit process has not responded yet; likely in startup",
+                    )
 
                 if self._restart_timestamps_monotonic:
-                    elapsed_since_last = time.monotonic(
-                    ) - self._restart_timestamps_monotonic[-1]
+                    elapsed_since_last = (
+                        time.monotonic() - self._restart_timestamps_monotonic[-1]
+                    )
                     if elapsed_since_last < self.restart_cooldown:
-                        return False, f"cooldown ({int(self.restart_cooldown - elapsed_since_last)}s remaining)"
+                        return (
+                            False,
+                            f"cooldown ({int(self.restart_cooldown - elapsed_since_last)}s remaining)",
+                        )
 
                 # If max_restarts_per_hour is 0, interpret it as "unlimited"
-                if self.max_restarts_per_hour > 0 and len(
-                        self._restart_timestamps_monotonic
-                ) >= self.max_restarts_per_hour:
-                    return False, f"rate limit reached ({len(self._restart_timestamps_monotonic)} restarts in last hour)"
+                if (
+                    self.max_restarts_per_hour > 0
+                    and len(self._restart_timestamps_monotonic)
+                    >= self.max_restarts_per_hour
+                ):
+                    return (
+                        False,
+                        f"rate limit reached ({len(self._restart_timestamps_monotonic)} restarts in last hour)",
+                    )
 
                 return True, "restart allowed"
             case _:
@@ -294,13 +315,12 @@ class Monitor:
             return False
 
         # Try D-Bus RestartUnit first, fallback to systemctl restart on failure.
-        self._log("Attempting RestartUnit via D-Bus for unit",
-                  self.systemd_unit)
+        self._log("Attempting RestartUnit via D-Bus for unit", self.systemd_unit)
         try:
             self._restart_unit()
         except Exception as e:
             self._log("Restart failed after start attempt:", str(e))
-            raise e
+            raise
 
         self._log("Restart of unit succeeded:", self.systemd_unit)
         return True
@@ -312,9 +332,7 @@ class Monitor:
         # If the unit is currently in a transitional state, we wait it out
         active_state = self.get_unit_state()
         time_waited = 0
-        while active_state in [
-                "activating", "deactivating", "reloading", "refreshing"
-        ]:
+        while active_state in ["activating", "deactivating", "reloading", "refreshing"]:
             if time_waited >= 300:
                 raise RuntimeError(
                     f"Unit {self.systemd_unit} has been in state {active_state} over {time_waited}s"
@@ -330,33 +348,39 @@ class Monitor:
 
         match active_state:
             case "maintenance":
-                self._log("Unit is in maintenance; refusing restart:",
-                          self.systemd_unit)
+                self._log(
+                    "Unit is in maintenance; refusing restart:", self.systemd_unit
+                )
             case "inactive":
                 self._log(
                     "Unit is inactive, but not failed; refusing restart:",
-                    self.systemd_unit)
+                    self.systemd_unit,
+                )
             case "failed":
-                self._log("Unit has failed; restart handled by systemd:",
-                          self.systemd_unit)
+                self._log(
+                    "Unit has failed; restart handled by systemd:", self.systemd_unit
+                )
             case "active":
                 # Unit is active -> perform A2S query
                 try:
-                    info = a2s.info((self.server_host, self.port),
-                                    timeout=self.timeout)
+                    info = a2s.info((self.server_host, self.port), timeout=self.timeout)
                     self._log(
-                        "OK", f"{self.server_host}:{self.port}",
+                        "OK",
+                        f"{self.server_host}:{self.port}",
                         f"players: {info.player_count}/{info.max_players}",
-                        f"map: {info.map_name}")
+                        f"map: {info.map_name}",
+                    )
                     self._consecutive_failures = 0
                     self._proc_responded_after_start = True
-                except Exception as e:
+                # Whatever goes wrong with the query, the server didn't answer
+                except Exception as e:  # noqa: BLE001
                     if self._proc_responded_after_start:
                         self._consecutive_failures += 1
                         self._log(
                             "ERROR querying server:",
-                            f"{self.server_host}:{self.port}", str(e),
-                            f"(consecutive failures={self._consecutive_failures})"
+                            f"{self.server_host}:{self.port}",
+                            str(e),
+                            f"(consecutive failures={self._consecutive_failures})",
                         )
 
                         # If we've reached the failure threshold, try to restart the unit.
@@ -385,50 +409,61 @@ class Monitor:
 def parse_args() -> argparse.Namespace:
     """Initialise the commandline argument parser."""
     p = argparse.ArgumentParser(
-        description=
-        "SRCDS monitor that restarts/starts a systemd unit when the server is down."
+        description="SRCDS monitor that restarts/starts a systemd unit when the server is down."
     )
     # rename host -> server-host for clarity; fallback to env SERVER_HOST, otherwise current hostname
     p.add_argument(
         "--server-host",
         help="SRCDS host/IP (or set SERVER_HOST env)",
-        default=os.getenv("SERVER_HOST", socket.gethostname())
+        default=os.getenv("SERVER_HOST", socket.gethostname()),
     )
-    p.add_argument("--port",
-                   type=int,
-                   help="SRCDS query port",
-                   default=int(os.getenv("SERVER_PORT", "27015")))
+    p.add_argument(
+        "--port",
+        type=int,
+        help="SRCDS query port",
+        default=int(os.getenv("SERVER_PORT", "27015")),
+    )
     p.add_argument(
         "--systemd-unit",
-        help=
-        "systemd unit to control (e.g. my-server@instance.service or my-server.service)",
-        default=os.getenv("SERVER_UNIT")
+        help="systemd unit to control (e.g. my-server@instance.service or my-server.service)",
+        default=os.getenv("SERVER_UNIT"),
     )
-    p.add_argument("--interval",
-                   type=float,
-                   help="seconds between checks",
-                   default=float(os.getenv("INTERVAL", "30")))
-    p.add_argument("--timeout",
-                   type=float,
-                   help="a2s socket timeout (seconds)",
-                   default=float(os.getenv("TIMEOUT", "5")))
-    p.add_argument("--failure-threshold",
-                   type=int,
-                   help="consecutive failed queries before restart/start",
-                   default=int(os.getenv("FAILURE_THRESHOLD", "3")))
-    p.add_argument("--restart-cooldown",
-                   type=float,
-                   help="seconds to wait between restarts (monotonic)",
-                   default=float(os.getenv("RESTART_COOLDOWN", "300")))
+    p.add_argument(
+        "--interval",
+        type=float,
+        help="seconds between checks",
+        default=float(os.getenv("INTERVAL", "30")),
+    )
+    p.add_argument(
+        "--timeout",
+        type=float,
+        help="a2s socket timeout (seconds)",
+        default=float(os.getenv("TIMEOUT", "5")),
+    )
+    p.add_argument(
+        "--failure-threshold",
+        type=int,
+        help="consecutive failed queries before restart/start",
+        default=int(os.getenv("FAILURE_THRESHOLD", "3")),
+    )
+    p.add_argument(
+        "--restart-cooldown",
+        type=float,
+        help="seconds to wait between restarts (monotonic)",
+        default=float(os.getenv("RESTART_COOLDOWN", "300")),
+    )
     p.add_argument(
         "--max-restarts-per-hour",
         type=int,
         help="max restarts allowed in rolling 1-hour window (0 = unlimited)",
-        default=int(os.getenv("MAX_RESTARTS_PER_HOUR", "0")))
-    p.add_argument("--unit-scope",
-                   choices=("user", "system"),
-                   help="control a user or system unit",
-                   default=os.getenv("SERVER_UNIT_SCOPE", "user"))
+        default=int(os.getenv("MAX_RESTARTS_PER_HOUR", "0")),
+    )
+    p.add_argument(
+        "--unit-scope",
+        choices=("user", "system"),
+        help="control a user or system unit",
+        default=os.getenv("SERVER_UNIT_SCOPE", "user"),
+    )
     return p.parse_args()
 
 
@@ -439,31 +474,34 @@ def main() -> None:
     if not args.server_host:
         print(
             "Error: --server-host must be provided (or set SERVER_HOST env in systemd EnvironmentFile).",
-            file=sys.stderr)
+            file=sys.stderr,
+        )
         sys.exit(2)
     if not args.systemd_unit:
         print(
             "Error: --systemd-unit must be provided (or set SERVER_UNIT env in systemd EnvironmentFile).",
-            file=sys.stderr)
+            file=sys.stderr,
+        )
         sys.exit(2)
 
     try:
         unit_scope_enum = UnitScope(args.unit_scope)
     except ValueError:
-        print("Error: --unit-scope must be 'user' or 'system'",
-              file=sys.stderr)
+        print("Error: --unit-scope must be 'user' or 'system'", file=sys.stderr)
         sys.exit(2)
 
     try:
-        monitor = Monitor(server_host=args.server_host,
-                          port=args.port,
-                          systemd_unit=args.systemd_unit,
-                          interval=args.interval,
-                          timeout=args.timeout,
-                          failure_threshold=args.failure_threshold,
-                          restart_cooldown=args.restart_cooldown,
-                          max_restarts_per_hour=args.max_restarts_per_hour,
-                          unit_scope=unit_scope_enum)
+        monitor = Monitor(
+            server_host=args.server_host,
+            port=args.port,
+            systemd_unit=args.systemd_unit,
+            interval=args.interval,
+            timeout=args.timeout,
+            failure_threshold=args.failure_threshold,
+            restart_cooldown=args.restart_cooldown,
+            max_restarts_per_hour=args.max_restarts_per_hour,
+            unit_scope=unit_scope_enum,
+        )
     except ValueError as ve:
         print(f"Configuration error: {ve}", file=sys.stderr)
         sys.exit(2)

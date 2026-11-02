@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-cd ~
+cd ~ || exit
 if [ -d "repo" ]; then
 	rm -rf repo
 fi
