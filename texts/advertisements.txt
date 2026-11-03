@@ -3,7 +3,7 @@
 //
 // Types
 // -----
-// center: Center message
+// center: Centre message
 // chat: Chat message
 // hint: Hint message
 // menu: Menu message - WARNING: blocks numrow key inputs while active.

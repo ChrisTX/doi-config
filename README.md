@@ -156,11 +156,11 @@ a free MaxMind account and keeps current databases in `/var/lib/GeoIP`.
 `prepare_server.sh` and `deploy_sourcebans.sh` link the databases from there
 when they exist.
 
-## License
+## Licence
 
 The configuration, scripts and units are licensed under the [MIT](LICENSE)
-license. The SourceMod plugins written for these servers, `doi_cvar_unlocker`
-and `doi_difficulty_scaler`, are available under the MIT license or the
+licence. The SourceMod plugins written for these servers, `doi_cvar_unlocker`
+and `doi_difficulty_scaler`, are available under the MIT licence or the
 GPL-3.0-only with SourceMod's linking exception, at your choice, so they can be
 used in other SourceMod projects either way.
 

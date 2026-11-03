@@ -40,6 +40,10 @@ GitHub Actions runs the same checks on every push and pull request.
 - Every file has copyright and licence information, checked by `reuse lint`. Files of this repository are MIT, which `REUSE.toml` covers. A file under another licence, like the vendored AFK Manager, says so in an SPDX header or gets its own annotation in `REUSE.toml`.
 - Built files like `.smx` plugins don't belong into the repository, they're built on the server by `prepare_server.sh`. The patched server binary in `server-patch/` is the exception.
 
+## Writing
+
+- Texts are in British English: documentation, comments, commit messages and what players see, like the MOTDs and advertisements. Names keep their spelling, e.g. cvars, keywords of file formats, the game's terms like "theater", and texts from upstream like the licence texts and vendored code.
+
 ## Commits
 
 - One commit per logical change.

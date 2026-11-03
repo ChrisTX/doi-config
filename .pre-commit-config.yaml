@@ -67,7 +67,7 @@ repos:
         types: [markdown]
 
       # The formatters take care of the indentation of the languages they know, the indent size of the
-      # game's configuration files is up to the author. Patches and license texts stay as they are.
+      # game's configuration files is up to the author. Patches and licence texts stay as they are.
       - id: editorconfig-checker
         name: editorconfig-checker (editorconfig-checker)
         language: system
