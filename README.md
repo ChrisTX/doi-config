@@ -164,7 +164,7 @@ and `doi_difficulty_scaler`, are available under the MIT license or the
 GPL-3.0-only with SourceMod's linking exception, at your choice, so they can be
 used in other SourceMod projects either way.
 
-AFK Manager, vendored in the `sourcemod` folder together with its
+AFK Manager, vendored in the `sourcemod` folder together with its include,
 translations and configuration, is licensed under the GPL-3.0-only with
 SourceMod's linking exception, like its earlier versions. The map files in
 `mods` and the patched server binary in `server-patch` come from the game and

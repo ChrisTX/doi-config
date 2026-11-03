@@ -58,14 +58,14 @@
 #define OBS_MODE_ROAMING	6
 
 /**
- * Specifies AFK immunity types.
+ * Specifies AFK immunity types. Keep this in sync with include/afk_manager.inc.
  */
-enum AFKImmunity:
+enum AFKImmunity
 {
 	AFKImmunity_None = 0,
 	AFKImmunity_Move = 1,
 	AFKImmunity_Kick = 2,
-	AFKImmunity_Full = 3,
+	AFKImmunity_Full = 3
 };
 
 // Defines

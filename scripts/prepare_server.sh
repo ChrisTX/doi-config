@@ -69,6 +69,10 @@ for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
 	smscript_file="${smscript##*/}"
 	ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
 done
+for sminclude in doi/cfg/doi-config/sourcemod/include/*.inc; do
+	sminclude_file="${sminclude##*/}"
+	ln -sf ../../../../cfg/doi-config/sourcemod/include/"$sminclude_file" doi/addons/sourcemod/scripting/include/"$sminclude_file"
+done
 for smtranslation in doi/cfg/doi-config/sourcemod/translations/*.txt; do
 	smtranslation_file="${smtranslation##*/}"
 	ln -sf ../../../cfg/doi-config/sourcemod/translations/"$smtranslation_file" doi/addons/sourcemod/translations/"$smtranslation_file"
