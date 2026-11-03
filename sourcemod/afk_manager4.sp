@@ -1390,6 +1390,17 @@ public Action Event_PlayerDeathPost(Event event, const char[] name, bool dontBro
 // Timers
 public Action Timer_CheckPlayer(Handle Timer, int client) // General AFK Timers
 {
+	Action result = CheckPlayer(client);
+
+	// Plugin_Stop, which another plugin can return for the AFK move or kick events, ends the timer
+	if (result == Plugin_Stop)
+		g_hAFKTimer[client] = null;
+
+	return result;
+}
+
+Action CheckPlayer(int client)
+{
 #if _DEBUG
 	LogDebug(false, "Timer_CheckPlayer - Client: %i", client);
 #endif
