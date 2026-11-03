@@ -35,8 +35,8 @@ GitHub Actions runs the same checks on every push and pull request.
 - Python scripts are formatted with ruff and pass `ruff check`. Suppress a rule only where the code can't comply, with `# noqa: <rule>` and a comment saying why.
 - systemd units pass systemd-lsp, the GitHub files yamllint, Markdown files rumdl.
 - Everything follows `.editorconfig`, checked by editorconfig-checker. Formatters fix files themselves; run the check again afterwards.
-- The MOTDs in `texts/` keep their trailing whitespace, which the game needs to render them as intended.
-- The map files in `mods/` are copies of the game's own files and patches have to apply as they are, so both are left as they are, line endings included.
+- The MOTDs (`servers/*/motd.txt`) keep their trailing whitespace, which the game needs to render them as intended.
+- The map files in `game/custom/` are copies of the game's own files and patches have to apply as they are, so both are left as they are, line endings included.
 - Every file has copyright and licence information, checked by `reuse lint`. Files of this repository are MIT, which `REUSE.toml` covers. A file under another licence, like the vendored AFK Manager, says so in an SPDX header or gets its own annotation in `REUSE.toml`.
 - Built files like `.smx` plugins don't belong into the repository, they're built on the server by `prepare_server.sh`. The patched server binary in `server-patch/` is the exception.
 

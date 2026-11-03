@@ -3,14 +3,21 @@
 steamcmd +force_install_dir "$1" +login anonymous +app_update 462310 validate +quit
 
 cd "$1" || exit
-if [ -d "doi/cfg/doi-config" ]; then
-	git -C doi/cfg/doi-config pull
+
+# Remove the clone inside doi/cfg and the links into it, which the old layout of the repository used
+if [[ -d doi/cfg/doi-config/.git ]]; then
+	find doi -lname '*doi-config/*' -delete
+	rm -rf doi/cfg/doi-config
+fi
+
+if [[ -d doi-config ]]; then
+	git -C doi-config pull
 else
-	git clone https://github.com/ChrisTX/doi-config.git doi/cfg/doi-config
+	git clone https://github.com/ChrisTX/doi-config.git doi-config
 fi
 
 # Apply server playlist unlock patch
-cp doi/cfg/doi-config/server-patch/server_srv.so doi/bin/server_srv.so
+cp doi-config/server-patch/server_srv.so doi/bin/server_srv.so
 
 # Remove the shipped, outdated standard libraries
 rm bin/libgcc_s.so.1
@@ -18,22 +25,8 @@ rm bin/libstdc++.so.6
 rm bin/libogg.so
 rm bin/libvorbis.so
 
-# Add included mods
-mkdir -p doi/custom
-for modfolder in doi/cfg/doi-config/mods/*/; do
-	modfolder_path="${modfolder%*/}"
-	modfolder_name="${modfolder_path##*/}"
-	ln -sfn ../cfg/doi-config/mods/"$modfolder_name" doi/custom/"$modfolder_name"
-done
-
-# Create config symlinks
-for gameconfig in doi/cfg/doi-config/configs/gamemodes/*.cfg; do
-	gameconfig_file="${gameconfig##*/}"
-	ln -sf doi-config/configs/gamemodes/"$gameconfig_file" doi/cfg/"$gameconfig_file"
-done
-
 # Remove all theater VPKs to ensure they update
-./doi/cfg/doi-config/scripts/wscache_deleter.py -p "$PWD" -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
+./doi-config/tools/wscache_deleter.py -p "$PWD" -i 3627608872 3591171916 3545048108 3431251359 3431242570 3431236539
 
 # Update metamod source and sourcemod
 # The secrets are provided in addons/sourcemod/configs/databases.cfg
@@ -64,19 +57,10 @@ rm sourcemod.tgz
 # This isn't supported yet via HTTPS either according to the core.cfg comment.
 sed -i -E "s/(\"DisableAutoUpdate\"\s+)\"no\"/\1\"yes\"/" doi/addons/sourcemod/configs/core.cfg
 
-# Link included sourcemod scripts
-for smscript in doi/cfg/doi-config/sourcemod/*.sp; do
-	smscript_file="${smscript##*/}"
-	ln -sf ../../../cfg/doi-config/sourcemod/"$smscript_file" doi/addons/sourcemod/scripting/"$smscript_file"
-done
-for sminclude in doi/cfg/doi-config/sourcemod/include/*.inc; do
-	sminclude_file="${sminclude##*/}"
-	ln -sf ../../../../cfg/doi-config/sourcemod/include/"$sminclude_file" doi/addons/sourcemod/scripting/include/"$sminclude_file"
-done
-for smtranslation in doi/cfg/doi-config/sourcemod/translations/*.txt; do
-	smtranslation_file="${smtranslation##*/}"
-	ln -sf ../../../cfg/doi-config/sourcemod/translations/"$smtranslation_file" doi/addons/sourcemod/translations/"$smtranslation_file"
-done
+# Link the files of this repository's game folder into the server, which is laid out like it: the configs, mods,
+# SourceMod plugins, their translations and configs. Links to files that have since been removed go first.
+find doi -xtype l -lname "$PWD/doi-config/game/*" -delete
+cp -rs --remove-destination "$PWD"/doi-config/game/. doi/
 
 # Update GeoIP databases
 if [[ -f "/var/lib/GeoIP/GeoLite2-City.mmdb" ]]; then
@@ -109,12 +93,7 @@ git clone https://github.com/ErikMinekus/sm-advertisements.git
 cp -r sm-advertisements/addons/sourcemod/scripting doi/addons/sourcemod
 rm -rf sm-advertisements
 
-# Add our advertisements
-ln -sf ../../../cfg/doi-config/texts/advertisements.txt doi/addons/sourcemod/configs/advertisements.txt
-
-# Update AFK Manager
-ln -sf ../doi-config/configs/afk_manager.cfg doi/cfg/sourcemod/afk_manager.cfg
-# AFK Manager itself is part of the included sourcemod scripts
+# AFK Manager itself is part of this repository's game folder, it needs Multi-Colors
 git clone https://github.com/Bara/Multi-Colors.git
 cp -r Multi-Colors/addons/sourcemod/scripting/include doi/addons/sourcemod/scripting/include
 rm -rf Multi-Colors
@@ -165,21 +144,21 @@ done
 ../scripting/spcomp64 ../scripting/doi_difficulty_scaler.sp
 popd || exit
 
-pushd doi/cfg || exit
-
-# Install MOTDs if known to our config system
+# Install the server.cfg and MOTD of the server, if this repository has the server
 # Otherwise users need to make their own server.cfg loading init-...
-if [[ ! -n $SERVER_CONFIG_NAME && -f doi-config/texts/server_"$2".cfg ]]; then
+if [[ ! -n $SERVER_CONFIG_NAME && -d doi-config/servers/"$2" ]]; then
 	SERVER_CONFIG_NAME=$2
 fi
 if [[ -n $SERVER_CONFIG_NAME ]]; then
-	if [[ ! -f doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg ]]; then
+	if [[ ! -d doi-config/servers/"$SERVER_CONFIG_NAME" ]]; then
 		echo "Error: Config ""$SERVER_CONFIG_NAME requested but unknown!" >&2
 		exit 1
 	fi
-	cp doi-config/texts/server_"$SERVER_CONFIG_NAME".cfg server.cfg
-	cp doi-config/texts/motd_"$SERVER_CONFIG_NAME".txt ../motd.txt
+	# Copies rather than links, as the RCON password is added to server.cfg
+	cp -r doi-config/servers/"$SERVER_CONFIG_NAME"/. doi/
 fi
+
+pushd doi/cfg || exit
 
 if [[ -n $RCON_PASSWORD ]]; then
 	echo "rcon_password \"$RCON_PASSWORD\"" >rcon.cfg

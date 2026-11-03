@@ -19,11 +19,11 @@ indent_size = 4
 indent_style = tab
 
 # The game renders the MOTDs differently without their trailing whitespace
-[texts/motd_*.txt]
+[servers/*/motd.txt]
 trim_trailing_whitespace = false
 
 # The map files of the mods are copies of the game's own, kept as they are so they can be compared
-[mods/**]
+[game/custom/**]
 end_of_line = unset
 insert_final_newline = unset
 trim_trailing_whitespace = unset
@@ -39,5 +39,5 @@ indent_style = unset
 indent_size = unset
 
 # AFK Manager, vendored from version 4.3.0, indents with tabs
-[sourcemod/{afk_manager4.sp,include/afk_manager.inc,translations/afk_manager.phrases.txt}]
+[game/addons/sourcemod/{scripting/afk_manager4.sp,scripting/include/afk_manager.inc,translations/afk_manager.phrases.txt}]
 indent_style = tab

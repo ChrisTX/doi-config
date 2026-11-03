@@ -9,14 +9,30 @@ update a server, and the systemd units that run and monitor it.
 For players, [docs/Clients.md](docs/Clients.md) covers the client settings the
 servers need.
 
+## Layout
+
+The repository is laid out like the server's `doi` folder, so its folders can be
+placed on top of a server as they are:
+
+- `game` holds what all servers share: the configs in `cfg/doi-config`, the
+  configs of the game modes (`cfg/server_<gamemode>.cfg`), the mods in `custom`
+  and the SourceMod plugins, their translations and configs in
+  `addons/sourcemod`.
+- `servers/<config>` holds what one server adds: its `cfg/server.cfg` and its
+  `motd.txt`.
+- `tools` has the scripts that set up and monitor a server, `deploy` the systemd
+  units and the deployment of the SourceBans++ web panel, `server-patch` the
+  patched server library.
+
 ## Usage
 
-Clone this repository into the `doi/cfg` folder of the server, as
+`game` belongs into the server's `doi` folder, with `cfg/doi-config` at
 `doi/cfg/doi-config`. Source configs can't resolve paths dynamically, so the
-configuration only works at that location.
+configuration only works at that location. `prepare_server.sh` sets this up.
 
-Then create a `server.cfg` that sets the server's name and runs one of the
-`init-<config>.cfg` files. For the Coop Commando configuration, for example:
+Without one of the servers in `servers`, create a `server.cfg` that sets the
+server's name and runs one of the `init-<config>.cfg` files. For the Coop
+Commando configuration, for example:
 
 ```text
 hostname "MY-SERVER-NAME"
@@ -25,39 +41,40 @@ rcon_password "MY-PASSWORD"
 exec doi-config/init-coop-commando.cfg
 ```
 
-The workshop ID file of the configuration in the `configs` folder has to be
+The workshop ID file of the configuration in `game/cfg/doi-config` has to be
 passed to SRCDS on the command line with `sv_workshop_list_file`, as it can't be
 changed once the server is running.
 
 ### `prepare_server.sh`
 
-`scripts/prepare_server.sh` sets up or updates a server before it starts:
+`tools/prepare_server.sh` sets up or updates a server before it starts:
 
 ```bash
-scripts/prepare_server.sh <server folder> [<config>]
+tools/prepare_server.sh <server folder> [<config>]
 ```
 
 It installs or updates the game with SteamCMD, clones or pulls this repository
-into `doi/cfg/doi-config`, and installs the latest Metamod:Source and SourceMod
-together with the plugins the configuration uses (SourceBans++, Advertisements
-and their dependencies). It then links the mods, game mode configs and plugins
-of this repository into the server and compiles the plugins. AFK Manager, which
-is no longer maintained upstream, is kept in this repository's `sourcemod`
-folder.
+into the server folder as `doi-config`, and installs the latest Metamod:Source
+and SourceMod together with the plugins the configuration uses (SourceBans++,
+Advertisements and their dependencies). It then links the files of `game` into
+the server's `doi` folder and compiles the plugins. AFK Manager, which is no
+longer maintained upstream, is kept in `game/addons/sourcemod`. A server set up
+with the earlier layout, where the repository was cloned into `doi/cfg`, is
+moved to the new one.
 
-`<config>` names one of the server configs in the `texts` folder, e.g.
-`coop-commando` for `texts/server_coop-commando.cfg`. That config becomes the
-server's `server.cfg`, and the matching `texts/motd_<config>.txt` its MOTD. The
-`SERVER_CONFIG_NAME` environment variable can name the config instead. Without
-either, the server needs a `server.cfg` of its own, as described above.
+`<config>` names one of the servers in the `servers` folder, e.g.
+`coop-commando`. Its files are copied into the server's `doi` folder, which
+makes its `server.cfg` and MOTD the server's. The `SERVER_CONFIG_NAME`
+environment variable can name the server instead. Without either, the server
+needs a `server.cfg` of its own, as described above.
 
 If the `RCON_PASSWORD` environment variable is set, the script writes it to
 `rcon.cfg` and runs that from `server.cfg`.
 
 ### Running with systemd
 
-The `systemd` folder has user units for running the servers, one instance per
-config:
+The `deploy/systemd` folder has user units for running the servers, one
+instance per config:
 
 - `doi-server@<config>.service` runs the server in
   `~/servers/dayofinfamy-<config>`, after running `prepare_server.sh` from this
@@ -72,7 +89,7 @@ config:
 - `check_srcds_monitor@<config>.service` queries the server every 30 seconds and
   restarts it once it stops answering. Its settings come from
   `~/.config/systemd/user/check_srcds_monitor@<config>.env`, see
-  `monitor/check_srcds_monitor@coop-commando.env` for an example.
+  `deploy/systemd/check_srcds_monitor@coop-commando.env` for an example.
 
 ## Server notes
 
@@ -138,7 +155,7 @@ else seems fine.
 
 The `doi_difficulty_scaler` SourceMod plugin adjusts the number of bots to the
 number of players, independently of the map's scripting. For this to work, the
-active game mode needs its `server_<gamemode>.cfg` from the `configs/gamemodes`
+active game mode needs its `server_<gamemode>.cfg` from the `game/cfg`
 folder, which `prepare_server.sh` links into the server.
 
 ### Server patch
@@ -164,10 +181,10 @@ and `doi_difficulty_scaler`, are available under the MIT licence or the
 GPL-3.0-only with SourceMod's linking exception, at your choice, so they can be
 used in other SourceMod projects either way.
 
-AFK Manager, vendored in the `sourcemod` folder together with its include,
+AFK Manager, vendored in `game/addons/sourcemod` together with its include,
 translations and configuration, is licensed under the GPL-3.0-only with
 SourceMod's linking exception, like its earlier versions. The map files in
-`mods` and the patched server binary in `server-patch` come from the game and
+`game/custom` and the patched server binary in `server-patch` come from the game and
 remain New World Interactive's.
 
 `REUSE.toml`, the file headers and the `LICENSES` folder say this in the
