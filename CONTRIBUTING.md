@@ -12,7 +12,7 @@ The tools of the checks are all in the Arch Linux repositories:
 
 ```bash
 sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
-  yamllint rumdl editorconfig-checker
+  yamllint rumdl editorconfig-checker reuse
 ```
 
 Then install the git hooks, which run the checks on the staged files before each commit:
@@ -37,6 +37,7 @@ GitHub Actions runs the same checks on every push and pull request.
 - Everything follows `.editorconfig`, checked by editorconfig-checker. Formatters fix files themselves; run the check again afterwards.
 - The MOTDs in `texts/` keep their trailing whitespace, which the game needs to render them as intended.
 - The map files in `mods/` are copies of the game's own files and patches have to apply as they are, so both are left as they are, line endings included.
+- Every file has copyright and licence information, checked by `reuse lint`. Files of this repository are MIT, which `REUSE.toml` covers. A file under another licence, like the vendored AFK Manager, says so in an SPDX header or gets its own annotation in `REUSE.toml`.
 - Built files like `.smx` plugins don't belong into the repository, they're built on the server by `prepare_server.sh`. The patched server binary in `server-patch/` is the exception.
 
 ## Commits

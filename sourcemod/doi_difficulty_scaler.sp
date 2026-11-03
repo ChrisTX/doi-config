@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Christian Pfeiffer
+// SPDX-License-Identifier: MIT OR GPL-3.0-only WITH LicenseRef-SourceMod-exception
+
 #include <sourcemod>
 #include <sdktools>
 

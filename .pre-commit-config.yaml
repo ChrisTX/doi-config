@@ -67,10 +67,22 @@ repos:
         types: [markdown]
 
       # The formatters take care of the indentation of the languages they know, the indent size of the
-      # game's configuration files is up to the author. Patches have to stay as they are.
+      # game's configuration files is up to the author. Patches and license texts stay as they are.
       - id: editorconfig-checker
         name: editorconfig-checker (editorconfig-checker)
         language: system
         entry: editorconfig-checker -disable-indent-size
         types: [text]
-        exclude: \.(patch|diff)$|^LICENSE$
+        exclude: \.(patch|diff)$|^LICENSES?(/|$)
+
+      - id: reuse
+        name: reuse lint-file (reuse)
+        language: system
+        entry: reuse lint-file
+        types: [file]
+      - id: reuse-lint
+        name: reuse lint (reuse)
+        language: system
+        entry: reuse lint --quiet
+        pass_filenames: false
+        always_run: true

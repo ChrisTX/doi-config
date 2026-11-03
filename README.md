@@ -155,3 +155,20 @@ and configure [geoipupdate](https://github.com/maxmind/geoipupdate), which needs
 a free MaxMind account and keeps current databases in `/var/lib/GeoIP`.
 `prepare_server.sh` and `deploy_sourcebans.sh` link the databases from there
 when they exist.
+
+## License
+
+The configuration, scripts and units are licensed under the [MIT](LICENSE)
+license. The SourceMod plugins written for these servers, `doi_cvar_unlocker`
+and `doi_difficulty_scaler`, are available under the MIT license or the
+GPL-3.0-only with SourceMod's linking exception, at your choice, so they can be
+used in other SourceMod projects either way.
+
+AFK Manager, vendored in the `sourcemod` folder together with its
+translations and configuration, is licensed under the GPL-3.0-only with
+SourceMod's linking exception, like its earlier versions. The map files in
+`mods` and the patched server binary in `server-patch` come from the game and
+remain New World Interactive's.
+
+`REUSE.toml`, the file headers and the `LICENSES` folder say this in the
+[REUSE](https://reuse.software/) format.

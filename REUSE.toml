@@ -1,0 +1,20 @@
+version = 1
+
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "Christian Pfeiffer"
+SPDX-License-Identifier = "MIT"
+
+# The map files of the mods and the patched server binary come from the game
+[[annotations]]
+path = ["mods/**", "server-patch/**"]
+precedence = "override"
+SPDX-FileCopyrightText = "New World Interactive"
+SPDX-License-Identifier = "LicenseRef-NWI-Day-of-Infamy"
+
+# AFK Manager's translations, and its configuration, which SourceMod generated from the plugin's descriptions
+[[annotations]]
+path = ["sourcemod/translations/afk_manager.phrases.txt", "configs/afk_manager.cfg"]
+precedence = "override"
+SPDX-FileCopyrightText = ["Rothgar", "Christian Pfeiffer"]
+SPDX-License-Identifier = "GPL-3.0-only WITH LicenseRef-SourceMod-exception"

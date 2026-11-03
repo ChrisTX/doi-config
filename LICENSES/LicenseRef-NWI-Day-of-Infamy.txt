@@ -1,0 +1,3 @@
+These files are copies or modified versions of files of the game Day of Infamy
+by New World Interactive. They are not covered by the licences of this
+repository; the rights to them remain with New World Interactive.
