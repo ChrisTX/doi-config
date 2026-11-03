@@ -2,5 +2,3 @@
 game/custom/** -text
 # Patches have to stay as they are, line endings included
 *.patch -text
-# The patched server binary
-*.so binary

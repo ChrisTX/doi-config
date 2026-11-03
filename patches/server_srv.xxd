@@ -1,0 +1,23 @@
+# Patch of doi/bin/server_srv.so, the server library of Day of Infamy, applied with `xxd -r`
+# It lifts the restrictions of the playlists and enables stats with custom content.
+# Each line is an offset in the file and the new bytes, the comment above it names the function and the old bytes.
+# The SHA-256 sums of the library before and after are checked by tools/prepare_server.sh.
+
+# Playlist::GetAllowedMaps() const: je to jmp (74)
+0038f16f: eb
+# Playlist::GetMinPlayers() const: je to jmp (74)
+0038f4a2: eb
+# Playlist::GetMaxPlayers() const: je to jmp (74)
+0038f4f2: eb
+# Playlist::GetPureSettings(int&): je to jmp (74)
+0038f545: eb
+# Playlist::GetForcedConvars(): KeyValues::FindKey() to mov eax, 0 (e8 2b dc 55)
+0038f670: b8000000
+# Playlist::GetForcedConvarsDedicated(): KeyValues::FindKey() to mov eax, 0 (e8 eb db 55)
+0038f6b0: b8000000
+# Playlist::GetRequiredMaxPlayers(int&, int&): KeyValues::GetInt() to mov eax, 1 (e8 f6 02 56)
+0038f735: b8010000
+# Playlist::GetRequiredMaxPlayers(int&, int&): KeyValues::GetInt() to mov eax, -1 (e8 d1 02 56 00)
+0038f75a: b8ffffffff
+# CDOIPersistence::RegisterServer(): je to jmp (74)
+0072bdb9: eb

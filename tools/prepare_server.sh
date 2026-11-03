@@ -16,8 +16,19 @@ else
 	git clone https://github.com/ChrisTX/doi-config.git doi-config
 fi
 
-# Apply server playlist unlock patch
-cp doi-config/server-patch/server_srv.so doi/bin/server_srv.so
+# Patch the server library to lift the playlist restrictions and enable stats with custom content.
+# SteamCMD's validate restores the original, which the patch applies to. A game update needs a new patch.
+server_srv_original=be44b24b6525ec0a622310a91803e5f8444c1b501e057032800e6f1dd924a318
+server_srv_patched=104743f75a63ebf6137f4e1dbcd83897fee50386a895fad3bf26ccd2051f5358
+server_srv_sum=$(sha256sum doi/bin/server_srv.so | cut -d ' ' -f 1)
+if [[ $server_srv_sum == "$server_srv_original" ]]; then
+	xxd -r doi-config/patches/server_srv.xxd doi/bin/server_srv.so
+	server_srv_sum=$(sha256sum doi/bin/server_srv.so | cut -d ' ' -f 1)
+fi
+if [[ $server_srv_sum != "$server_srv_patched" ]]; then
+	echo "Error: doi/bin/server_srv.so isn't the version patches/server_srv.xxd is made for" >&2
+	exit 1
+fi
 
 # Remove the shipped, outdated standard libraries
 rm bin/libgcc_s.so.1

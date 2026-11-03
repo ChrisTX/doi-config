@@ -4,13 +4,12 @@
 repos:
   - repo: local
     hooks:
-      # The patched server binary is the only binary that belongs into the repository
+      # Binaries don't belong into the repository
       - id: no-binaries
         name: no downloaded or built files
         language: fail
         entry: Downloaded and built files belong into .gitignore
         files: \.(smx|vpk|bsp|zip|tar|tgz|gz|bz2|xz|zst|7z|mmdb|so|dll|exe)$
-        exclude: ^server-patch/server_srv\.so$
 
       - id: shfmt
         name: shfmt (shfmt)

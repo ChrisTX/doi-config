@@ -21,8 +21,8 @@ placed on top of a server as they are:
 - `servers/<config>` holds what one server adds: its `cfg/server.cfg` and its
   `motd.txt`.
 - `tools` has the scripts that set up and monitor a server, `deploy` the systemd
-  units and the deployment of the SourceBans++ web panel, `server-patch` the
-  patched server library.
+  units and the deployment of the SourceBans++ web panel, `patches` the patch of
+  the server library.
 
 ## Usage
 
@@ -160,9 +160,12 @@ folder, which `prepare_server.sh` links into the server.
 
 ### Server patch
 
-`server-patch/server_srv.so` is a modified game server library that enables
-stats with custom content and lifts the playlist restrictions.
-`prepare_server.sh` copies it into `doi/bin`.
+`patches/server_srv.xxd` patches the game's server library,
+`doi/bin/server_srv.so`, so it enables stats with custom content and lifts the
+playlist restrictions. It changes a few bytes, which `prepare_server.sh` writes
+with `xxd -r` (from the `vim` or `tinyxxd` package). The script checks the
+library's SHA-256 before and after, so it stops if a game update changes the
+library.
 
 ### GeoIP2 databases
 
@@ -184,8 +187,7 @@ used in other SourceMod projects either way.
 AFK Manager, vendored in `game/addons/sourcemod` together with its include,
 translations and configuration, is licensed under the GPL-3.0-only with
 SourceMod's linking exception, like its earlier versions. The map files in
-`game/custom` and the patched server binary in `server-patch` come from the game and
-remain New World Interactive's.
+`game/custom` come from the game and remain New World Interactive's.
 
 `REUSE.toml`, the file headers and the `LICENSES` folder say this in the
 [REUSE](https://reuse.software/) format.

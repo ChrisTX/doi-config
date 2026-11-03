@@ -5,9 +5,9 @@ path = "**"
 SPDX-FileCopyrightText = "Christian Pfeiffer"
 SPDX-License-Identifier = "MIT"
 
-# The map files of the mods and the patched server binary come from the game
+# The map files of the mods come from the game
 [[annotations]]
-path = ["game/custom/**", "server-patch/**"]
+path = "game/custom/**"
 precedence = "override"
 SPDX-FileCopyrightText = "New World Interactive"
 SPDX-License-Identifier = "LicenseRef-NWI-Day-of-Infamy"
