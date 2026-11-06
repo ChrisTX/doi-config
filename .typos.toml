@@ -1,0 +1,30 @@
+# Spell checking with typos (https://github.com/crate-ci/typos, the typos package), in British English:
+# American spellings are reported too. Names keep their spelling, see CONTRIBUTING.md.
+
+[default]
+locale = "en-gb"
+extend-ignore-re = [
+  # Advertisements' message type
+  "\\bcenter:",
+  # Composer's option
+  "--optimize-autoloader",
+  # The SourceMod library AFK Manager needs
+  "Multi-Colors",
+]
+
+[default.extend-words]
+# The game's term, also in its cvars (mp_theater_override) and THEATER
+theater = "theater"
+
+[files]
+extend-exclude = [
+  # Licence texts, as they are
+  "LICENSES/",
+  # The game's own map files
+  "game/custom/",
+  # AFK Manager, vendored: its code, include, translations and the configuration generated from it
+  "game/addons/sourcemod/scripting/afk_manager4.sp",
+  "game/addons/sourcemod/scripting/include/afk_manager.inc",
+  "game/addons/sourcemod/translations/afk_manager.phrases.txt",
+  "game/cfg/sourcemod/afk_manager.cfg",
+]

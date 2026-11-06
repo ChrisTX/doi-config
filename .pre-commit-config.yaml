@@ -77,6 +77,14 @@ repos:
         entry: rumdl check --config 'MD013.paragraphs = false'
         types: [markdown]
 
+      # British English, settings in .typos.toml. --force-exclude: its excludes also apply to the
+      # files prek passes.
+      - id: typos
+        name: typos (typos)
+        language: system
+        entry: typos --force-exclude
+        types: [text]
+
       # The formatters take care of the indentation of the languages they know, the indent size of the
       # game's configuration files is up to the author. Patches and licence texts stay as they are.
       - id: editorconfig-checker

@@ -25,7 +25,7 @@ jobs:
       - name: Install the tools of the checks
         run: >-
           pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint
-          rumdl editorconfig-checker reuse
+          rumdl typos editorconfig-checker reuse
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

@@ -12,7 +12,7 @@ The tools of the checks are in the Arch Linux repositories, apart from SourceMod
 
 ```bash
 sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
-  yamllint rumdl editorconfig-checker reuse
+  yamllint rumdl typos editorconfig-checker reuse
 ```
 
 Then install the git hooks, which run the checks on the staged files before each commit:
@@ -43,7 +43,7 @@ GitHub Actions runs the same checks on every push and pull request, except spcom
 
 ## Writing
 
-- Texts are in British English: documentation, comments, commit messages and what players see, like the MOTDs and advertisements. Names keep their spelling, e.g. cvars, keywords of file formats, the game's terms like "theater", and texts from upstream like the licence texts and vendored code.
+- Texts are in British English: documentation, comments, commit messages and what players see, like the MOTDs and advertisements. Names keep their spelling, e.g. cvars, keywords of file formats, the game's terms like "theater", and texts from upstream like the licence texts and vendored code. typos checks the spelling of the files, American spellings included; the names and files it leaves alone are in `.typos.toml`.
 
 ## Commits
 
