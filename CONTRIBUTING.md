@@ -48,5 +48,5 @@ GitHub Actions runs the same checks on every push and pull request, except spcom
 ## Commits
 
 - One commit per logical change.
-- Message summary: `<scope>: <summary>`, where the scope is the script, file or area that changes (e.g. `prepare_server:`, `MOTD:`, `systemd:`, `.github:`). The summary is imperative (`Add …`, `Fix …`, `Remove …`), without a trailing period.
+- Message summary: `<scope>: <summary>`, where the scope is the script, file or area that changes (e.g. `prepare_server:`, `MOTD:`, `systemd:`, `.github:`). The summary is imperative (`Add …`, `Fix …`, `Remove …`), without a trailing period. The commit-msg hook checks it: the scope has to be a file or folder of the repository, by its name with or without the extension, or one of the areas in `tools/check_commit_msg.sh`.
 - The body says why, where the summary doesn't.

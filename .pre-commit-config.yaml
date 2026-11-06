@@ -91,6 +91,13 @@ repos:
         entry: typos --force-exclude
         types: [text]
 
+      # The summary of the commit message: its scope and form, see CONTRIBUTING.md
+      - id: commit-msg-summary
+        name: summary of the commit message
+        language: system
+        entry: tools/check_commit_msg.sh
+        stages: [commit-msg]
+
       # The commit message, without git's comments and the diff below them of `git commit -v`
       - id: typos-commit-msg
         name: typos of the commit message (typos)
