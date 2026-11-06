@@ -15,7 +15,7 @@ sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
   yamllint rumdl typos editorconfig-checker reuse
 ```
 
-Then install the git hooks, which run the checks on the staged files before each commit:
+Then install the git hooks, which run the checks on the staged files before each commit and check the spelling of the commit message:
 
 ```bash
 prek install

@@ -1,6 +1,12 @@
 # Checks for pre-commit (https://pre-commit.com, the pre-commit or prek package), run before each commit
 # after `prek install`. The hooks use the tools of the Arch Linux packages named in brackets, nothing is
 # downloaded.
+
+# `prek install` installs the hook of the commit message as well. The checks run before the commit
+# (or on request), only the typos-commit-msg hook runs for the commit message.
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit, manual]
+
 repos:
   - repo: local
     hooks:
@@ -84,6 +90,14 @@ repos:
         language: system
         entry: typos --force-exclude
         types: [text]
+
+      # The commit message, without git's comments and the diff below them of `git commit -v`
+      - id: typos-commit-msg
+        name: typos of the commit message (typos)
+        language: system
+        entry: >-
+          bash -c 'sed "/^# -* >8 -*\$/,\$d" "$1" | grep -v "^#" | typos -' --
+        stages: [commit-msg]
 
       # The formatters take care of the indentation of the languages they know, the indent size of the
       # game's configuration files is up to the author. Patches and licence texts stay as they are.
