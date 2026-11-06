@@ -33,4 +33,7 @@ jobs:
       - name: Trust the checkout
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Run the checks
+        # Without spcomp, which is in the AUR (sourcemod-scripting), not in the Arch Linux repositories
+        env:
+          SKIP: spcomp
         run: prek run --all-files --show-diff-on-failure

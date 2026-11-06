@@ -38,6 +38,18 @@ repos:
         entry: ruff format
         types: [python]
 
+      # The plugins compile, warnings as errors, with the include folder of the repository (AFK
+      # Manager's). spcomp takes one plugin per run. Nothing is written, the plugins are built on the
+      # server. Include files can't be compiled on their own, they're checked with the plugins.
+      - id: spcomp
+        name: spcomp (sourcemod-scripting, AUR)
+        language: system
+        entry: >-
+          bash -c 'status=0; for f; do
+          spcomp -E -i game/addons/sourcemod/scripting/include -o /dev/null "$f" || status=1;
+          done; exit "$status"' --
+        files: ^game/addons/sourcemod/scripting/[^/]+\.sp$
+
       # systemd-lsp exits with 0 on findings
       - id: systemd-lsp
         name: systemd-lsp (systemd-lsp)
