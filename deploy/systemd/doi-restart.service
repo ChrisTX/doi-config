@@ -1,0 +1,8 @@
+[Unit]
+Description=Update and restart the Day of Infamy servers
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl stop doi-servers.target
+ExecStart=/usr/bin/systemctl restart doi-update.service
+ExecStart=/usr/bin/systemctl start doi-servers.target

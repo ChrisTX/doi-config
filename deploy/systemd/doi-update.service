@@ -1,0 +1,25 @@
+[Unit]
+Description=Update the Day of Infamy game install and doi-config
+After=network-online.target
+Wants=network-online.target
+# The servers are the overlays of the game install, which mustn't change while they run: they start
+# after it, and doi-restart.service stops them before running it again
+Before=doi-servers.target
+
+[Service]
+Type=oneshot
+# Active once done, so a server that starts or restarts on its own doesn't run it again
+RemainAfterExit=yes
+User=doi
+StateDirectory=doi-server
+StateDirectoryMode=0750
+# SteamCMD keeps its files in the home folder
+Environment=HOME=%S/doi-server
+ExecStart=/usr/bin/git -C %S/doi-server/doi-config pull --ff-only
+ExecStart=%S/doi-server/doi-config/tools/update_game.sh %S/doi-server
+TimeoutStartSec=infinity
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes

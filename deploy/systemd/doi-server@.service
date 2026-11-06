@@ -1,22 +1,41 @@
 [Unit]
 Description=Day of Infamy server (%i)
-After=network.target
+After=network-online.target doi-update.service
+Wants=network-online.target doi-update.service
+# Stopped and restarted with the servers' target, see doi-restart.service
+PartOf=doi-servers.target
+# srcds_watchdog.py's restarts of a server that stopped answering: at most 6 an hour
+StartLimitIntervalSec=1h
+StartLimitBurst=6
 
 [Service]
-Environment=LD_LIBRARY_PATH=%h/servers/dayofinfamy-%i:%h/servers/dayofinfamy-%i/bin
-EnvironmentFile=%h/.config/systemd/user/doi-server@%i.env
-WorkingDirectory=%h/servers/dayofinfamy-%i
-ExecStartPre=%h/doi-config/tools/prepare_server.sh %h/servers/dayofinfamy-%i %i
-ExecStartPre=/usr/bin/cp -r %h/doi-secrets/. %h/servers/dayofinfamy-%i/doi
-ExecStart=%h/servers/dayofinfamy-%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} -clientport ${CLIENT_PORT} +map \"${STARTUP_MAP}\" +sv_workshop_list_file \"${WORKSHOP_IDS_FILE}\" +r_hunkalloclightmaps 0 +mp_theater_override \"${THEATER}\" +sv_password \"${SERVER_PASSWORD}\"
+# srcds_watchdog.py runs the server: ready once it first answers A2S queries, restarted by the watchdog
+# once it doesn't answer for WatchdogSec. Its SIGABRT goes to the server, which dumps its core then.
+Type=notify
+WatchdogSec=90
+User=doi
+EnvironmentFile=/etc/doi-server/%i.env
+StateDirectory=doi-server
+StateDirectoryMode=0750
+RuntimeDirectory=doi-server/%i
+WorkingDirectory=/run/doi-server/%i
+Environment=LD_LIBRARY_PATH=/run/doi-server/%i:/run/doi-server/%i/bin
+# The layers of the server, mounted and configured as root in the service's mount namespace ("!")
+PrivateMounts=yes
+ExecStartPre=!%S/doi-server/doi-config/tools/mount_server.sh %i %u
+ExecStartPre=!%S/doi-server/doi-config/tools/prepare_server.sh /run/doi-server/%i %i
+ExecStart=/usr/bin/python3 %S/doi-server/doi-config/tools/srcds_watchdog.py -- /run/doi-server/%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} -clientport ${CLIENT_PORT} +map \"${STARTUP_MAP}\" +sv_workshop_list_file \"${WORKSHOP_IDS_FILE}\" +r_hunkalloclightmaps 0 +mp_theater_override \"${THEATER}\" +sv_password \"${SERVER_PASSWORD}\"
 KillSignal=SIGINT
-ReadWritePaths=%h/servers/dayofinfamy-%i
+# The stop signal to srcds_watchdog.py only, which passes it on to the server
+KillMode=mixed
 PrivateTmp=yes
 PrivateDevices=yes
 NoNewPrivileges=yes
 ProtectSystem=strict
+ProtectHome=yes
 Restart=always
+RestartSec=10
 TimeoutStartSec=infinity
 
 [Install]
-WantedBy=default.target
+WantedBy=doi-servers.target

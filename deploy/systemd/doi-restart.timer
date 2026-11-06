@@ -1,5 +1,5 @@
 [Unit]
-Description=Daily 06:00 restart timer for doi-server@%i
+Description=Update and restart the Day of Infamy servers every day at 06:00
 
 [Timer]
 OnCalendar=*-*-* 06:00:00

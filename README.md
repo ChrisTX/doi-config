@@ -21,13 +21,14 @@ placed on top of a server as they are:
 - `servers/<config>` holds what one server adds: its `cfg/server.cfg` and its
   `motd.txt`.
 - `tools` has the scripts that set up and monitor a server, `deploy` the systemd
-  units, `patches` the patch of the server library.
+  units and the servers' user, `patches` the patch of the server library.
 
 ## Usage
 
 `game` belongs into the server's `doi` folder, with `cfg/doi-config` at
 `doi/cfg/doi-config`. Source configs can't resolve paths dynamically, so the
-configuration only works at that location. `prepare_server.sh` sets this up.
+configuration only works at that location. The systemd units below set this
+up.
 
 Without one of the servers in `servers`, create a `server.cfg` that sets the
 server's name and runs one of the `init-<config>.cfg` files. For the Coop
@@ -44,51 +45,73 @@ The workshop ID file of the configuration in `game/cfg/doi-config` has to be
 passed to SRCDS on the command line with `sv_workshop_list_file`, as it can't be
 changed once the server is running.
 
-### `prepare_server.sh`
-
-`tools/prepare_server.sh` sets up or updates a server before it starts:
-
-```bash
-tools/prepare_server.sh <server folder> [<config>]
-```
-
-It installs or updates the game with SteamCMD, clones or pulls this repository
-into the server folder as `doi-config`, and installs the latest Metamod:Source
-and SourceMod together with the plugins the configuration uses (SourceBans++,
-Advertisements and their dependencies). It then links the files of `game` into
-the server's `doi` folder and compiles the plugins. AFK Manager, which is no
-longer maintained upstream, is kept in `game/addons/sourcemod`. A server set up
-with the earlier layout, where the repository was cloned into `doi/cfg`, is
-moved to the new one.
-
-`<config>` names one of the servers in the `servers` folder, e.g.
-`coop-commando`. Its files are copied into the server's `doi` folder, which
-makes its `server.cfg` and MOTD the server's. The `SERVER_CONFIG_NAME`
-environment variable can name the server instead. Without either, the server
-needs a `server.cfg` of its own, as described above.
-
-If the `RCON_PASSWORD` environment variable is set, the script writes it to
-`rcon.cfg` and runs that from `server.cfg`.
-
 ### Running with systemd
 
-The `deploy/systemd` folder has user units for running the servers, one
-instance per config:
+The servers run as system services of the `doi` user, one instance per server,
+which share one install of the game. Each server is put together with overlayfs
+from read-only layers, top first:
 
-- `doi-server@<config>.service` runs the server in
-  `~/servers/dayofinfamy-<config>`, after running `prepare_server.sh` from this
-  repository in `~/doi-config`. Its ports, startup map, workshop ID file, theater
-  and password come from `~/.config/systemd/user/doi-server@<config>.env`
-  (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`, `STARTUP_MAP`, `WORKSHOP_IDS_FILE`,
-  `THEATER`, `SERVER_PASSWORD`). The contents of `~/doi-secrets`, like the
-  database credentials of SourceMod and SourceBans++, are copied into the
-  server's `doi` folder before it starts.
-- `doi-server-restart@<config>.timer` restarts the server every day at 06:00,
-  which also updates it.
-- `check_srcds_monitor@<config>.service` queries the server every 30 seconds and
-  restarts it once it stops answering. Its settings come from
-  `~/.config/systemd/user/check_srcds_monitor@<config>.env`, see
-  `deploy/systemd/check_srcds_monitor@coop-commando.env` for an example.
+- `/etc/doi-server/secrets`, laid out like the `doi` folder, e.g. the database
+  credentials of SourceMod and SourceBans++ in
+  `addons/sourcemod/configs/databases.cfg`
+- the server's folder in `servers`, if there's one
+- this repository's plugins, compiled by `doi-update.service`
+- `game` of this repository
+- `/usr/lib/sourcemod` and `/usr/lib/metamod`: SourceMod, Metamod:Source and
+  the plugins from their packages (`sourcemod`, `metamod-source`,
+  `sourcemod-sourcebans-pp`, `sourcemod-sourcebans-pp-discord-forward`,
+  `sourcemod-advertisements`, `sourcemod-multicolors`, `sourcemod-smjansson`,
+  `sourcemod-steamworks`)
+- the workshop items of all servers
+- the game
+
+Their writable layer starts empty on every start, so changes to the layers
+always show. What the server writes and keeps, like its logs, is bind-mounted
+from the server's state folder instead (see `tools/mount_server.sh`). The mounts
+only exist in the service's mount namespace and disappear when it stops.
+
+The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
+
+- `doi-update.service` pulls this repository in
+  `/var/lib/doi-server/doi-config` and runs `tools/update_game.sh`, which
+  installs or updates the game in `/var/lib/doi-server/game` with SteamCMD,
+  patches it (see [Server patch](#server-patch)) and compiles this repository's
+  plugins. It runs before the servers start. It also downloads the workshop
+  items of all `workshop-ids-*.txt` files into `/var/lib/doi-server/workshop`,
+  once for all servers. SteamCMD gets their current versions, which the game
+  itself never does once it has an item, and items no list names any more are
+  removed.
+- `doi-server@<server>.service` mounts the layers (`tools/mount_server.sh`),
+  configures the server (`tools/prepare_server.sh`: the plugins SourceBans++
+  needs, its website and server ID from `SOURCEBANS_WEBSITE` and
+  `SOURCEBANS_SERVER_ID`, `RCON_PASSWORD` in `rcon.cfg`) and runs it. Its
+  ports, startup map, workshop ID file, theater and password come from
+  `/etc/doi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`,
+  `STARTUP_MAP`, `WORKSHOP_IDS_FILE`, `THEATER`, `SERVER_PASSWORD`). The
+  server uses the folder of the same name in `servers`, or the one
+  `SERVER_CONFIG_NAME` names; without one, the secrets layer needs a
+  `cfg/server.cfg` as described above.
+- `tools/srcds_watchdog.py` runs the server and queries it with A2S. The
+  service is ready once the server first answers, and systemd's watchdog
+  restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
+  The hung server dumps its core first.
+- `doi-servers.target` starts the enabled servers.
+- `doi-restart.timer` stops the servers every day at 06:00, runs
+  `doi-update.service` and starts them again, as the game install mustn't
+  change while servers use it.
+
+Setting up a server, as root, with the packages above and `steamcmd`, `git`,
+`python-a2s` and `vim` (for `xxd`) installed:
+
+```bash
+cp deploy/sysusers.d/doi-server.conf /etc/sysusers.d/
+cp deploy/systemd/* /etc/systemd/system/
+systemd-sysusers
+install -d -o doi -g doi -m 750 /var/lib/doi-server
+sudo -u doi git clone https://github.com/ChrisTX/doi-config.git /var/lib/doi-server/doi-config
+# The server's settings in /etc/doi-server/coop-commando.env, its secrets in /etc/doi-server/secrets
+systemctl enable --now doi-server@coop-commando.service doi-servers.target doi-restart.timer
+```
 
 ## Server notes
 
@@ -161,7 +184,7 @@ folder, which `prepare_server.sh` links into the server.
 
 `patches/server_srv.xxd` patches the game's server library,
 `doi/bin/server_srv.so`, so it enables stats with custom content and lifts the
-playlist restrictions. It changes a few bytes, which `prepare_server.sh` writes
+playlist restrictions. It changes a few bytes, which `update_game.sh` writes
 with `xxd -r` (from the `vim` or `tinyxxd` package). The script checks the
 library's SHA-256 before and after, so it stops if a game update changes the
 library.
@@ -172,9 +195,9 @@ SourceMod and the SourceBans++ web panel both use MaxMind's GeoIP2 databases.
 Both ship MMDB files, but those haven't been updated in years. Instead, install
 and configure [geoipupdate](https://github.com/maxmind/geoipupdate), which needs
 a free MaxMind account and keeps current databases in `/var/lib/GeoIP`.
-`prepare_server.sh` links the databases from there when they exist, and the web
-panel of the [sourcebans-pp](https://aur.archlinux.org/packages/sourcebans-pp)
-package links its database from there too.
+The `sourcemod` package and the web panel of the
+[sourcebans-pp](https://aur.archlinux.org/packages/sourcebans-pp) package link
+their databases from there.
 
 ## Licence
 
