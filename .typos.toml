@@ -4,10 +4,12 @@
 [default]
 locale = "en-gb"
 extend-ignore-re = [
+  # Command-line options (--innodb_initialized, --armor)
+  "(?:^|[\\s\"'(=])--?[A-Za-z][-A-Za-z0-9_:]*",
   # Advertisements' message type
   "\\bcenter:",
-  # Composer's option
-  "--optimize-autoloader",
+  # SourceBans++'s file of its tables
+  "\\bstruc\\.sql\\b",
   # The SourceMod library AFK Manager needs
   "Multi-Colors",
 ]

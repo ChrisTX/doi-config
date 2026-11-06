@@ -167,6 +167,29 @@ podman run -d --name doi-coop-commando \
 The health check queries the server with A2S like the systemd units'
 watchdog, and restarts the container when it stops answering.
 
+### Testing locally
+
+`deploy/container/test-instance.sh` runs a server of one of the configs in a
+Podman pod, together with a new MariaDB. The database has the tables of
+SourceBans++ and SourceMod and the test server registered, the passwords are
+generated, and without its config the Discord forward stays silent, so nothing
+reaches the live servers. `TEST_ADMIN` makes a SteamID root admin:
+
+```bash
+deploy/container/test-instance.sh build
+TEST_ADMIN=STEAM_0:0:123 deploy/container/test-instance.sh up coop-commando
+deploy/container/test-instance.sh rcon sm plugins list
+deploy/container/test-instance.sh down
+```
+
+The server is then at this machine's address, port 27015, which `up` prints.
+Not at `127.0.0.1`: rootless Podman passes connections from there on from the
+pod's own address, and the server drops them. `build` and `up` take the packages
+and
+SourceBans++'s tables from the pacman repository in `AUR_REPO`
+(`/var/lib/aurutils-repo` by default). `tools/rcon.py` is the RCON client, with
+the password in `RCON_PASSWORD`.
+
 ## Server notes
 
 ### Engine hunk overflow
