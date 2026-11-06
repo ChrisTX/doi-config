@@ -1,20 +1,27 @@
 #!/bin/bash
-# Configures a server assembled by mount_server.sh, in its writable layer, which starts empty on every
-# start. doi-server@.service runs it as root with "!", in the service's mount namespace: the layers of
-# the packages belong to root.
+# Configures a server in its writable layer: one assembled by mount_server.sh, whose writable layer starts
+# empty on every start (doi-server@.service runs it as root with "!", in the service's mount namespace, as
+# the layers of the packages belong to root), or the container's (deploy/container/entrypoint.sh).
 # $1: the server's root, $2: the server's name
 set -euo pipefail
 
 cd "$1" || exit
 
+# Moves a plugin unless it's moved already: a container that restarts keeps its writable layer
+move_plugin() {
+	if [[ -f $1 ]]; then
+		mv "$1" "$2"
+	fi
+}
+
 pushd doi/addons/sourcemod/plugins || exit
 # Enable SQL admin plugins
-mv disabled/admin-sql-threaded.smx .
-mv disabled/sql-admin-manager.smx .
+move_plugin disabled/admin-sql-threaded.smx .
+move_plugin disabled/sql-admin-manager.smx .
 # Nextmap is incompatible with DOI
-mv nextmap.smx disabled
+move_plugin nextmap.smx disabled
 # SourceBans requires basebans to be off
-mv basebans.smx disabled
+move_plugin basebans.smx disabled
 popd || exit
 
 sourcebans_replacer() {
@@ -25,8 +32,14 @@ sourcebans_replacer "BackupConfigs" "0"
 if [[ -n ${SOURCEBANS_WEBSITE:-} ]]; then
 	sourcebans_replacer "Website" "https:\/\/$SOURCEBANS_WEBSITE"
 fi
+# The server's ID in the panel. Left at -1, SourceBans++ looks it up by the server's address and port,
+# with the address from hostip, or from SOURCEBANS_SERVER_IP where hostip is a private address, as in a
+# container
 if [[ -n ${SOURCEBANS_SERVER_ID:-} ]]; then
 	sourcebans_replacer "ServerID" "$SOURCEBANS_SERVER_ID"
+fi
+if [[ -n ${SOURCEBANS_SERVER_IP:-} ]]; then
+	sourcebans_replacer "ServerIP" "$SOURCEBANS_SERVER_IP"
 fi
 
 # Without a config of this repository, users need to provide their own server.cfg loading init-...

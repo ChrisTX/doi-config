@@ -16,7 +16,7 @@ StateDirectoryMode=0750
 # SteamCMD keeps its files in the home folder
 Environment=HOME=%S/doi-server
 ExecStart=/usr/bin/git -C %S/doi-server/doi-config pull --ff-only
-ExecStart=%S/doi-server/doi-config/tools/update_game.sh %S/doi-server
+ExecStart=%S/doi-server/doi-config/tools/update_game.sh --game %S/doi-server/game --workshop %S/doi-server/workshop --plugins %S/doi-server/plugins
 TimeoutStartSec=infinity
 PrivateTmp=yes
 PrivateDevices=yes

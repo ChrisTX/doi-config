@@ -1,0 +1,69 @@
+# The Day of Infamy server, with SourceMod and the plugins from their packages and this configuration.
+# The image's layers are what overlayfs puts together for the systemd units, lowest first: the game, the
+# workshop items of all servers, the packages and this repository. Containers of the image share them, and
+# a container's writable layer starts anew whenever it's created. See README.md for building and running.
+#
+# Build arguments:
+#   GAME_UPDATE, WORKSHOP_UPDATE   any new value (e.g. the date) downloads the game or the workshop items
+#                                  again, which the layer cache keeps otherwise
+# Build context "aur": the pacman repository with the packages, secret "aur-key": its signing key
+
+FROM docker.io/library/archlinux:base
+
+RUN printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf \
+  && pacman -Syu --noconfirm --needed lib32-gcc-libs lib32-glibc lib32-zlib tinyxxd \
+  && pacman -Scc --noconfirm \
+  && useradd --system --create-home --home-dir /home/doi doi \
+  && install -d -o doi -g doi /srv/doi /opt/steamcmd
+
+# SteamCMD, which updates itself on its first run (and may exit with an error status after that)
+USER doi
+RUN curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C /opt/steamcmd \
+  && { /opt/steamcmd/steamcmd.sh +quit || test -x /opt/steamcmd/linux32/steamcmd; }
+USER root
+RUN printf '#!/bin/sh\nexec /opt/steamcmd/steamcmd.sh "$@"\n' >/usr/local/bin/steamcmd \
+  && chmod 755 /usr/local/bin/steamcmd
+
+# The game, patched, then the workshop items, each with only the files of this repository it needs, so
+# that other changes don't download them again
+USER doi
+COPY --chown=doi:doi tools/update_game.sh /opt/doi-config/tools/
+COPY --chown=doi:doi patches/ /opt/doi-config/patches/
+ARG GAME_UPDATE=
+RUN /opt/doi-config/tools/update_game.sh --game /srv/doi
+COPY --chown=doi:doi game/cfg/doi-config/workshop-ids-*.txt /opt/doi-config/game/cfg/doi-config/
+ARG WORKSHOP_UPDATE=
+RUN /opt/doi-config/tools/update_game.sh --workshop /srv/doi
+
+# The packages from the repository, verified with its key, and lib32-sdl2-compat, which the game links
+# and which is in the AUR, no longer in multilib. SourceMod's optional dependencies, those of its MySQL,
+# PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source are copied into
+# the game's doi folder, owned by the servers' user, who changes the plugins and configs on every start.
+USER root
+RUN --mount=type=bind,from=aur,target=/var/lib/aurutils-repo --mount=type=secret,id=aur-key \
+  pacman-key --init \
+  && pacman-key --add /run/secrets/aur-key \
+  && pacman-key --lsign-key "$(gpg --show-keys --with-colons /run/secrets/aur-key | awk -F: '/^fpr/ { print $10; exit }')" \
+  && cp /etc/pacman.conf /etc/pacman.conf.orig \
+  && printf '\n[aur]\nServer = file:///var/lib/aurutils-repo\n' >>/etc/pacman.conf \
+  && pacman -Syu --noconfirm --needed lib32-sdl2-compat metamod-source sourcemod sourcemod-scripting python-a2s \
+    sourcemod-sourcebans-pp sourcemod-sourcebans-pp-discord-forward sourcemod-advertisements \
+    sourcemod-multicolors sourcemod-smjansson sourcemod-steamworks \
+    lib32-mariadb-connector-c lib32-postgresql-libs lib32-libmaxminddb lib32-pcre2 lib32-curl \
+  && mv /etc/pacman.conf.orig /etc/pacman.conf \
+  && pacman -Scc --noconfirm \
+  && cp -a --no-preserve=ownership /usr/lib/metamod/. /usr/lib/sourcemod/. /srv/doi/doi/ \
+  && chown -R doi:doi /srv/doi/doi/addons /srv/doi/doi/cfg
+
+# This repository and its plugins
+USER doi
+COPY --chown=doi:doi . /opt/doi-config
+RUN /opt/doi-config/tools/update_game.sh --plugins /tmp/plugins \
+  && cp -a /tmp/plugins/. /opt/doi-config/game/. /srv/doi/doi/ \
+  && rm -rf /tmp/plugins
+
+WORKDIR /srv/doi
+ENV LD_LIBRARY_PATH=/srv/doi:/srv/doi/bin
+# SRCDS shuts down on SIGINT, which srcds_watchdog.py passes on
+STOPSIGNAL SIGINT
+ENTRYPOINT ["/opt/doi-config/deploy/container/entrypoint.sh"]

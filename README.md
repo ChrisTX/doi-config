@@ -83,8 +83,11 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   removed.
 - `doi-server@<server>.service` mounts the layers (`tools/mount_server.sh`),
   configures the server (`tools/prepare_server.sh`: the plugins SourceBans++
-  needs, its website and server ID from `SOURCEBANS_WEBSITE` and
-  `SOURCEBANS_SERVER_ID`, `RCON_PASSWORD` in `rcon.cfg`) and runs it. Its
+  needs, its website from `SOURCEBANS_WEBSITE`, `RCON_PASSWORD` in `rcon.cfg`)
+  and runs it. SourceBans++ finds the server in the panel by its address and
+  port: the address the server reports, or `SOURCEBANS_SERVER_IP` if that's a
+  private one, as in a container. `SOURCEBANS_SERVER_ID` sets the panel's ID of
+  the server instead. Its
   ports, startup map, workshop ID file, theater and password come from
   `/etc/doi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`,
   `STARTUP_MAP`, `WORKSHOP_IDS_FILE`, `THEATER`, `SERVER_PASSWORD`). The
@@ -112,6 +115,57 @@ sudo -u doi git clone https://github.com/ChrisTX/doi-config.git /var/lib/doi-ser
 # The server's settings in /etc/doi-server/coop-commando.env, its secrets in /etc/doi-server/secrets
 systemctl enable --now doi-server@coop-commando.service doi-servers.target doi-restart.timer
 ```
+
+### Running in a container
+
+`deploy/container/Containerfile` builds an image of a server, with the same
+layers as the systemd units: the game, the workshop items of all servers,
+SourceMod, Metamod:Source and the plugins from their packages, and this
+repository. Containers of the image share its layers, and a container's
+writable layer starts anew whenever the container is created. The packages come
+from a pacman repository, like the one of aurutils, verified with its signing
+key. With Podman, from the repository's root:
+
+```bash
+gpg --homedir /etc/pacman.d/gnupg --export -a <key> >aur-key.asc
+podman build --build-context aur=/var/lib/aurutils-repo \
+  --secret id=aur-key,src=aur-key.asc \
+  -f deploy/container/Containerfile -t doi-server .
+```
+
+The layer cache keeps the game and the workshop items until the build
+arguments `GAME_UPDATE` and `WORKSHOP_UPDATE` change, e.g.
+`--build-arg WORKSHOP_UPDATE=$(date +%F)` to update the workshop items.
+
+A container takes the variables of the systemd units' environment file, with
+`SOURCEBANS_SERVER_IP` set to the server's public address (the container only
+sees its private one), the server's config in `servers` as `SERVER_NAME` and
+the secrets, laid out like the
+`doi` folder, in `/run/secrets/doi-server`. What the server keeps between
+containers goes into volumes. The GeoIP2 databases come from the host's
+`/var/lib/GeoIP`, kept current by geoipupdate there (see
+[GeoIP2 databases](#geoip2-databases)): it needs the MaxMind account's
+credentials, which don't belong into the container.
+
+```bash
+podman run -d --name doi-coop-commando \
+  --env-file coop-commando.env -e SERVER_NAME=coop-commando \
+  -p 27015:27015/udp -p 27015:27015/tcp -p 27020:27020/udp \
+  -v /etc/doi-server/secrets:/run/secrets/doi-server:ro \
+  -v /var/lib/GeoIP:/var/lib/GeoIP:ro \
+  -v doi-coop-commando-dumps:/srv/doi/dumps \
+  -v doi-coop-commando-logs:/srv/doi/doi/logs \
+  -v doi-coop-commando-sm-logs:/srv/doi/doi/addons/sourcemod/logs \
+  -v doi-coop-commando-sm-data:/srv/doi/doi/addons/sourcemod/data \
+  --health-cmd \
+  'python3 /opt/doi-config/tools/srcds_watchdog.py --check --port 27015' \
+  --health-start-period 10m --health-interval 30s --health-retries 3 \
+  --health-on-failure restart \
+  doi-server
+```
+
+The health check queries the server with A2S like the systemd units'
+watchdog, and restarts the container when it stops answering.
 
 ## Server notes
 
