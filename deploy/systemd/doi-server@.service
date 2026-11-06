@@ -24,7 +24,7 @@ Environment=LD_LIBRARY_PATH=/run/doi-server/%i:/run/doi-server/%i/bin
 PrivateMounts=yes
 ExecStartPre=!%S/doi-server/doi-config/tools/mount_server.sh %i %u
 ExecStartPre=!%S/doi-server/doi-config/tools/prepare_server.sh /run/doi-server/%i %i
-ExecStart=/usr/bin/python3 %S/doi-server/doi-config/tools/srcds_watchdog.py -- /run/doi-server/%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} -clientport ${CLIENT_PORT} +map \"${STARTUP_MAP}\" +sv_workshop_list_file \"${WORKSHOP_IDS_FILE}\" +r_hunkalloclightmaps 0 +mp_theater_override \"${THEATER}\" +sv_password \"${SERVER_PASSWORD}\"
+ExecStart=/usr/bin/python3 %S/doi-server/doi-config/tools/srcds_watchdog.py -- /run/doi-server/%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} +clientport ${CLIENT_PORT} +map \"${STARTUP_MAP}\" +sv_workshop_list_file \"${WORKSHOP_IDS_FILE}\" +r_hunkalloclightmaps 0 +mp_theater_override \"${THEATER}\" +sv_password \"${SERVER_PASSWORD}\"
 KillSignal=SIGINT
 # The stop signal to srcds_watchdog.py only, which passes it on to the server
 KillMode=mixed
