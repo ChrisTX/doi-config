@@ -21,8 +21,7 @@ placed on top of a server as they are:
 - `servers/<config>` holds what one server adds: its `cfg/server.cfg` and its
   `motd.txt`.
 - `tools` has the scripts that set up and monitor a server, `deploy` the systemd
-  units and the deployment of the SourceBans++ web panel, `patches` the patch of
-  the server library.
+  units, `patches` the patch of the server library.
 
 ## Usage
 
@@ -173,8 +172,9 @@ SourceMod and the SourceBans++ web panel both use MaxMind's GeoIP2 databases.
 Both ship MMDB files, but those haven't been updated in years. Instead, install
 and configure [geoipupdate](https://github.com/maxmind/geoipupdate), which needs
 a free MaxMind account and keeps current databases in `/var/lib/GeoIP`.
-`prepare_server.sh` and `deploy_sourcebans.sh` link the databases from there
-when they exist.
+`prepare_server.sh` links the databases from there when they exist, and the web
+panel of the [sourcebans-pp](https://aur.archlinux.org/packages/sourcebans-pp)
+package links its database from there too.
 
 ## Licence
 
