@@ -25,7 +25,7 @@ jobs:
       - name: Install the tools of the checks
         run: >-
           pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint
-          rumdl typos editorconfig-checker reuse
+          rumdl typos trivy editorconfig-checker reuse
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -33,7 +33,8 @@ jobs:
       - name: Trust the checkout
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Run the checks
-        # Without spcomp, which is in the AUR (sourcemod-scripting), not in the Arch Linux repositories
+        # Without spcomp and hadolint, which are in the AUR (sourcemod-scripting, hadolint), not in the
+        # Arch Linux repositories
         env:
-          SKIP: spcomp
+          SKIP: spcomp,hadolint
         run: prek run --all-files --show-diff-on-failure

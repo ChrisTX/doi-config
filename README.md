@@ -128,7 +128,7 @@ key. With Podman, from the repository's root:
 
 ```bash
 gpg --homedir /etc/pacman.d/gnupg --export -a <key> >aur-key.asc
-podman build --build-context aur=/var/lib/aurutils-repo \
+podman build --format docker --build-context aur=/var/lib/aurutils-repo \
   --secret id=aur-key,src=aur-key.asc \
   -f deploy/container/Containerfile -t doi-server .
 ```
@@ -157,15 +157,14 @@ podman run -d --name doi-coop-commando \
   -v doi-coop-commando-logs:/srv/doi/doi/logs \
   -v doi-coop-commando-sm-logs:/srv/doi/doi/addons/sourcemod/logs \
   -v doi-coop-commando-sm-data:/srv/doi/doi/addons/sourcemod/data \
-  --health-cmd \
-  'python3 /opt/doi-config/tools/srcds_watchdog.py --check --port 27015' \
-  --health-start-period 10m --health-interval 30s --health-retries 3 \
   --health-on-failure restart \
   doi-server
 ```
 
-The health check queries the server with A2S like the systemd units'
-watchdog, and restarts the container when it stops answering.
+The image's health check queries the server with A2S like the systemd units'
+watchdog, and `--health-on-failure restart` restarts the container when it
+stops answering. Images in the OCI format have no health check, hence
+`--format docker`.
 
 ### Testing locally
 

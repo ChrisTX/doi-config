@@ -8,11 +8,11 @@ For problems with a server or a script, open an issue. Problems of the game, Sou
 
 ## Getting started
 
-The tools of the checks are in the Arch Linux repositories, apart from SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting` from the AUR:
+The tools of the checks are in the Arch Linux repositories, apart from two from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, and `hadolint`:
 
 ```bash
 sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
-  yamllint rumdl typos editorconfig-checker reuse
+  yamllint rumdl typos trivy editorconfig-checker reuse
 ```
 
 Then install the git hooks, which run the checks on the staged files before each commit and check the spelling of the commit message:
@@ -27,13 +27,14 @@ prek install
 prek run --all-files
 ```
 
-GitHub Actions runs the same checks on every push and pull request, except spcomp, as the AUR isn't available there.
+GitHub Actions runs the same checks on every push and pull request, except spcomp and hadolint, as the AUR isn't available there.
 
 ## Checks
 
 - Shell scripts are formatted with shfmt and pass shellcheck and shellharden. Write `cd … || exit` instead of disabling SC2164.
 - Python scripts are formatted with ruff and pass `ruff check`. Suppress a rule only where the code can't comply, with `# noqa: <rule>` and a comment saying why.
 - The SourceMod plugins (`game/addons/sourcemod/scripting/*.sp`) compile without warnings: `spcomp -E`.
+- The Containerfile passes hadolint and `trivy config`.
 - systemd units pass systemd-lsp, the GitHub files yamllint, Markdown files rumdl.
 - Everything follows `.editorconfig`, checked by editorconfig-checker. Formatters fix files themselves; run the check again afterwards.
 - The MOTDs (`servers/*/motd.txt`) keep their trailing whitespace, which the game needs to render them as intended.

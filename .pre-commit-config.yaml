@@ -56,6 +56,19 @@ repos:
           done; exit "$status"' --
         files: ^game/addons/sourcemod/scripting/[^/]+\.sp$
 
+      # The Containerfile: hadolint (from the AUR), with shellcheck for its RUN instructions, and trivy's
+      # checks of its configuration, the ones trivy comes with (--skip-check-update, nothing is downloaded)
+      - id: hadolint
+        name: hadolint (hadolint, AUR)
+        language: system
+        entry: hadolint
+        files: (^|/)(Containerfile|Dockerfile)$
+      - id: trivy-config
+        name: trivy config (trivy)
+        language: system
+        entry: trivy config --skip-check-update --quiet --exit-code 1
+        files: (^|/)(Containerfile|Dockerfile)$
+
       # systemd-lsp exits with 0 on findings
       - id: systemd-lsp
         name: systemd-lsp (systemd-lsp)

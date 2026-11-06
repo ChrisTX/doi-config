@@ -45,7 +45,7 @@ cmd_build() {
 	key=$(mktemp)
 	trap 'rm -f "$key"' EXIT
 	gpg --homedir /etc/pacman.d/gnupg --no-permission-warning --export -a "$fingerprint" >"$key"
-	podman build --build-context aur="$aur_repo" --secret id=aur-key,src="$key" \
+	podman build --format docker --build-context aur="$aur_repo" --secret id=aur-key,src="$key" \
 		-f "$repo/deploy/container/Containerfile" -t "$image" "$repo" "$@"
 }
 
@@ -181,9 +181,7 @@ cmd_up() {
 	fi
 	podman run -d --pod "$pod" --name "$pod-server" --env-file "$dir/server.env" -e SERVER_NAME="$config" \
 		-v "$dir/secrets:/run/secrets/doi-server:ro" "${geoip[@]}" "${volumes[@]}" \
-		--health-cmd 'python3 /opt/doi-config/tools/srcds_watchdog.py --check --port 27015' \
-		--health-start-period 10m --health-interval 30s --health-retries 3 --health-on-failure restart \
-		"$image" >/dev/null
+		--health-on-failure restart "$image" >/dev/null
 	echo "Waiting for the server"
 	until podman exec "$pod-server" python3 /opt/doi-config/tools/srcds_watchdog.py --check --port 27015 \
 		--timeout 2 >/dev/null 2>&1; do

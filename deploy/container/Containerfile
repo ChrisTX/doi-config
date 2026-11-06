@@ -7,26 +7,33 @@
 #   GAME_UPDATE, WORKSHOP_UPDATE   any new value (e.g. the date) downloads the game or the workshop items
 #                                  again, which the layer cache keeps otherwise
 # Build context "aur": the pacman repository with the packages, secret "aur-key": its signing key
+# Built in Docker's format (podman build --format docker): OCI images have no HEALTHCHECK
 
 FROM docker.io/library/archlinux:base
 
+# A failed download in a pipe fails the step
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# The servers' user with a fixed ID, which the files of the volumes belong to: a system user's ID depends on
+# the users the base image has
 RUN printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf \
   && pacman -Syu --noconfirm --needed lib32-gcc-libs lib32-glibc lib32-zlib tinyxxd \
   && pacman -Scc --noconfirm \
-  && useradd --system --create-home --home-dir /home/doi doi \
+  && groupadd --gid 1000 doi \
+  && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/doi doi \
   && install -d -o doi -g doi /srv/doi /opt/steamcmd
 
 # SteamCMD, which updates itself on its first run (and may exit with an error status after that)
-USER doi
+USER 1000:1000
 RUN curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C /opt/steamcmd \
   && { /opt/steamcmd/steamcmd.sh +quit || test -x /opt/steamcmd/linux32/steamcmd; }
-USER root
+USER 0:0
 RUN printf '#!/bin/sh\nexec /opt/steamcmd/steamcmd.sh "$@"\n' >/usr/local/bin/steamcmd \
   && chmod 755 /usr/local/bin/steamcmd
 
 # The game, patched, then the workshop items, each with only the files of this repository it needs, so
 # that other changes don't download them again
-USER doi
+USER 1000:1000
 COPY --chown=doi:doi tools/update_game.sh /opt/doi-config/tools/
 COPY --chown=doi:doi patches/ /opt/doi-config/patches/
 ARG GAME_UPDATE=
@@ -39,7 +46,7 @@ RUN /opt/doi-config/tools/update_game.sh --workshop /srv/doi
 # and which is in the AUR, no longer in multilib. SourceMod's optional dependencies, those of its MySQL,
 # PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source are copied into
 # the game's doi folder, owned by the servers' user, who changes the plugins and configs on every start.
-USER root
+USER 0:0
 RUN --mount=type=bind,from=aur,target=/var/lib/aurutils-repo --mount=type=secret,id=aur-key \
   pacman-key --init \
   && pacman-key --add /run/secrets/aur-key \
@@ -56,7 +63,7 @@ RUN --mount=type=bind,from=aur,target=/var/lib/aurutils-repo --mount=type=secret
   && chown -R doi:doi /srv/doi/doi/addons /srv/doi/doi/cfg
 
 # This repository and its plugins
-USER doi
+USER 1000:1000
 COPY --chown=doi:doi . /opt/doi-config
 RUN /opt/doi-config/tools/update_game.sh --plugins /tmp/plugins \
   && cp -a /tmp/plugins/. /opt/doi-config/game/. /srv/doi/doi/ \
@@ -66,4 +73,7 @@ WORKDIR /srv/doi
 ENV LD_LIBRARY_PATH=/srv/doi:/srv/doi/bin
 # SRCDS shuts down on SIGINT, which srcds_watchdog.py passes on
 STOPSIGNAL SIGINT
+# The server answers A2S queries, as the systemd units' watchdog checks; the port is SERVER_PORT
+HEALTHCHECK --start-period=10m --interval=30s --retries=3 \
+  CMD ["python3", "/opt/doi-config/tools/srcds_watchdog.py", "--check"]
 ENTRYPOINT ["/opt/doi-config/deploy/container/entrypoint.sh"]
