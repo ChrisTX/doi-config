@@ -8,6 +8,9 @@
 #   --workshop DIR   download the workshop items of all workshop-ids-*.txt files into DIR
 #   --plugins DIR    compile this repository's plugins into DIR/addons/sourcemod/plugins, replacing DIR
 #   --patcher FILE   build tools/doi_patch.c, which patches the server library in memory, as FILE
+#   --check-patches DIR
+#                    check that the patch list fits the server library of the game in DIR, without
+#                    changing it
 set -euo pipefail
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
@@ -82,14 +85,30 @@ update_patcher() {
 	mv "$file.new" "$file"
 }
 
+# The patch list, patches/server_srv.patches, checked against the library it names with
+# tools/doi_patch.c built as a program: after a game update that moved a patched function, the update
+# fails rather than the servers when they start
+check_patches() {
+	local game=$1 list=$repo/patches/server_srv.patches library checker
+	library=$(awk '$1 == "library" { print $2 }' "$list")
+	checker=$(mktemp)
+	trap 'rm -f "$checker"' RETURN
+	gcc -std=c23 -O2 -Wall -Wextra -DDOI_PATCH_FILE -o "$checker" "$repo/tools/doi_patch.c"
+	"$checker" --check "$list" "$game/doi/bin/$library"
+}
+
 while (($#)); do
 	case $1 in
 		--game | --workshop | --plugins | --patcher)
 			"update_${1#--}" "$2"
 			shift 2
 			;;
+		--check-patches)
+			check_patches "$2"
+			shift 2
+			;;
 		*)
-			echo "Usage: $0 [--game DIR] [--workshop DIR] [--plugins DIR] [--patcher FILE]" >&2
+			echo "Usage: $0 [--game DIR] [--workshop DIR] [--plugins DIR] [--patcher FILE] [--check-patches DIR]" >&2
 			exit 2
 			;;
 	esac

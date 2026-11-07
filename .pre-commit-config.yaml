@@ -57,7 +57,8 @@ repos:
         files: ^game/addons/sourcemod/scripting/[^/]+\.sp$
 
       # The patcher of the server library (tools/doi_patch.c): formatted with clang-format, checked with
-      # clang-tidy (.clang-tidy) and compiled for 32-bit like srcds, warnings as errors
+      # clang-tidy (.clang-tidy) and compiled, warnings as errors, both of its builds: the library for
+      # srcds, 32-bit, and the program (DOI_PATCH_FILE)
       - id: clang-format
         name: clang-format (clang)
         language: system
@@ -66,7 +67,9 @@ repos:
       - id: clang-tidy
         name: clang-tidy (clang, lib32-glibc)
         language: system
-        entry: bash -c 'clang-tidy --quiet "$@" -- -m32 -std=c23' --
+        entry: >-
+          bash -c 'clang-tidy --quiet "$@" -- -m32 -std=c23 &&
+          clang-tidy --quiet "$@" -- -std=c23 -DDOI_PATCH_FILE' --
         types: [c]
       - id: gcc
         name: gcc -m32 (gcc, lib32-gcc-libs, lib32-glibc)
@@ -74,6 +77,7 @@ repos:
         entry: >-
           bash -c 'status=0; for f; do
           gcc -m32 -std=c23 -O2 -shared -fPIC -Wall -Wextra -Wpedantic -Werror -o /dev/null "$f" || status=1;
+          gcc -std=c23 -O2 -DDOI_PATCH_FILE -Wall -Wextra -Wpedantic -Werror -o /dev/null "$f" || status=1;
           done; exit "$status"' --
         types: [c]
 

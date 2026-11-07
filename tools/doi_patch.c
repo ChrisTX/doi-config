@@ -10,24 +10,28 @@
 // server starts, and a patcher that comes later, e.g. with Metamod:Source, is too late for them.
 //
 // Each patch of the list is a function's symbol, an offset in the function, the old bytes and the new
-// ones. The symbols come from
-// the library's own symbol table (.symtab, which has the game's local functions), so a patch doesn't
-// depend on where the linker put the function. Before anything is written, every patch site is checked:
-// if a function is missing or doesn't hold the old bytes, e.g. after a game update, srcds exits with a
-// failure, as the server doesn't work properly without all of them. Sites that already hold the new
-// bytes, from a patch on disk, count as patched.
+// ones. The symbols come from the library's own symbol table (.symtab, which has the game's local
+// functions), so a patch doesn't depend on where the linker put the function. Before anything is
+// written, every patch site is checked: if a function is missing or doesn't hold the old bytes, e.g.
+// after a game update, srcds exits with a failure, as the server doesn't work properly without all of
+// them. A library whose sites all hold the new bytes already, patched on disk, is left as it is; one
+// with only some of them is a failure too, as it's neither the library the list was made for nor one
+// patched with it.
+//
+// Built with DOI_PATCH_FILE defined, it's a program instead, which applies the same list to the
+// library's file: doi_patch [--check] LIST LIBRARY. With --check, it only checks the sites and writes
+// nothing, e.g. after a game update, to find out before the servers start whether the list still fits
+// the library. The program reads the 32-bit library as a file, so it builds for any architecture.
 //
 // Build: gcc -m32 -std=c23 -O2 -shared -fPIC -o doi_patch.so tools/doi_patch.c
+//        gcc -std=c23 -O2 -DDOI_PATCH_FILE -o doi_patch tools/doi_patch.c
 
 // glibc's feature macro, for dlinfo() and RTLD_NEXT
 #define _GNU_SOURCE // NOLINT(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp)
-#include <dlfcn.h>
 #include <elf.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <link.h>
 #include <stdarg.h>
-#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,9 +39,14 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifndef DOI_PATCH_FILE
+#include <dlfcn.h>
+#include <link.h>
+#include <stdatomic.h>
 
-// srcds and the game are 32-bit, and so are the ELF structures below
+// srcds and the game are 32-bit, and so is the library srcds preloads
 static_assert(sizeof(void *) == 4, "build with -m32");
+#endif
 
 // The widths of the fields of a line of the patch list, which sscanf() reads. The byte fields are read
 // with one character more than the longest valid value, two hex digits for each of max_bytes, so that a
@@ -77,7 +86,8 @@ struct patch {
   size_t length;
   unsigned char old_bytes[max_bytes];
   unsigned char new_bytes[max_bytes];
-  // Set by find_symbols(): the function's address relative to the library's start, 0 if it's missing
+  // Set by find_symbols(): the function's address relative to the library's start, 0 if it's missing.
+  // The program turns it into the function's offset in the file (to_file_offset()).
   uintptr_t address;
 };
 
@@ -90,8 +100,13 @@ struct patch_list {
   size_t count;
 };
 
-// The list of DOI_PATCH_LIST, read when srcds starts
-static struct patch_list patch_list;
+// The library's file, mapped as a private copy: what's written to the mapping doesn't reach the file
+struct file {
+  unsigned char *data;
+  size_t size;
+  // The file's permissions, for the patched copy that replaces it
+  mode_t mode;
+};
 
 // What a patch site holds before it's patched
 enum state {
@@ -117,8 +132,9 @@ enum state {
   va_end(args);
 }
 
-// Ends srcds: the server doesn't work properly without all patches. _Exit() rather than exit(), which
-// would run the exit handlers of the engine and of the game, whose library isn't initialised yet.
+// Ends srcds, or the program: the server doesn't work properly without all patches. _Exit() rather than
+// exit(), which would run the exit handlers of the engine and of the game, whose library isn't
+// initialised yet.
 [[noreturn]] static void fail() {
   report("not all patches can be applied, stopping");
   _Exit(EXIT_FAILURE);
@@ -217,8 +233,37 @@ enum state {
   if (valid && list->library[0] == '\0') {
     report("%s: no library line names the library to patch", path);
     valid = false;
+  } else if (valid && list->count == 0) {
+    report("%s has no patches", path);
+    valid = false;
   }
   return valid;
+}
+
+// Maps the library's file into *file; false if it can't be read or is too short for an ELF header
+[[nodiscard]] static bool map_file(const char *path, struct file *file) {
+  int descriptor = open(path, O_RDONLY | O_CLOEXEC);
+  if (descriptor < 0) {
+    report("can't open %s: %s", path, strerror(errno));
+    return false;
+  }
+  struct stat info;
+  if (fstat(descriptor, &info) != 0 || (size_t)info.st_size < sizeof(Elf32_Ehdr)) {
+    report("can't read %s", path);
+    close(descriptor);
+    return false;
+  }
+  file->size = (size_t)info.st_size;
+  file->mode = info.st_mode;
+  // Writable, but private: the program patches the copy in memory and writes it to a new file
+  void *data = mmap(nullptr, file->size, PROT_READ | PROT_WRITE, MAP_PRIVATE, descriptor, 0);
+  close(descriptor);
+  if (data == MAP_FAILED) {
+    report("can't map %s: %s", path, strerror(errno));
+    return false;
+  }
+  file->data = data;
+  return true;
 }
 
 // Sets the address of each patch's function from the symbol table. Functions only: a variable of the
@@ -260,46 +305,28 @@ static void match_symbols(const unsigned char *data, const Elf32_Shdr *table, co
   return false;
 }
 
-// Sets the addresses of the patches' functions from the library's file. The loaded library doesn't have
-// the symbol table: it isn't part of what the loader maps, so it's read from the file, which the loader
-// has just opened.
-[[nodiscard]] static bool find_symbols(const char *path, struct patch *patches, size_t count) {
-  int descriptor = open(path, O_RDONLY | O_CLOEXEC);
-  if (descriptor < 0) {
-    report("can't open %s: %s", path, strerror(errno));
-    return false;
-  }
-  struct stat info;
-  if (fstat(descriptor, &info) != 0 || (size_t)info.st_size < sizeof(Elf32_Ehdr)) {
-    report("can't read %s", path);
-    close(descriptor);
-    return false;
-  }
-  size_t size = (size_t)info.st_size;
-  const unsigned char *data = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, descriptor, 0);
-  close(descriptor);
-  if (data == MAP_FAILED) {
-    report("can't map %s: %s", path, strerror(errno));
-    return false;
-  }
+// Sets the addresses of the patches' functions from the library's file at path, mapped as *file. The
+// loaded library doesn't have the symbol table: it isn't part of what the loader maps, so it's read from
+// the file, which the loader has just opened.
+[[nodiscard]] static bool find_symbols(const char *path, const struct file *file, struct patch *patches,
+                                       size_t count) {
   const Elf32_Shdr *table = nullptr;
   const Elf32_Shdr *strings = nullptr;
-  bool found = find_symtab(data, size, &table, &strings);
-  if (found) {
-    match_symbols(data, table, strings, patches, count);
-  } else {
+  if (!find_symtab(file->data, file->size, &table, &strings)) {
     report("%s isn't a 32-bit ELF file with a symbol table", path);
+    return false;
   }
-  munmap((void *)data, size);
-  return found;
+  match_symbols(file->data, table, strings, patches, count);
+  return true;
 }
 
-// What the patch's site in the loaded library holds, which starts at base
-[[nodiscard]] static enum state check(const struct patch *patch, uintptr_t base) {
+// What the patch's site holds, in the library that starts at base: the loaded library's code, or the
+// program's copy of its file
+[[nodiscard]] static enum state check(const struct patch *patch, const unsigned char *base) {
   if (patch->address == 0) {
     return state_missing;
   }
-  const unsigned char *site = (const unsigned char *)(base + patch->address + patch->offset);
+  const unsigned char *site = base + patch->address + patch->offset;
   if (memcmp(site, patch->old_bytes, patch->length) == 0) {
     return state_original;
   }
@@ -308,6 +335,197 @@ static void match_symbols(const unsigned char *data, const Elf32_Shdr *table, co
   }
   return state_mismatch;
 }
+
+// Checks every site of the list's patches, in the library that starts at base, into states, and counts
+// the sites still to be patched and those patched already; false if any patch can't be applied, or if
+// some sites are patched already and others aren't
+[[nodiscard]] static bool check_sites(const struct patch_list *list, const unsigned char *base,
+                                      enum state *states, size_t *original, size_t *applied) {
+  // The count once, as the reports could change the list for all the compiler knows
+  size_t count = list->count;
+  size_t unusable = 0;
+  *original = 0;
+  *applied = 0;
+  for (size_t index = 0; index < count; index++) {
+    const struct patch *patch = &list->patches[index];
+    states[index] = check(patch, base);
+    switch (states[index]) {
+    case state_original:
+      (*original)++;
+      break;
+    case state_applied:
+      (*applied)++;
+      break;
+    case state_missing:
+      report("line %u: %s has no function %s", patch->line, list->library, patch->symbol);
+      unusable++;
+      break;
+    case state_mismatch:
+      report("line %u: %s+0x%jx doesn't hold the expected bytes", patch->line, patch->symbol,
+             (uintmax_t)patch->offset);
+      unusable++;
+      break;
+    }
+  }
+  if (unusable > 0) {
+    return false;
+  }
+  // All or none: a library that holds some of the new bytes, but not all, was patched by something else
+  if (*original > 0 && *applied > 0) {
+    report("%s is partly patched: %zu of %zu sites hold the new bytes already", list->library, *applied,
+           count);
+    return false;
+  }
+  return true;
+}
+
+#ifdef DOI_PATCH_FILE
+
+// Turns the patch's function address into its offset in the file: the address is where the loader maps
+// the function, the loadable segment (PT_LOAD) that holds it says where it is in the file. False if no
+// segment holds all of the patch's bytes, e.g. as the offset reaches past the function's code.
+[[nodiscard]] static bool to_file_offset(const struct file *file, struct patch *patch) {
+  const Elf32_Ehdr *header = (const Elf32_Ehdr *)file->data;
+  if (header->e_phoff + ((size_t)header->e_phnum * sizeof(Elf32_Phdr)) > file->size) {
+    return false;
+  }
+  const Elf32_Phdr *segments = (const Elf32_Phdr *)(file->data + header->e_phoff);
+  uintptr_t site = patch->address + patch->offset;
+  for (size_t index = 0; index < header->e_phnum; index++) {
+    const Elf32_Phdr *segment = &segments[index];
+    if (segment->p_type != PT_LOAD || site < segment->p_vaddr ||
+        site - segment->p_vaddr > segment->p_filesz ||
+        patch->length > segment->p_filesz - (site - segment->p_vaddr) ||
+        (size_t)segment->p_offset + segment->p_filesz > file->size) {
+      continue;
+    }
+    // Unsigned arithmetic, which wraps around if the function starts before the segment: the site
+    // still comes out right
+    patch->address = patch->address - segment->p_vaddr + segment->p_offset;
+    return true;
+  }
+  return false;
+}
+
+// Replaces the file at path with the patched copy: written as a new file next to it first, which then
+// takes its place, so that a failure never leaves a partly written library behind
+// The bits of a file's mode the patched copy takes over: its permissions, not its type
+static constexpr mode_t permission_bits = 0777;
+
+[[nodiscard]] static bool write_file(const char *path, const struct file *file) {
+  static const char suffix[] = ".new";
+  size_t length = strlen(path) + sizeof suffix;
+  char *temporary = malloc(length);
+  if (temporary == nullptr) {
+    report("out of memory");
+    return false;
+  }
+  (void)snprintf(temporary, length, "%s%s", path, suffix);
+  int descriptor =
+      open(temporary, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, file->mode & permission_bits);
+  bool written = false;
+  if (descriptor >= 0) {
+    size_t done = 0;
+    while (done < file->size) {
+      ssize_t result = write(descriptor, file->data + done, file->size - done);
+      if (result < 0) {
+        break;
+      }
+      done += (size_t)result;
+    }
+    // On disk before it replaces the library, so that a crash leaves the old or the new one
+    if (done == file->size && fsync(descriptor) == 0) {
+      written = true;
+    }
+    if (close(descriptor) != 0) {
+      written = false;
+    }
+  }
+  if (written && rename(temporary, path) != 0) {
+    written = false;
+  }
+  if (!written) {
+    report("can't write %s: %s", path, strerror(errno));
+    (void)unlink(temporary);
+  }
+  free(temporary);
+  return written;
+}
+
+int main(int argc, char *argv[]) {
+  bool check_only = (argc == 4 && strcmp(argv[1], "--check") == 0) != 0;
+  if (argc != 3 && !check_only) {
+    (void)fprintf(stderr, "Usage: %s [--check] LIST LIBRARY\n", argv[0]);
+    return 2;
+  }
+  const char *list_path = argv[argc - 2];
+  const char *path = argv[argc - 1];
+  struct patch_list list = {};
+  if (!read_list(list_path, &list)) {
+    fail();
+  }
+  // The library must be the one the list names, as in srcds
+  const char *name = strrchr(path, '/');
+  name = name == nullptr ? path : name + 1;
+  if (strcmp(name, list.library) != 0) {
+    report("%s patches %s, not %s", list_path, list.library, name);
+    fail();
+  }
+
+  struct file file = {};
+  if (!map_file(path, &file) || !find_symbols(path, &file, list.patches, list.count)) {
+    fail();
+  }
+  for (size_t index = 0; index < list.count; index++) {
+    struct patch *patch = &list.patches[index];
+    // A missing function is left to check_sites(), which reports it with the others
+    if (patch->address != 0 && !to_file_offset(&file, patch)) {
+      report("line %u: %s+0x%jx isn't in the file's loaded code", patch->line, patch->symbol,
+             (uintmax_t)patch->offset);
+      fail();
+    }
+  }
+
+  // read_list() rejects a list without patches, which the analyser doesn't follow
+  // NOLINTNEXTLINE(clang-analyzer-optin.portability.UnixAPI)
+  enum state *states = calloc(list.count, sizeof *states);
+  if (states == nullptr) {
+    report("out of memory");
+    fail();
+  }
+  size_t original = 0;
+  size_t applied = 0;
+  if (!check_sites(&list, file.data, states, &original, &applied)) {
+    fail();
+  }
+  if (check_only) {
+    // check_sites() has made sure it's all or none
+    report("%s fits the list: %s", path, applied > 0 ? "patched already" : "all patches can be applied");
+    free(states);
+    munmap(file.data, file.size);
+    return EXIT_SUCCESS;
+  }
+
+  for (size_t index = 0; index < list.count; index++) {
+    const struct patch *patch = &list.patches[index];
+    if (states[index] == state_original) {
+      memcpy(file.data + patch->address + patch->offset, patch->new_bytes, patch->length);
+    }
+  }
+  // Nothing to write if every site holds the new bytes already
+  if (original > 0 && !write_file(path, &file)) {
+    fail();
+  }
+  report("%zu of %zu patches applied to %s, %zu were already", original, list.count, path, applied);
+  free(states);
+  munmap(file.data, file.size);
+  return EXIT_SUCCESS;
+}
+
+#else
+
+// The list of DOI_PATCH_LIST, read when srcds starts
+static struct patch_list patch_list;
 
 // Writes the patch's new bytes into the library's code, which the loader maps read-only and executable.
 // The pages around the site are made writable while it's written, but not executable at the same time:
@@ -339,13 +557,14 @@ static void patch_library(void *handle, struct patch_list *list) {
     report("can't find where %s is loaded: %s", list->library, dlerror());
     fail();
   }
-  struct patch *patches = list->patches;
-  size_t count = list->count;
-  if (!find_symbols(map->l_name, patches, count)) {
+  struct file file = {};
+  if (!map_file(map->l_name, &file) || !find_symbols(map->l_name, &file, list->patches, list->count)) {
     fail();
   }
+  munmap(file.data, file.size);
 
   // Every site first, so that nothing is written unless all patches can be applied
+  size_t count = list->count;
   enum state *states = calloc(count, sizeof *states);
   if (states == nullptr) {
     report("out of memory");
@@ -353,36 +572,14 @@ static void patch_library(void *handle, struct patch_list *list) {
   }
   size_t original = 0;
   size_t applied = 0;
-  size_t unusable = 0;
-  for (size_t index = 0; index < count; index++) {
-    const struct patch *patch = &patches[index];
-    states[index] = check(patch, map->l_addr);
-    switch (states[index]) {
-    case state_original:
-      original++;
-      break;
-    case state_applied:
-      applied++;
-      break;
-    case state_missing:
-      report("line %u: %s has no function %s", patch->line, list->library, patch->symbol);
-      unusable++;
-      break;
-    case state_mismatch:
-      report("line %u: %s+0x%jx doesn't hold the expected bytes", patch->line, patch->symbol,
-             (uintmax_t)patch->offset);
-      unusable++;
-      break;
-    }
-  }
-  if (unusable > 0) {
+  if (!check_sites(list, (const unsigned char *)map->l_addr, states, &original, &applied)) {
     fail();
   }
 
   size_t written = 0;
   for (size_t index = 0; index < count; index++) {
     if (states[index] == state_original) {
-      if (!apply(&patches[index], map->l_addr)) {
+      if (!apply(&list->patches[index], map->l_addr)) {
         fail();
       }
       written++;
@@ -391,7 +588,7 @@ static void patch_library(void *handle, struct patch_list *list) {
   report("%zu of %zu patches applied to %s, %zu were already (%zu found unpatched)", written, count,
          list->library, applied, original);
   free(states);
-  free(patches);
+  free(list->patches);
   list->patches = nullptr;
   list->count = 0;
 }
@@ -445,3 +642,5 @@ void *dlopen(const char *file, int mode) {
   }
   return handle;
 }
+
+#endif

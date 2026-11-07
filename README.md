@@ -319,6 +319,18 @@ LD_PRELOAD=$PWD/doi_patch.so DOI_PATCH_LIST=$PWD/patches/server_srv.patches \
   ./srcds_run -game doi …
 ```
 
+Built with `DOI_PATCH_FILE` defined, the patcher is a program that applies the
+same list to the library's file instead, for a server that can't preload it.
+SteamCMD's updates and validation undo that patch, so apply it again after
+each. With `--check` it only checks the list against the library and changes
+nothing; `doi-update.service` runs this after each update, so a game update
+that breaks the patches fails there rather than when the servers start:
+
+```bash
+gcc -std=c23 -O2 -DDOI_PATCH_FILE -o doi_patch tools/doi_patch.c
+./doi_patch [--check] patches/server_srv.patches …/doi/bin/server_srv.so
+```
+
 ### GeoIP2 databases
 
 SourceMod and the SourceBans++ web panel both use MaxMind's GeoIP2 databases.
