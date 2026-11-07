@@ -12,8 +12,8 @@ extend-ignore-re = [
   "\\bstruc\\.sql\\b",
   # The SourceMod library AFK Manager needs
   "Multi-Colors",
-  # clang-tidy's checks of the static analyser
-  "\\bclang-analyzer-",
+  # The names of clang-tidy's checks (clang-analyzer-*, modernize-*)
+  "\\b(?:clang-analyzer|modernize)-[-a-z0-9.*]*",
 ]
 
 [default.extend-words]
