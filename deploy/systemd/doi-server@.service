@@ -16,6 +16,9 @@ StartLimitBurst=6
 # once it doesn't answer for WatchdogSec. Its SIGABRT goes to the server, which dumps its core then.
 Type=notify
 WatchdogSec=90
+# The time the hung server has to dump its core after the watchdog's SIGABRT, before it's killed. A
+# stopped process (SIGSTOP) only dies then, as it doesn't receive the SIGABRT.
+TimeoutAbortSec=30
 User=doi
 EnvironmentFile=/etc/doi-server/%i.env
 StateDirectory=doi-server

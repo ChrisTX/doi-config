@@ -75,8 +75,7 @@ Their writable layer starts empty whenever the layers are mounted, so changes
 to the layers always show. What the server writes and keeps, like its logs, is
 bind-mounted from the server's state folder instead (see
 `tools/mount_server.sh`). The layers are mounted while the server runs, in
-`/run/doi-server/<server>`, and when the server restarts on its own, they and
-its writable layer stay as they are.
+`/run/doi-server/<server>`.
 
 The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
 
@@ -91,7 +90,8 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   removed.
 - `doi-mount@<server>.service` mounts the layers (`tools/mount_server.sh`)
   after `doi-update.service`, and unmounts them after the server stops. It's
-  stopped and restarted with the server, and the server only runs with it.
+  stopped and restarted with the server, systemd's restarts of the server
+  included, and the server only runs with it.
 - `doi-server@<server>.service` configures the server (`tools/prepare_server.sh`: the plugins SourceBans++
   needs, its website from `SOURCEBANS_WEBSITE`, `RCON_PASSWORD` in `rcon.cfg`)
   and runs it. SourceBans++ finds the server in the panel by its address and
@@ -107,7 +107,7 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
 - `tools/srcds_watchdog.py` runs the server and queries it with A2S. The
   service is ready once the server first answers, and systemd's watchdog
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
-  The hung server dumps its core first.
+  The hung server has 30 seconds to dump its core first.
 - `doi-servers.target` starts the enabled servers.
 - `doi-restart.timer` stops the servers every day at 06:00, runs
   `doi-update.service` and starts them again, as the game install mustn't

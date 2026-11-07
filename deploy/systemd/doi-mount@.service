@@ -3,8 +3,8 @@ Description=Layers of the Day of Infamy server (%i)
 # The layers include the game install and this repository, which mustn't change while they're mounted
 After=doi-update.service
 Wants=doi-update.service
-# Stopped and restarted with its server, after it stops and before it starts. systemd's own restarts of
-# the server (Restart=) keep the layers, and with them its writable layer.
+# Stopped and restarted with its server, after it stops and before it starts, its restarts by systemd
+# (Restart=) included: the server's writable layer starts empty on every start.
 PartOf=doi-server@%i.service
 
 [Service]
