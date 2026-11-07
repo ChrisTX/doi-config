@@ -1,40 +1,25 @@
 #!/bin/bash
 # Updates the layers the servers share: the game install, the workshop items of all servers and this
-# repository's compiled plugins. doi-update.service runs it as the servers' user while no server runs, as
+# repository's compiled plugins, and builds the patcher of the server library. doi-update.service runs it as the servers' user while no server runs, as
 # the lower layers of an overlay mustn't change while it's mounted; the container image runs each step in
 # a layer of its own.
 #
-#   --game DIR       install or update the game in DIR, patched, without its outdated libraries
+#   --game DIR       install or update the game in DIR, without its outdated libraries
 #   --workshop DIR   download the workshop items of all workshop-ids-*.txt files into DIR
 #   --plugins DIR    compile this repository's plugins into DIR/addons/sourcemod/plugins, replacing DIR
+#   --patcher FILE   build tools/doi_patch.c, which patches the server library in memory, as FILE
 set -euo pipefail
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
 
 update_game() {
-	local game=$1 server_srv server_srv_sum attempt
+	local game=$1 attempt
 	# A new SteamCMD fails its first install with "Missing configuration", before it has the app's
 	# configuration, and downloads fail at times: tried three times
 	for attempt in 1 2 3; do
 		steamcmd +force_install_dir "$game" +login anonymous +app_update 462310 validate +quit && break
 		((attempt < 3)) || exit 1
 	done
-
-	# Patch the server library to lift the playlist restrictions and enable stats with custom content.
-	# SteamCMD's validate restores the original, which the patch applies to. A game update needs a new
-	# patch.
-	local server_srv_original=be44b24b6525ec0a622310a91803e5f8444c1b501e057032800e6f1dd924a318
-	local server_srv_patched=104743f75a63ebf6137f4e1dbcd83897fee50386a895fad3bf26ccd2051f5358
-	server_srv=$game/doi/bin/server_srv.so
-	server_srv_sum=$(sha256sum "$server_srv" | cut -d ' ' -f 1)
-	if [[ $server_srv_sum == "$server_srv_original" ]]; then
-		xxd -r "$repo/patches/server_srv.xxd" "$server_srv"
-		server_srv_sum=$(sha256sum "$server_srv" | cut -d ' ' -f 1)
-	fi
-	if [[ $server_srv_sum != "$server_srv_patched" ]]; then
-		echo "Error: $server_srv isn't the version patches/server_srv.xxd is made for" >&2
-		exit 1
-	fi
 
 	# Remove the shipped, outdated standard libraries, the system's are used instead
 	rm -f "$game"/bin/{libgcc_s.so.1,libstdc++.so.6,libogg.so,libvorbis.so}
@@ -90,14 +75,21 @@ update_plugins() {
 	done
 }
 
+# The patcher, for srcds (32-bit); replaced only once it's built
+update_patcher() {
+	local file=$1
+	gcc -m32 -std=c23 -O2 -shared -fPIC -Wall -Wextra -o "$file.new" "$repo/tools/doi_patch.c"
+	mv "$file.new" "$file"
+}
+
 while (($#)); do
 	case $1 in
-		--game | --workshop | --plugins)
+		--game | --workshop | --plugins | --patcher)
 			"update_${1#--}" "$2"
 			shift 2
 			;;
 		*)
-			echo "Usage: $0 [--game DIR] [--workshop DIR] [--plugins DIR]" >&2
+			echo "Usage: $0 [--game DIR] [--workshop DIR] [--plugins DIR] [--patcher FILE]" >&2
 			exit 2
 			;;
 	esac

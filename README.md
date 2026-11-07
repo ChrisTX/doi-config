@@ -82,8 +82,8 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
 - `doi-update.service` pulls this repository in
   `/var/lib/doi-server/doi-config` and runs `tools/update_game.sh`, which
   installs or updates the game in `/var/lib/doi-server/game` with SteamCMD,
-  patches it (see [Server patch](#server-patch)) and compiles this repository's
-  plugins. It runs before the servers start. It also downloads the workshop
+  builds the patcher of its server library (see [Server patch](#server-patch))
+  and compiles this repository's plugins. It runs before the servers start. It also downloads the workshop
   items of all `workshop-ids-*.txt` files into `/var/lib/doi-server/workshop`,
   once for all servers. SteamCMD gets their current versions, which the game
   itself never does once it has an item, and items no list names any more are
@@ -114,7 +114,8 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   change while servers use it.
 
 Setting up a server, as root, with the packages above and `steamcmd`, `git`,
-`python-a2s` and `vim` (for `xxd`) installed:
+`python-a2s`, `gcc` and the 32-bit `lib32-glibc` (for the patcher, see [Server
+patch](#server-patch)) installed:
 
 ```bash
 cp deploy/sysusers.d/doi-server.conf /etc/sysusers.d/
@@ -298,12 +299,25 @@ folder, which `prepare_server.sh` links into the server.
 
 ### Server patch
 
-`patches/server_srv.xxd` patches the game's server library,
-`doi/bin/server_srv.so`, so it enables stats with custom content and lifts the
-playlist restrictions. It changes a few bytes, which `update_game.sh` writes
-with `xxd -r` (from the `vim` or `tinyxxd` package). The script checks the
-library's SHA-256 before and after, so it stops if a game update changes the
-library.
+The game's server library, `doi/bin/server_srv.so`, is patched so it enables
+stats with custom content and lifts the playlist restrictions. The patch is
+applied in memory, by `tools/doi_patch.c`, so the game's files stay as SteamCMD
+installs them, and SteamCMD's updates, which every server needs for the current
+Steam client library, don't undo it. srcds loads it with `LD_PRELOAD`: when the
+engine has loaded the library, before it initialises it, the patcher writes the
+patches of `patches/server_srv.patches` (the list `DOI_PATCH_LIST` names).
+
+Each patch names the function's symbol, the offset in the function and the old
+and new bytes. If a function is missing or its bytes aren't the expected ones,
+e.g. after a game update, srcds stops with an error instead of running without
+all patches. The patcher builds with a 32-bit C compiler, on any Linux
+distribution, e.g. for a server of your own:
+
+```bash
+gcc -m32 -std=c23 -O2 -shared -fPIC -o doi_patch.so tools/doi_patch.c
+LD_PRELOAD=$PWD/doi_patch.so DOI_PATCH_LIST=$PWD/patches/server_srv.patches \
+  ./srcds_run -game doi …
+```
 
 ### GeoIP2 databases
 
