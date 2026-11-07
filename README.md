@@ -41,6 +41,12 @@ rcon_password "MY-PASSWORD"
 exec doi-config/init-coop-commando.cfg
 ```
 
+The live Coop Commando server's
+[`servers/coop-commando/cfg/server.cfg`](servers/coop-commando/cfg/server.cfg)
+is the same, with the names of SourceTV as well; its RCON password is
+`RCON_PASSWORD` of its environment file, which `prepare_server.sh` writes to
+`cfg/rcon.cfg`.
+
 The workshop ID file of the configuration in `game/cfg/doi-config` has to be
 passed to SRCDS on the command line with `sv_workshop_list_file`, as it can't be
 changed once the server is running.
