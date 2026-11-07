@@ -95,7 +95,8 @@ enum state {
 // Writes a line to stderr, which srcds' output and so the journal or the container's log has. The
 // results of the writes are of no use: there's nowhere else to report a failed write to.
 [[gnu::format(printf, 1, 2)]] static void report(const char *format, ...) {
-  va_list args;
+  // C23's empty initializer, as va_list is a pointer, an array or a struct, depending on the ABI
+  va_list args = {};
   va_start(args, format);
   (void)fputs("doi_patch: ", stderr);
   (void)vfprintf(stderr, format, args);
@@ -225,8 +226,8 @@ static void match_symbols(const unsigned char *data, const Elf32_Shdr *table, co
     if (sections[section].sh_type == SHT_SYMTAB && sections[section].sh_link < header->e_shnum) {
       *table = &sections[section];
       *strings = &sections[sections[section].sh_link];
-      return (*table)->sh_offset + (*table)->sh_size <= size &&
-             (*strings)->sh_offset + (*strings)->sh_size <= size;
+      return ((*table)->sh_offset + (*table)->sh_size <= size &&
+              (*strings)->sh_offset + (*strings)->sh_size <= size) != 0;
     }
   }
   return false;

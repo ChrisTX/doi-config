@@ -1,9 +1,10 @@
 # clang-tidy's checks of the C code, warnings as errors. Left out: swappable parameters, which C's
 # pointer and size pairs always are; C11's Annex K (memcpy_s, sscanf_s), which glibc doesn't have;
-# integer to pointer casts, which a patcher needs to address the code; and implicit conversions to bool,
-# as C's comparisons and logical operators yield an int.
+# and integer to pointer casts, which a patcher needs to address the code. Uninitialised variables are
+# checked too.
 Checks: >-
   bugprone-*,
+  cppcoreguidelines-init-variables,
   cert-*,
   clang-analyzer-*,
   misc-*,
@@ -13,6 +14,5 @@ Checks: >-
   readability-*,
   -bugprone-easily-swappable-parameters,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
-  -performance-no-int-to-ptr,
-  -readability-implicit-bool-conversion
+  -performance-no-int-to-ptr
 WarningsAsErrors: "*"
