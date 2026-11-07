@@ -57,8 +57,8 @@ repos:
         files: ^game/addons/sourcemod/scripting/[^/]+\.sp$
 
       # The patcher of the server library (tools/doi_patch.c): formatted with clang-format, checked with
-      # clang-tidy (.clang-tidy) and compiled, warnings as errors, both of its builds: the library for
-      # srcds, 32-bit, and the program (DOI_PATCH_FILE)
+      # clang-tidy (.clang-tidy) and compiled with gcc and clang, warnings as errors, both of its builds:
+      # the library for srcds, 32-bit, and the program (DOI_PATCH_FILE)
       - id: clang-format
         name: clang-format (clang)
         language: system
@@ -78,6 +78,16 @@ repos:
           bash -c 'status=0; for f; do
           gcc -m32 -std=c23 -O2 -shared -fPIC -Wall -Wextra -Wpedantic -Werror -o /dev/null "$f" || status=1;
           gcc -std=c23 -O2 -DDOI_PATCH_FILE -Wall -Wextra -Wpedantic -Werror -o /dev/null "$f" || status=1;
+          done; exit "$status"' --
+        types: [c]
+      # The same with clang, whose warnings differ from gcc's
+      - id: clang
+        name: clang, both builds (clang, lib32-gcc-libs, lib32-glibc)
+        language: system
+        entry: >-
+          bash -c 'status=0; for f; do
+          clang -m32 -std=c23 -O2 -shared -fPIC -Wall -Wextra -Wpedantic -Werror -o /dev/null "$f" || status=1;
+          clang -std=c23 -O2 -DDOI_PATCH_FILE -Wall -Wextra -Wpedantic -Werror -o /dev/null "$f" || status=1;
           done; exit "$status"' --
         types: [c]
 
