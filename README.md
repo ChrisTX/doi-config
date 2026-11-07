@@ -133,13 +133,15 @@ layers as the systemd units: the game, the workshop items of all servers,
 SourceMod, Metamod:Source and the plugins from their packages, and this
 repository. Containers of the image share its layers, and a container's
 writable layer starts anew whenever the container is created. The packages come
-from a pacman repository, like the one of aurutils, verified with its signing
-key. With Podman, from the repository's root:
+from a local pacman repository, like the one of aurutils, verified with its
+signing key: the build context `repo` is its folder, `REPO_NAME` its name. With
+Podman, from the repository's root, for aurutils' `aur` repository in
+`/var/lib/aurutils-repo`:
 
 ```bash
-gpg --homedir /etc/pacman.d/gnupg --export -a <key> >aur-key.asc
-podman build --format docker --build-context aur=/var/lib/aurutils-repo \
-  --secret id=aur-key,src=aur-key.asc \
+gpg --homedir /etc/pacman.d/gnupg --export -a <key> >repo-key.asc
+podman build --format docker --build-context repo=/var/lib/aurutils-repo \
+  --build-arg REPO_NAME=aur --secret id=repo-key,src=repo-key.asc \
   -f deploy/container/Containerfile -t doi-server .
 ```
 
@@ -205,9 +207,11 @@ deploy/container/test-instance.sh down
 The server is then at this machine's address, port 27015, which `up` prints.
 Not at `127.0.0.1`: rootless Podman passes connections from there on from the
 pod's own address, and the server drops them. `build` and `up` take the packages
-and SourceBans++'s tables from the pacman repository in `AUR_REPO`
-(`/var/lib/aurutils-repo` by default). `tools/rcon.py` is the RCON client, with
-the password in `RCON_PASSWORD`.
+and SourceBans++'s tables from the local pacman repository, which they find like
+aurutils: `aur repo --status`, or without aurutils the one repository of
+pacman.conf with a `file://` server. `AUR_REPO` and `AUR_DBROOT` name its name
+and folder, as for aurutils. `tools/rcon.py` is the RCON client, with the
+password in `RCON_PASSWORD`.
 
 The systemd units can be tested on this machine as well, set up as in [Running
 with systemd](#running-with-systemd), with only the test instance's database:

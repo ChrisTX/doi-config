@@ -3,7 +3,7 @@
 # SourceMod's tables, the server registered in SourceBans++ and optionally an admin. Nothing of it reaches
 # the live servers: the passwords are generated, and without its config the Discord forward stays silent.
 #
-#   build             build the image (podman build, see README.md) from the pacman repository $AUR_REPO
+#   build             build the image (podman build, see README.md) from the local pacman repository
 #   up [--db-only] [CONFIG]
 #                     start the test instance of a config of servers/ (coop-commando by default), anew;
 #                     with --db-only only its database, for the systemd units on this machine
@@ -11,15 +11,19 @@
 #   rcon COMMAND...   run a command on the server over RCON
 #   logs              follow the server's log
 #
-# AUR_REPO: the pacman repository with the packages (/var/lib/aurutils-repo); its package of the
-# SourceBans++ web panel has the tables, and the signature of its database names its key
+# The local pacman repository with the packages, which aurutils builds into, found like aurutils finds
+# it (aur repo --status, or the one file:// repository of pacman.conf without aurutils); its package of
+# the SourceBans++ web panel has the tables, and the signature of its database names its key
+# AUR_REPO, AUR_DBROOT: the repository's name and folder, as for aurutils
 # DOI_TEST_DIR: the test instance's files (${XDG_STATE_HOME:-~/.local/state}/doi-config-test)
 # TEST_ADMIN: a SteamID (STEAM_0:…) that gets root admin
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 set -euo pipefail
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
-aur_repo=${AUR_REPO:-/var/lib/aurutils-repo}
+# Set by find_repo
+repo_name=''
+repo_root=''
 dir=${DOI_TEST_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/doi-config-test}
 image=localhost/doi-server
 pod=doi-test
@@ -32,27 +36,64 @@ usage() {
 	exit 2
 }
 
-# The repository's database, e.g. aur.db, and the key it's signed with
+# The local repository's name and folder
+find_repo() {
+	[[ -z $repo_root ]] || return 0
+	if command -v aur >/dev/null; then
+		local status
+		status=$(aur repo --status)
+		repo_name=$(sed -n 's/^repo://p' <<<"$status")
+		repo_root=$(sed -n 's/^root://p' <<<"$status")
+	else
+		# The one repository with a file:// server, or the one AUR_REPO names
+		local repo server
+		local -a repos found=()
+		mapfile -t repos < <(pacman-conf --repo-list)
+		for repo in "${repos[@]}"; do
+			[[ -z ${AUR_REPO:-} || $repo == "$AUR_REPO" ]] || continue
+			server=$(pacman-conf --repo="$repo" Server | head -n 1)
+			if [[ $server == file://* ]]; then
+				found+=("$repo")
+				repo_name=$repo
+				repo_root=${server#file://}
+			fi
+		done
+		if [[ -n ${AUR_REPO:-} && ${#found[@]} == 0 ]]; then
+			echo "Error: pacman.conf has no local (file://) repository $AUR_REPO" >&2
+			exit 1
+		elif ((${#found[@]} != 1)); then
+			echo "Error: ${#found[@]} local repositories in pacman.conf (${found[*]}), name one with AUR_REPO" >&2
+			exit 1
+		fi
+		repo_root=${AUR_DBROOT:-${repo_root%/}}
+	fi
+	if [[ ! -f $repo_root/$repo_name.db ]]; then
+		echo "Error: no database of the repository $repo_name in $repo_root" >&2
+		exit 1
+	fi
+}
+
+# The key the repository's database is signed with
 repo_key() {
-	local db
-	db=$(find "$aur_repo" -maxdepth 1 -name '*.db' -print -quit)
+	local db=$repo_root/$repo_name.db
 	gpg --homedir /etc/pacman.d/gnupg --no-permission-warning --status-fd 1 --verify "$db.sig" "$db" 2>/dev/null |
 		awk '/^\[GNUPG:\] VALIDSIG/ { print $3; exit }'
 }
 
 cmd_build() {
+	find_repo
 	local fingerprint
 	fingerprint=$(repo_key)
 	if [[ -z $fingerprint ]]; then
-		echo "Error: the database of $aur_repo has no valid signature" >&2
+		echo "Error: the database of $repo_name in $repo_root has no valid signature" >&2
 		exit 1
 	fi
 	# Global, for the trap, which runs after the function has returned
 	key=$(mktemp)
 	trap 'rm -f "$key"' EXIT
 	gpg --homedir /etc/pacman.d/gnupg --no-permission-warning --export -a "$fingerprint" >"$key"
-	podman build --format docker --build-context aur="$aur_repo" --secret id=aur-key,src="$key" \
-		-f "$repo/deploy/container/Containerfile" -t "$image" "$repo" "$@"
+	podman build --format docker --build-context repo="$repo_root" --secret id=repo-key,src="$key" \
+		--build-arg REPO_NAME="$repo_name" -f "$repo/deploy/container/Containerfile" -t "$image" "$repo" "$@"
 }
 
 # The settings of the live servers' environment files, with the test's ports
@@ -82,9 +123,10 @@ password() {
 # admins and client preferences (from the image), the test server and the admin
 write_database() {
 	local package
-	package=$(find "$aur_repo" -maxdepth 1 -name 'sourcebans-pp-[0-9]*.pkg.tar.zst' | sort -V | tail -1)
+	find_repo
+	package=$(find "$repo_root" -maxdepth 1 -name 'sourcebans-pp-[0-9]*.pkg.tar.zst' | sort -V | tail -1)
 	if [[ -z $package ]]; then
-		echo "Error: $aur_repo has no sourcebans-pp package with SourceBans++'s tables" >&2
+		echo "Error: $repo_root has no sourcebans-pp package with SourceBans++'s tables" >&2
 		exit 1
 	fi
 	mkdir -p "$dir/init"
