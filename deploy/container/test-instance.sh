@@ -4,7 +4,9 @@
 # the live servers: the passwords are generated, and without its config the Discord forward stays silent.
 #
 #   build             build the image (podman build, see README.md) from the pacman repository $AUR_REPO
-#   up [CONFIG]       start the test instance of a config of servers/ (coop-commando by default), anew
+#   up [--db-only] [CONFIG]
+#                     start the test instance of a config of servers/ (coop-commando by default), anew;
+#                     with --db-only only its database, for the systemd units on this machine
 #   down              remove the test instance, its database and volumes
 #   rcon COMMAND...   run a command on the server over RCON
 #   logs              follow the server's log
@@ -13,6 +15,7 @@
 # SourceBans++ web panel has the tables, and the signature of its database names its key
 # DOI_TEST_DIR: the test instance's files (${XDG_STATE_HOME:-~/.local/state}/doi-config-test)
 # TEST_ADMIN: a SteamID (STEAM_0:…) that gets root admin
+# TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 set -euo pipefail
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
@@ -20,6 +23,9 @@ aur_repo=${AUR_REPO:-/var/lib/aurutils-repo}
 dir=${DOI_TEST_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/doi-config-test}
 image=localhost/doi-server
 pod=doi-test
+db_port=${TEST_DB_PORT:-3306}
+# Set by up --db-only
+db_only=
 
 usage() {
 	sed -n '2,/^set -euo/p' "${BASH_SOURCE[0]}" | sed -e '/^set -euo/d' -e 's/^# \?//' >&2
@@ -88,10 +94,11 @@ write_database() {
 	for sql in struc.sql data.sql; do
 		bsdtar -xOf "$package" "usr/share/sourcebans-pp/install/includes/sql/$sql"
 	done | sed -e 's/{prefix}/sb/g' -e 's/{charset}/utf8mb4/g' >"$dir/init/01-sourcebans.sql"
-	podman run --rm --entrypoint cat "$image" \
-		/usr/lib/sourcemod/addons/sourcemod/configs/sql-init-scripts/mysql/create_admins.sql \
-		/usr/lib/sourcemod/addons/sourcemod/configs/sql-init-scripts/mysql/clientprefs-mysql.sql \
-		>"$dir/init/02-sourcemod.sql"
+	# SourceMod of the server: the image's, or this machine's for the systemd units
+	local scripts=/usr/lib/sourcemod/addons/sourcemod/configs/sql-init-scripts/mysql
+	local -a cat=(podman run --rm --entrypoint cat "$image")
+	[[ -z $db_only ]] || cat=(cat)
+	"${cat[@]}" "$scripts/create_admins.sql" "$scripts/clientprefs-mysql.sql" >"$dir/init/02-sourcemod.sql"
 	cat >"$dir/init/03-test.sql" <<-'EOF'
 		-- The test server, which SourceBans++ finds by its address (SOURCEBANS_SERVER_IP) and port
 		INSERT INTO sb_mods (mid, name, icon, modfolder, steam_universe, enabled) VALUES
@@ -117,12 +124,16 @@ write_database() {
 }
 
 write_secrets() {
-	local db_password=$1 entry
+	local db_password=$1 entry port=3306
+	# The server of the systemd units reaches the database at its port on this machine, the
+	# container's within the pod
+	[[ -z $db_only ]] || port=$db_port
 	mkdir -p "$dir/secrets/addons/sourcemod/configs"
 	{
 		printf '"Databases"\n{\n\t"driver_default"\t"mysql"\n'
 		for entry in default sourcebans clientprefs; do
 			printf '\n\t"%s"\n\t{\n\t\t"driver"\t"mysql"\n\t\t"host"\t"127.0.0.1"\n' "$entry"
+			printf '\t\t"port"\t"%s"\n' "$port"
 			printf '\t\t"database"\t"doi"\n\t\t"user"\t"doi"\n\t\t"pass"\t"%s"\n\t}\n' "$db_password"
 		done
 		printf '\n\t"storage-local"\n\t{\n\t\t"driver"\t"sqlite"\n\t\t"database"\t"sourcemod-local"\n\t}\n}\n'
@@ -130,8 +141,12 @@ write_secrets() {
 }
 
 cmd_up() {
+	if [[ ${1:-} == --db-only ]]; then
+		db_only=1
+		shift
+	fi
 	local config=${1:-coop-commando} db_password volume
-	if ! podman image exists "$image"; then
+	if [[ -z $db_only ]] && ! podman image exists "$image"; then
 		echo "Error: no image $image, build it first: $0 build" >&2
 		exit 1
 	fi
@@ -157,8 +172,9 @@ cmd_up() {
 
 	# A private address of the pod's own: by default, rootless Podman's pasta gives the pod the host's
 	# address, and the server ignores connections that seem to come from its own address
-	podman pod create --name "$pod" --network pasta:-a,10.0.2.100,-n,24,-g,10.0.2.2 \
-		-p 27015:27015/udp -p 27015:27015/tcp -p 27020:27020/udp >/dev/null
+	local -a ports=(-p 27015:27015/udp -p 27015:27015/tcp -p 27020:27020/udp)
+	[[ -z $db_only ]] || ports=(-p "127.0.0.1:$db_port:3306/tcp")
+	podman pod create --name "$pod" --network pasta:-a,10.0.2.100,-n,24,-g,10.0.2.2 "${ports[@]}" >/dev/null
 	podman run -d --pod "$pod" --name "$pod-db" --env-file "$dir/db.env" \
 		-v "$dir/init:/docker-entrypoint-initdb.d:ro" docker.io/library/mariadb:lts >/dev/null
 	echo "Waiting for the database"
@@ -169,6 +185,13 @@ cmd_up() {
 		fi
 		sleep 2
 	done
+	if [[ -n $db_only ]]; then
+		echo "The database of the test instance of $config is up at 127.0.0.1:$db_port." \
+			"For doi-server@$config.service, its settings and the server's secrets, as root:"
+		printf '\n  install -D -m 640 -g doi %q /etc/doi-server/%q\n' "$dir/server.env" "$config.env"
+		printf '  cp -r %q /etc/doi-server/secrets/\n' "$dir/secrets/."
+		return
+	fi
 
 	local -a volumes=()
 	for volume in dumps:/srv/doi/dumps logs:/srv/doi/doi/logs sm-logs:/srv/doi/doi/addons/sourcemod/logs \

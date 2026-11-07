@@ -201,10 +201,19 @@ deploy/container/test-instance.sh down
 The server is then at this machine's address, port 27015, which `up` prints.
 Not at `127.0.0.1`: rootless Podman passes connections from there on from the
 pod's own address, and the server drops them. `build` and `up` take the packages
-and
-SourceBans++'s tables from the pacman repository in `AUR_REPO`
+and SourceBans++'s tables from the pacman repository in `AUR_REPO`
 (`/var/lib/aurutils-repo` by default). `tools/rcon.py` is the RCON client, with
 the password in `RCON_PASSWORD`.
+
+The systemd units can be tested on this machine as well, set up as in [Running
+with systemd](#running-with-systemd), with only the test instance's database:
+`up --db-only` starts it at `127.0.0.1:3306` (`TEST_DB_PORT` for another port)
+and prints the commands that copy the server's environment file and secrets to
+`/etc/doi-server`. `down` removes the database again.
+
+```bash
+deploy/container/test-instance.sh up --db-only coop-commando
+```
 
 ## Server notes
 
