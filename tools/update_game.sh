@@ -54,7 +54,9 @@ update_workshop() {
 		for item in "${pending[@]}"; do
 			downloads+=(+workshop_download_item 447820 "$item")
 		done
-		output=$(steamcmd +force_install_dir "$workshop" +login anonymous "${downloads[@]}" +quit | tee /dev/stderr) || true
+		# SteamCMD's output goes to the log as well, through a pipe: /dev/stderr can't be opened when it's
+		# a socket, like the journal's
+		output=$(steamcmd +force_install_dir "$workshop" +login anonymous "${downloads[@]}" +quit | tee >(cat >&2)) || true
 		failed=()
 		for item in "${pending[@]}"; do
 			grep -q "Success. Downloaded item $item " <<<"$output" || failed+=("$item")
