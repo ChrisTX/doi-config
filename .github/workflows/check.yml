@@ -19,7 +19,17 @@ jobs:
     name: prek run --all-files
     runs-on: ubuntu-latest
     container: archlinux:base
-    timeout-minutes: 15
+    timeout-minutes: 30
+    env:
+      # The tools from the AUR, which isn't available here. SourceMod's compiler is built from the
+      # release the servers run (the sourcemod package), with AMBuild at the commit of the ambuild package,
+      # and gets the include files of Multi-Colors (sourcemod-multicolors), which AFK Manager includes if
+      # they're there. hadolint is its release's binary, checked against the checksum of the release.
+      SOURCEMOD_TAG: 1.12.0.7260
+      AMBUILD_COMMIT: 4b8b3d34179a2f667799446f549e2ab0b492aa0c
+      MULTICOLORS_COMMIT: d2f2dc9126255571c0fc4499d5729cacb57265ca
+      HADOLINT_VERSION: 2.15.1
+      HADOLINT_SHA256: c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
     steps:
       # Before the checkout, which only makes a git repository with git installed
       - name: Install the tools of the checks
@@ -32,9 +42,44 @@ jobs:
       # The container runs as root, a different user than the owner of the checkout
       - name: Trust the checkout
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install hadolint
+        run: |
+          curl -fsSLo /tmp/hadolint \
+            "https://github.com/hadolint/hadolint/releases/download/v$HADOLINT_VERSION/hadolint-linux-x86_64"
+          echo "$HADOLINT_SHA256  /tmp/hadolint" | sha256sum -c
+          install -m755 /tmp/hadolint /usr/local/bin/hadolint
+
+      # spcomp and the include files, built once for each of the versions above
+      - name: Restore spcomp
+        id: spcomp-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /opt/sourcemod
+          key: spcomp-${{ env.SOURCEMOD_TAG }}-${{ env.AMBUILD_COMMIT }}-${{ env.MULTICOLORS_COMMIT }}
+      - name: Build spcomp
+        if: steps.spcomp-cache.outputs.cache-hit != 'true'
+        run: |
+          pacman -S --noconfirm --needed clang python
+          python -m venv /tmp/ambuild
+          /tmp/ambuild/bin/pip install --quiet "git+https://github.com/alliedmodders/ambuild@$AMBUILD_COMMIT"
+          git clone --quiet --depth 1 --branch "$SOURCEMOD_TAG" --recurse-submodules --shallow-submodules \
+            https://github.com/alliedmodders/sourcemod.git /tmp/sourcemod
+          mkdir /tmp/sourcemod/build
+          cd /tmp/sourcemod/build || exit
+          CC=clang CXX=clang++ /tmp/ambuild/bin/python ../configure.py --scripting-only --enable-optimize \
+            --targets=x86_64
+          /tmp/ambuild/bin/ambuild
+          mkdir -p /opt/sourcemod
+          cp -a package/spcomp64 package/include /opt/sourcemod/
+          curl -fsSL "https://github.com/Bara/Multi-Colors/archive/$MULTICOLORS_COMMIT.tar.gz" |
+            tar -xz -C /opt/sourcemod/include --strip-components=5 \
+              "Multi-Colors-$MULTICOLORS_COMMIT/addons/sourcemod/scripting/include"
+      # spcomp finds the include files next to the path it's run by, so it's run by its path
+      - name: Install spcomp
+        run: |
+          printf '#!/bin/sh\nexec /opt/sourcemod/spcomp64 "$@"\n' >/usr/local/bin/spcomp
+          chmod 755 /usr/local/bin/spcomp
+
       - name: Run the checks
-        # Without spcomp and hadolint, which are in the AUR (sourcemod-scripting, hadolint), not in the
-        # Arch Linux repositories
-        env:
-          SKIP: spcomp,hadolint
         run: prek run --all-files --show-diff-on-failure

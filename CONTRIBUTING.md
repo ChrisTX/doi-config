@@ -27,7 +27,7 @@ prek install
 prek run --all-files
 ```
 
-GitHub Actions runs the same checks on every push and pull request, except spcomp and hadolint, as the AUR isn't available there.
+GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run and downloads hadolint's release, see `.github/workflows/check.yml`.
 
 ## Checks
 
