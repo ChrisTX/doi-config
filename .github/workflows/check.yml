@@ -31,11 +31,13 @@ jobs:
       HADOLINT_VERSION: 2.15.1
       HADOLINT_SHA256: c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
     steps:
-      # Before the checkout, which only makes a git repository with git installed
+      # Before the checkout, which only makes a git repository with git installed. Multilib for the
+      # 32-bit glibc and gcc's libraries the patcher (tools/doi_patch.c) is compiled against.
       - name: Install the tools of the checks
-        run: >-
-          pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint
-          rumdl typos trivy editorconfig-checker reuse
+        run: |
+          printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf
+          pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint \
+            rumdl typos trivy editorconfig-checker reuse clang gcc lib32-gcc-libs lib32-glibc
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

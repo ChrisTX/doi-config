@@ -1,0 +1,25 @@
+# Patches of doi/bin/server_srv.so, the server library of Day of Infamy, which tools/doi_patch.c applies
+# in memory when srcds loads the library. They lift the restrictions of the playlists and enable stats
+# with custom content.
+#
+# Each line: the function's symbol, the offset in the function, its old bytes and the new ones, in hex.
+# A patch whose old bytes don't match isn't applied. The comment above names the function and the change.
+
+# Playlist::GetAllowedMaps() const: je to jmp
+_ZNK8Playlist14GetAllowedMapsEv 0x1f 74 eb
+# Playlist::GetMinPlayers() const: je to jmp
+_ZNK8Playlist13GetMinPlayersEv 0x22 74 eb
+# Playlist::GetMaxPlayers() const: je to jmp
+_ZNK8Playlist13GetMaxPlayersEv 0x22 74 eb
+# Playlist::GetPureSettings(int&): je to jmp
+_ZN8Playlist15GetPureSettingsERi 0x25 74 eb
+# Playlist::GetForcedConvars(): KeyValues::FindKey() to mov eax, 0
+_ZN8Playlist16GetForcedConvarsEv 0x30 e82bdc55 b8000000
+# Playlist::GetForcedConvarsDedicated(): KeyValues::FindKey() to mov eax, 0
+_ZN8Playlist25GetForcedConvarsDedicatedEv 0x30 e8ebdb55 b8000000
+# Playlist::GetRequiredMaxPlayers(int&, int&): KeyValues::GetInt() to mov eax, 1
+_ZN8Playlist21GetRequiredMaxPlayersERiS0_ 0x35 e8f60256 b8010000
+# Playlist::GetRequiredMaxPlayers(int&, int&): KeyValues::GetInt() to mov eax, -1
+_ZN8Playlist21GetRequiredMaxPlayersERiS0_ 0x5a e8d1025600 b8ffffffff
+# CDOIPersistence::RegisterServer(): je to jmp
+_ZN15CDOIPersistence14RegisterServerEv 0x59 74 eb

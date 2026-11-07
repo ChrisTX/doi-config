@@ -1,0 +1,21 @@
+# clang-tidy's checks of the C code, warnings as errors. Left out: the ones about style rather than
+# errors (magic numbers in an ELF reader, short loop variables), unchecked results of the logging's
+# fputs() and fclose() (cert-err33-c), C11's Annex K (memcpy_s, sscanf_s),
+# which glibc doesn't have, integer to pointer casts, which a patcher needs to address the code, and
+# implicit conversions to bool, as C's comparisons and logical operators yield an int.
+Checks: >-
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  misc-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -cert-err33-c,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -performance-no-int-to-ptr,
+  -readability-implicit-bool-conversion
+WarningsAsErrors: "*"

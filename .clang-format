@@ -1,0 +1,5 @@
+# The formatting of the C code, with the indentation of .editorconfig
+BasedOnStyle: LLVM
+IndentWidth: 2
+ColumnLimit: 105
+AllowShortFunctionsOnASingleLine: None
