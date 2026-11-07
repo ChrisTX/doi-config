@@ -71,10 +71,12 @@ from read-only layers, top first:
 - the workshop items of all servers
 - the game
 
-Their writable layer starts empty on every start, so changes to the layers
-always show. What the server writes and keeps, like its logs, is bind-mounted
-from the server's state folder instead (see `tools/mount_server.sh`). The mounts
-only exist in the service's mount namespace and disappear when it stops.
+Their writable layer starts empty whenever the layers are mounted, so changes
+to the layers always show. What the server writes and keeps, like its logs, is
+bind-mounted from the server's state folder instead (see
+`tools/mount_server.sh`). The layers are mounted while the server runs, in
+`/run/doi-server/<server>`, and when the server restarts on its own, they and
+its writable layer stay as they are.
 
 The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
 
@@ -87,8 +89,10 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   once for all servers. SteamCMD gets their current versions, which the game
   itself never does once it has an item, and items no list names any more are
   removed.
-- `doi-server@<server>.service` mounts the layers (`tools/mount_server.sh`),
-  configures the server (`tools/prepare_server.sh`: the plugins SourceBans++
+- `doi-mount@<server>.service` mounts the layers (`tools/mount_server.sh`)
+  after `doi-update.service`, and unmounts them after the server stops. It's
+  stopped and restarted with the server, and the server only runs with it.
+- `doi-server@<server>.service` configures the server (`tools/prepare_server.sh`: the plugins SourceBans++
   needs, its website from `SOURCEBANS_WEBSITE`, `RCON_PASSWORD` in `rcon.cfg`)
   and runs it. SourceBans++ finds the server in the panel by its address and
   port: the address the server reports, or `SOURCEBANS_SERVER_IP` if that's a

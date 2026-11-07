@@ -1,7 +1,10 @@
 [Unit]
 Description=Day of Infamy server (%i)
-After=network-online.target doi-update.service
+After=network-online.target doi-update.service doi-mount@%i.service
 Wants=network-online.target doi-update.service
+# The server's layers (doi-mount@.service, after doi-update.service): the server only runs with them, and
+# stops when they're unmounted
+BindsTo=doi-mount@%i.service
 # Stopped and restarted with the servers' target, see doi-restart.service
 PartOf=doi-servers.target
 # srcds_watchdog.py's restarts of a server that stopped answering: at most 6 an hour
@@ -17,12 +20,12 @@ User=doi
 EnvironmentFile=/etc/doi-server/%i.env
 StateDirectory=doi-server
 StateDirectoryMode=0750
-RuntimeDirectory=doi-server/%i
+# The server's layers, which doi-mount@.service mounts there, not a RuntimeDirectory=: systemd would
+# remove it with the server's files when the server stops, before the layers are unmounted
+ReadWritePaths=/run/doi-server/%i
 WorkingDirectory=/run/doi-server/%i
 Environment=LD_LIBRARY_PATH=/run/doi-server/%i:/run/doi-server/%i/bin
-# The layers of the server, mounted and configured as root in the service's mount namespace ("!")
-PrivateMounts=yes
-ExecStartPre=!%S/doi-server/doi-config/tools/mount_server.sh %i %u
+# Configured as root ("!"), as the layers of the packages belong to root
 ExecStartPre=!%S/doi-server/doi-config/tools/prepare_server.sh /run/doi-server/%i %i
 ExecStart=/usr/bin/python3 %S/doi-server/doi-config/tools/srcds_watchdog.py -- /run/doi-server/%i/srcds_linux -game doi -usercon +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} +clientport ${CLIENT_PORT} +map \"${STARTUP_MAP}\" +sv_workshop_list_file \"${WORKSHOP_IDS_FILE}\" +r_hunkalloclightmaps 0 +mp_theater_override \"${THEATER}\" +sv_password \"${SERVER_PASSWORD}\"
 KillSignal=SIGINT

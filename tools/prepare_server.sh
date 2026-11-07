@@ -1,7 +1,8 @@
 #!/bin/bash
 # Configures a server in its writable layer: one assembled by mount_server.sh, whose writable layer starts
-# empty on every start (doi-server@.service runs it as root with "!", in the service's mount namespace, as
-# the layers of the packages belong to root), or the container's (deploy/container/entrypoint.sh).
+# empty whenever doi-mount@.service mounts it (doi-server@.service runs this as root with "!", as the
+# layers of the packages belong to root), or the container's (deploy/container/entrypoint.sh). Both keep
+# their writable layer when the server restarts on its own, so changing it twice changes nothing.
 # $1: the server's root, $2: the server's name
 set -euo pipefail
 

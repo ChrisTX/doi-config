@@ -1,6 +1,6 @@
 #!/bin/bash
-# Assembles a server from read-only layers with overlayfs, in the mount namespace of its service
-# (doi-server@.service runs it as root with "!", so the mounts disappear when the service stops):
+# Assembles a server from read-only layers with overlayfs in /run/doi-server/<name>, as root, for
+# doi-mount@.service; doi-server@.service runs the server there:
 #
 #   <runtime>          the workshop items of all servers and the shared game install, with a writable
 #                      layer
@@ -8,11 +8,30 @@
 #                      repository, /usr/lib/sourcemod, /usr/lib/metamod, the game's doi folder,
 #                      with a writable layer
 #
-# The writable layers start empty on every start, so updates of the lower layers always show. What the
-# server writes and has to keep is bind-mounted from the server's state folder instead.
-# $1: the server's name (the instance of doi-server@), $2: the user the server runs as
+# The writable layers start empty whenever the layers are mounted, so updates of the lower layers always
+# show. What the server writes and has to keep is bind-mounted from the server's state folder instead.
+#
+#   mount_server.sh NAME USER       mount the layers of the server NAME (the instance of doi-server@),
+#                                   which runs as USER, anew
+#   mount_server.sh --unmount NAME  unmount them
+#
 # SERVER_CONFIG_NAME: the config of servers/ to use, by default the server's name if there's one
 set -euo pipefail
+
+# The overlays and the bind mounts of the state paths in them, left over or mounted
+unmount() {
+	if mountpoint -q "$1"; then
+		umount -R "$1"
+	fi
+	if [[ -d $1 ]]; then
+		rmdir "$1"
+	fi
+}
+
+if [[ ${1:-} == --unmount ]]; then
+	unmount "/run/doi-server/$2"
+	exit
+fi
 
 name=$1
 user=$2
@@ -41,6 +60,8 @@ if [[ -n $config && ! -d $repo/servers/$config ]]; then
 	exit 1
 fi
 
+unmount "$runtime"
+install -d -m 755 /run/doi-server "$runtime"
 rm -rf "$server/upper" "$server/work"
 mkdir -p "$server"/{upper,work}/{root,doi} "$server/state"
 chown "$user:" "$server" "$server"/{upper,work}/{root,doi} "$server/state"

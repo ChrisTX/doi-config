@@ -1,0 +1,18 @@
+[Unit]
+Description=Layers of the Day of Infamy server (%i)
+# The layers include the game install and this repository, which mustn't change while they're mounted
+After=doi-update.service
+Wants=doi-update.service
+# Stopped and restarted with its server, after it stops and before it starts. systemd's own restarts of
+# the server (Restart=) keep the layers, and with them its writable layer.
+PartOf=doi-server@%i.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# SERVER_CONFIG_NAME, the config of servers/ to use
+EnvironmentFile=/etc/doi-server/%i.env
+# Mounted in the system's mount namespace, as root, so that the server's service sees the layers. Also
+# unmounted when mounting failed.
+ExecStart=%S/doi-server/doi-config/tools/mount_server.sh %i doi
+ExecStopPost=%S/doi-server/doi-config/tools/mount_server.sh --unmount %i
