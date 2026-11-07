@@ -17,7 +17,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # The servers' user with a fixed ID, which the files of the volumes belong to: a system user's ID depends on
 # the users the base image has
 RUN printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf \
-  && pacman -Syu --noconfirm --needed lib32-gcc-libs lib32-glibc lib32-zlib tinyxxd \
+  && pacman -Syu --noconfirm --needed lib32-gcc-libs lib32-glibc lib32-zlib-ng-compat tinyxxd \
   && pacman -Scc --noconfirm \
   && groupadd --gid 1000 doi \
   && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/doi doi \
