@@ -202,37 +202,38 @@ has to be passed on the server's command line, as `doi-server@.service` does.
 
 ### Libraries (Linux)
 
-The game server needs the following 32-bit libraries on Linux:
+The game server needs the following 32-bit libraries on Linux, here with the
+Arch Linux packages that provide them:
 
-```text
-glibc
-libgcc
-libstdc++
-SDL2
-zlib
-```
+| Library | Arch Linux package |
+| --- | --- |
+| glibc | `lib32-glibc` |
+| libgcc, libstdc++ | `lib32-gcc-libs` |
+| SDL2 | `lib32-sdl2-compat` (AUR) |
+| zlib | `lib32-zlib-ng-compat` or `lib32-zlib` |
 
-SDL2 can be replaced with `sdl2-compat`, which implements SDL2 on top of SDL3.
-`prepare_server.sh` removes the outdated copies of libgcc, libstdc++, libogg and
-libvorbis that come with the game, so the system's libraries are used instead.
+`sdl2-compat` implements SDL2 on top of SDL3, and zlib-ng's compatibility
+package replaces zlib. `update_game.sh` removes the outdated copies of libgcc,
+libstdc++, libogg and libvorbis that come with the game, so the system's
+libraries are used instead.
 
 The Steam client library can load these libraries as well, but only in the game
 client, not in a server:
 
-```text
-SDL3
-libX11
-PulseAudio (libpulse)
-```
+| Library | Arch Linux package |
+| --- | --- |
+| SDL3 | `lib32-sdl3` |
+| libX11 | `lib32-libx11` |
+| PulseAudio (libpulse) | `lib32-libpulse` |
 
 The game server binaries also reference these libraries:
 
-```text
-OpenAL
-util-linux
-freetype2
-fontconfig
-```
+| Library | Arch Linux package |
+| --- | --- |
+| OpenAL | `lib32-openal` (AUR) |
+| util-linux | `lib32-util-linux` |
+| freetype2 | `lib32-freetype2` |
+| fontconfig | `lib32-fontconfig` |
 
 Only the client code paths in `engine.so` load them, so if a server asks for any
 of them, something is wrong. This happened when an update removed BattlEye from
