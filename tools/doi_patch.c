@@ -119,7 +119,7 @@ enum state {
     return false;
   }
   for (size_t i = 0; i < digits / 2; i++) {
-    char pair[3] = {text[2 * i], text[(2 * i) + 1], '\0'};
+    const char pair[3] = {text[2 * i], text[(2 * i) + 1], '\0'};
     char *end = nullptr;
     unsigned long value = strtoul(pair, &end, hex_base);
     if (*end != '\0') {
@@ -145,7 +145,7 @@ enum state {
   char text[max_line];
   bool valid = true;
   for (unsigned line = 1; fgets(text, sizeof text, file) != nullptr; line++) {
-    char *start = text;
+    const char *start = text;
     while (*start == ' ' || *start == '\t') {
       start++;
     }
