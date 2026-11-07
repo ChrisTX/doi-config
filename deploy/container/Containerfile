@@ -4,8 +4,8 @@
 # a container's writable layer starts anew whenever it's created. See README.md for building and running.
 #
 # Build arguments:
-#   GAME_UPDATE, WORKSHOP_UPDATE   any new value (e.g. the date) downloads the game or the workshop items
-#                                  again, which the layer cache keeps otherwise
+#   GAME_UPDATE, WORKSHOP_UPDATE   any new value (e.g. the date) updates the game or the workshop items,
+#                                  which the layer cache keeps otherwise
 # Build context "aur": the pacman repository with the packages, secret "aur-key": its signing key
 # Built in Docker's format (podman build --format docker): OCI images have no HEALTHCHECK
 
@@ -39,8 +39,13 @@ COPY --chown=doi:doi patches/ /opt/doi-config/patches/
 ARG GAME_UPDATE=
 RUN /opt/doi-config/tools/update_game.sh --game /srv/doi
 COPY --chown=doi:doi game/cfg/doi-config/workshop-ids-*.txt /opt/doi-config/game/cfg/doi-config/
+# The workshop items are kept in a cache of the builds, so that a new layer only downloads the items
+# that changed; one build at a time updates it. The layer gets a copy of the items, without SteamCMD's
+# other files of the cache's steamapps.
 ARG WORKSHOP_UPDATE=
-RUN /opt/doi-config/tools/update_game.sh --workshop /srv/doi
+RUN --mount=type=cache,id=doi-workshop,target=/var/cache/doi-workshop,uid=1000,gid=1000,sharing=locked \
+  /opt/doi-config/tools/update_game.sh --workshop /var/cache/doi-workshop \
+  && cp -a /var/cache/doi-workshop/steamapps/workshop /srv/doi/steamapps/
 
 # The packages from the repository, verified with its key. SourceMod's optional dependencies, those of
 # its MySQL, PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source are copied

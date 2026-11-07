@@ -141,7 +141,18 @@ podman build --format docker --build-context aur=/var/lib/aurutils-repo \
 
 The layer cache keeps the game and the workshop items until the build
 arguments `GAME_UPDATE` and `WORKSHOP_UPDATE` change, e.g.
-`--build-arg WORKSHOP_UPDATE=$(date +%F)` to update the workshop items.
+`--build-arg WORKSHOP_UPDATE=$(date +%F)` to update the workshop items. The
+workshop items are kept in a cache mount of the builds as well, so a new layer
+only downloads the items that changed. Rootless Podman keeps it in
+`/var/tmp/buildah-cache-<uid>`, and systemd-tmpfiles removes files in `/var/tmp`
+that nothing used for 30 days, which would leave items broken. Exclude the
+cache from that, e.g. with `/etc/tmpfiles.d/buildah-cache.conf`:
+
+```text
+x /var/tmp/buildah-cache-*
+```
+
+`buildah prune` removes it, with the other caches of the builds.
 
 A container takes the variables of the systemd units' environment file, with
 `SOURCEBANS_SERVER_IP` set to the server's public address (the container only
