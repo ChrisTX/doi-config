@@ -216,19 +216,22 @@ Arch Linux packages that provide them:
 | glibc | `lib32-glibc` |
 | libgcc, libstdc++ | `lib32-gcc-libs` |
 | SDL2 | `lib32-sdl2-compat` (AUR) |
-| zlib | `lib32-zlib-ng-compat` or `lib32-zlib` |
 
-`sdl2-compat` implements SDL2 on top of SDL3, and zlib-ng's compatibility
-package replaces zlib. `update_game.sh` removes the outdated copies of libgcc,
-libstdc++, libogg and libvorbis that come with the game, so the system's
-libraries are used instead.
+The server's binaries only link glibc and libstdc++. `libtier0_srv.so` loads
+SDL2 at runtime instead, and a running server may no longer have it loaded.
+`sdl2-compat` implements SDL2 on top of SDL3, which it brings along; the Steam
+client library (`steamclient.so`) loads SDL3 as well when it's there.
+`update_game.sh` removes the outdated copies of libgcc, libstdc++, libogg and
+libvorbis that come with the game, so the system's libraries are used instead.
+
+SourceMod's MySQL and PostgreSQL extensions need zlib besides, which
+`lib32-zlib-ng-compat` or `lib32-zlib` provides; the game itself doesn't use it.
 
 The Steam client library can load these libraries as well, but only in the game
 client, not in a server:
 
 | Library | Arch Linux package |
 | --- | --- |
-| SDL3 | `lib32-sdl3` |
 | libX11 | `lib32-libx11` |
 | PulseAudio (libpulse) | `lib32-libpulse` |
 
