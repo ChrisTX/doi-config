@@ -2,8 +2,11 @@
 # in memory when srcds loads the library. They lift the restrictions of the playlists and enable stats
 # with custom content.
 #
-# Each line: the function's symbol, the offset in the function, its old bytes and the new ones, in hex.
-# A patch whose old bytes don't match isn't applied. The comment above names the function and the change.
+# The library line names the library to patch, by its file name. Each line after it: the function's
+# symbol, the offset in the function, its old bytes and the new ones, in hex. If a patch's old bytes
+# don't match, none is applied and srcds stops. The comment above each names the function and the change.
+
+library server_srv.so
 
 # Playlist::GetAllowedMaps() const: je to jmp
 _ZNK8Playlist14GetAllowedMapsEv 0x1f 74 eb

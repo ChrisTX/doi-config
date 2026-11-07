@@ -3,13 +3,14 @@
 // can't undo a patch that never touches the file, and its validation never sees a modified file.
 //
 // How it works: srcds is started with this library preloaded (LD_PRELOAD), so its dlopen() takes the
-// place of the C library's. The engine loads the game's libraries with dlopen(), and once it has loaded
-// doi/bin/server_srv.so, this one patches it, before the engine calls into it for the first time
-// (DLLInit()): some of the patched functions run once, while the server starts, and a patcher that comes
-// later, e.g. with Metamod:Source, is too late for them.
+// place of the C library's. When srcds starts, the patch list DOI_PATCH_LIST names is read
+// (patches/server_srv.patches), which names the library to patch, doi/bin/server_srv.so. The engine
+// loads the game's libraries with dlopen(), and once it has loaded that one, it's patched, before the
+// engine calls into it for the first time (DLLInit()): some of the patched functions run once, while the
+// server starts, and a patcher that comes later, e.g. with Metamod:Source, is too late for them.
 //
-// The patches come from the list that DOI_PATCH_LIST names (patches/server_srv.patches). Each is a
-// function's symbol, an offset in the function, the old bytes and the new ones. The symbols come from
+// Each patch of the list is a function's symbol, an offset in the function, the old bytes and the new
+// ones. The symbols come from
 // the library's own symbol table (.symtab, which has the game's local functions), so a patch doesn't
 // depend on where the linker put the function. Before anything is written, every patch site is checked:
 // if a function is missing or doesn't hold the old bytes, e.g. after a game update, srcds exits with a
@@ -43,12 +44,15 @@ static_assert(sizeof(void *) == 4, "build with -m32");
 // longer field is recognised as such instead of being cut off. Macros, as the widths are part of the
 // format string.
 // NOLINTBEGIN(modernize-macro-to-enum,cppcoreguidelines-macro-to-enum): an enum can't be stringified
+#define LIBRARY_CHARS 255
 #define SYMBOL_CHARS 255
 #define OFFSET_CHARS 31
 #define BYTES_CHARS 33
 // NOLINTEND(modernize-macro-to-enum,cppcoreguidelines-macro-to-enum)
 #define STRINGIFY(value) #value
 #define WIDTH(value) STRINGIFY(value)
+static const char library_keyword[] = "library";
+static const char library_format[] = "library %" WIDTH(LIBRARY_CHARS) "s";
 static const char line_format[] = "%" WIDTH(SYMBOL_CHARS) "s %" WIDTH(OFFSET_CHARS) "s %" WIDTH(
     BYTES_CHARS) "s %" WIDTH(BYTES_CHARS) "s";
 
@@ -60,9 +64,6 @@ static constexpr size_t max_line = 512;
 static constexpr size_t initial_capacity = 16;
 // The base of the hex digits of the bytes
 static constexpr int hex_base = 16;
-
-// The library to patch, by its file name
-static const char target_name[] = "server_srv.so";
 
 // A patch of the list
 struct patch {
@@ -79,6 +80,18 @@ struct patch {
   // Set by find_symbols(): the function's address relative to the library's start, 0 if it's missing
   uintptr_t address;
 };
+
+// The patch list: the library it patches and its patches. One list, though the patches of other
+// libraries would only need more of these.
+struct patch_list {
+  // The library's file name, from the list's library line
+  char library[LIBRARY_CHARS + 1];
+  struct patch *patches;
+  size_t count;
+};
+
+// The list of DOI_PATCH_LIST, read when srcds starts
+static struct patch_list patch_list;
 
 // What a patch site holds before it's patched
 enum state {
@@ -107,7 +120,7 @@ enum state {
 // Ends srcds: the server doesn't work properly without all patches. _Exit() rather than exit(), which
 // would run the exit handlers of the engine and of the game, whose library isn't initialised yet.
 [[noreturn]] static void fail() {
-  report("not all patches can be applied to %s, stopping", target_name);
+  report("not all patches can be applied, stopping");
   _Exit(EXIT_FAILURE);
 }
 
@@ -131,67 +144,81 @@ enum state {
   return true;
 }
 
-// Reads the patch list: *count patches, without comments and blank lines, or nullptr if the list can't
-// be read or a line is invalid, as an incomplete list mustn't be applied
-[[nodiscard]] static struct patch *read_patches(const char *path, size_t *count) {
+// Reads one line of the list that isn't blank or a comment, without its indentation: the library line,
+// whose name goes into list->library, or a patch, which is appended to list->patches (whose array has
+// room for *capacity). False if the line is invalid.
+[[nodiscard]] static bool read_line(const char *start, const char *path, unsigned line,
+                                    struct patch_list *list, size_t *capacity) {
+  // The library line: the keyword, then whitespace and the library's file name, once
+  size_t keyword = sizeof library_keyword - 1;
+  if (strncmp(start, library_keyword, keyword) == 0 &&
+      (start[keyword] == ' ' || start[keyword] == '\t')) {
+    if (list->library[0] != '\0' || sscanf(start, library_format, list->library) != 1) {
+      report("%s:%u: expected one library line, with the library's file name", path, line);
+      return false;
+    }
+    return true;
+  }
+
+  if (list->count == *capacity) {
+    size_t grown_capacity = *capacity == 0 ? initial_capacity : 2 * *capacity;
+    struct patch *grown = realloc(list->patches, grown_capacity * sizeof *list->patches);
+    if (grown == nullptr) {
+      report("out of memory");
+      return false;
+    }
+    list->patches = grown;
+    *capacity = grown_capacity;
+  }
+  struct patch *patch = &list->patches[list->count];
+  *patch = (struct patch){.line = line};
+  char offset[OFFSET_CHARS + 1];
+  char old_hex[BYTES_CHARS + 1];
+  char new_hex[BYTES_CHARS + 1];
+  // The symbol straight into the patch, the other fields to be converted
+  if (sscanf(start, line_format, patch->symbol, offset, old_hex, new_hex) != 4) {
+    report("%s:%u: expected a symbol, an offset, the old and the new bytes", path, line);
+    return false;
+  }
+  char *end = nullptr;
+  patch->offset = strtoul(offset, &end, 0);
+  size_t new_length = 0;
+  if (*end != '\0' || !parse_hex(old_hex, patch->old_bytes, &patch->length) ||
+      !parse_hex(new_hex, patch->new_bytes, &new_length) || new_length != patch->length) {
+    report("%s:%u: invalid offset or bytes (old and new must be as long)", path, line);
+    return false;
+  }
+  list->count++;
+  return true;
+}
+
+// Reads the patch list into *list: its library line and its patches, without comments and blank lines;
+// false if the list can't be read or a line is invalid, as an incomplete list mustn't be applied
+[[nodiscard]] static bool read_list(const char *path, struct patch_list *list) {
   FILE *file = fopen(path, "re");
   if (file == nullptr) {
     report("can't open the patch list %s: %s", path, strerror(errno));
-    return nullptr;
+    return false;
   }
-  struct patch *patches = nullptr;
-  size_t used = 0;
   size_t capacity = 0;
   char text[max_line];
   bool valid = true;
-  for (unsigned line = 1; fgets(text, sizeof text, file) != nullptr; line++) {
+  for (unsigned line = 1; valid && fgets(text, sizeof text, file) != nullptr; line++) {
     const char *start = text;
     while (*start == ' ' || *start == '\t') {
       start++;
     }
-    if (*start == '#' || *start == '\n' || *start == '\0') {
-      continue;
+    if (*start != '#' && *start != '\n' && *start != '\0') {
+      valid = read_line(start, path, line, list, &capacity);
     }
-    if (used == capacity) {
-      capacity = capacity == 0 ? initial_capacity : 2 * capacity;
-      struct patch *grown = realloc(patches, capacity * sizeof *patches);
-      if (grown == nullptr) {
-        report("out of memory");
-        valid = false;
-        break;
-      }
-      patches = grown;
-    }
-    struct patch *patch = &patches[used];
-    *patch = (struct patch){.line = line};
-    char offset[OFFSET_CHARS + 1];
-    char old_hex[BYTES_CHARS + 1];
-    char new_hex[BYTES_CHARS + 1];
-    // The symbol straight into the patch, the other fields to be converted
-    if (sscanf(start, line_format, patch->symbol, offset, old_hex, new_hex) != 4) {
-      report("%s:%u: expected a symbol, an offset, the old and the new bytes", path, line);
-      valid = false;
-      break;
-    }
-    char *end = nullptr;
-    patch->offset = strtoul(offset, &end, 0);
-    size_t new_length = 0;
-    if (*end != '\0' || !parse_hex(old_hex, patch->old_bytes, &patch->length) ||
-        !parse_hex(new_hex, patch->new_bytes, &new_length) || new_length != patch->length) {
-      report("%s:%u: invalid offset or bytes (old and new must be as long)", path, line);
-      valid = false;
-      break;
-    }
-    used++;
   }
   // Only read from, so closing it can't lose anything
   (void)fclose(file);
-  if (!valid) {
-    free(patches);
-    return nullptr;
+  if (valid && list->library[0] == '\0') {
+    report("%s: no library line names the library to patch", path);
+    valid = false;
   }
-  *count = used;
-  return patches;
+  return valid;
 }
 
 // Sets the address of each patch's function from the symbol table. Functions only: a variable of the
@@ -303,23 +330,18 @@ static void match_symbols(const unsigned char *data, const Elf32_Shdr *table, co
   return true;
 }
 
-// Patches the server library the handle is of: reads the list, checks every site, then writes, or ends
+// Patches the library the handle is of with the list's patches: checks every site, then writes, or ends
 // srcds if not all patches can be applied
-static void patch_library(void *handle) {
-  const char *list = getenv("DOI_PATCH_LIST");
-  if (list == nullptr || *list == '\0') {
-    report("DOI_PATCH_LIST isn't set");
-    fail();
-  }
+static void patch_library(void *handle, struct patch_list *list) {
   // Where the library is loaded (l_addr) and its file (l_name)
   struct link_map *map = nullptr;
   if (dlinfo(handle, RTLD_DI_LINKMAP, (void *)&map) != 0 || map == nullptr) {
-    report("can't find where %s is loaded: %s", target_name, dlerror());
+    report("can't find where %s is loaded: %s", list->library, dlerror());
     fail();
   }
-  size_t count = 0;
-  struct patch *patches = read_patches(list, &count);
-  if (patches == nullptr || !find_symbols(map->l_name, patches, count)) {
+  struct patch *patches = list->patches;
+  size_t count = list->count;
+  if (!find_symbols(map->l_name, patches, count)) {
     fail();
   }
 
@@ -343,7 +365,7 @@ static void patch_library(void *handle) {
       applied++;
       break;
     case state_missing:
-      report("line %u: %s has no function %s", patch->line, target_name, patch->symbol);
+      report("line %u: %s has no function %s", patch->line, list->library, patch->symbol);
       unusable++;
       break;
     case state_mismatch:
@@ -367,14 +389,40 @@ static void patch_library(void *handle) {
     }
   }
   report("%zu of %zu patches applied to %s, %zu were already (%zu found unpatched)", written, count,
-         target_name, applied, original);
+         list->library, applied, original);
   free(states);
   free(patches);
+  list->patches = nullptr;
+  list->count = 0;
+}
+
+// Reads the patch list when srcds starts, before the engine loads the library, so that a missing or
+// invalid list stops srcds before the engine does anything. The loader runs it when it preloads this
+// library.
+[[gnu::constructor]] static void load_list() {
+  const char *path = getenv("DOI_PATCH_LIST");
+  if (path == nullptr || *path == '\0') {
+    report("DOI_PATCH_LIST isn't set");
+    fail();
+  }
+  if (!read_list(path, &patch_list)) {
+    fail();
+  }
+  // srcds' child processes don't need the patcher, and a 64-bit one, like the shell it runs commands
+  // with, can't load it, which its loader warns about. LD_PRELOAD goes if it names nothing but this
+  // library: other preloads are left as they are.
+  Dl_info self;
+  const char *preload = getenv("LD_PRELOAD");
+  // Any address in this library names its file: the list's, an object rather than a function
+  if (preload != nullptr && dladdr((const void *)&patch_list, &self) != 0 && self.dli_fname != nullptr &&
+      strcmp(preload, self.dli_fname) == 0) {
+    (void)unsetenv("LD_PRELOAD");
+  }
 }
 
 // Takes the place of the C library's dlopen(), whose symbol the engine's calls resolve to this one, as
-// it's preloaded. Loads the library with the real dlopen() and patches server_srv.so the first time it's
-// loaded; dlopen() of a library that's loaded already returns the same, patched one.
+// it's preloaded. Loads the library with the real dlopen() and patches the list's library the first time
+// it's loaded; dlopen() of a library that's loaded already returns the same, patched one.
 void *dlopen(const char *file, int mode) {
   static void *(*real_dlopen)(const char *, int) = nullptr;
   if (real_dlopen == nullptr) {
@@ -391,8 +439,8 @@ void *dlopen(const char *file, int mode) {
   if (handle != nullptr && file != nullptr) {
     const char *name = strrchr(file, '/');
     name = name == nullptr ? file : name + 1;
-    if (strcmp(name, target_name) == 0 && !atomic_flag_test_and_set(&patched)) {
-      patch_library(handle);
+    if (strcmp(name, patch_list.library) == 0 && !atomic_flag_test_and_set(&patched)) {
+      patch_library(handle, &patch_list);
     }
   }
   return handle;
