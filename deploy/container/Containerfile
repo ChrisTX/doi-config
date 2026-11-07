@@ -14,10 +14,10 @@ FROM docker.io/library/archlinux:base
 # A failed download in a pipe fails the step
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# The servers' user with a fixed ID, which the files of the volumes belong to: a system user's ID depends on
-# the users the base image has
+# The game's libraries (see README.md) and the servers' user with a fixed ID, which the files of the
+# volumes belong to: a system user's ID depends on the users the base image has
 RUN printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf \
-  && pacman -Syu --noconfirm --needed lib32-gcc-libs lib32-glibc lib32-zlib-ng-compat tinyxxd \
+  && pacman -Syu --noconfirm --needed lib32-gcc-libs lib32-glibc lib32-sdl3 lib32-zlib-ng-compat tinyxxd \
   && pacman -Scc --noconfirm \
   && groupadd --gid 1000 doi \
   && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/doi doi \
@@ -42,10 +42,10 @@ COPY --chown=doi:doi game/cfg/doi-config/workshop-ids-*.txt /opt/doi-config/game
 ARG WORKSHOP_UPDATE=
 RUN /opt/doi-config/tools/update_game.sh --workshop /srv/doi
 
-# The packages from the repository, verified with its key, and lib32-sdl2-compat, which the game links
-# and which is in the AUR, no longer in multilib. SourceMod's optional dependencies, those of its MySQL,
-# PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source are copied into
-# the game's doi folder, owned by the servers' user, who changes the plugins and configs on every start.
+# The packages from the repository, verified with its key. SourceMod's optional dependencies, those of
+# its MySQL, PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source are copied
+# into the game's doi folder, owned by the servers' user, who changes the plugins and configs on every
+# start.
 USER 0:0
 RUN --mount=type=bind,from=aur,target=/var/lib/aurutils-repo --mount=type=secret,id=aur-key \
   pacman-key --init \
@@ -53,7 +53,7 @@ RUN --mount=type=bind,from=aur,target=/var/lib/aurutils-repo --mount=type=secret
   && pacman-key --lsign-key "$(gpg --show-keys --with-colons /run/secrets/aur-key | awk -F: '/^fpr/ { print $10; exit }')" \
   && cp /etc/pacman.conf /etc/pacman.conf.orig \
   && printf '\n[aur]\nServer = file:///var/lib/aurutils-repo\n' >>/etc/pacman.conf \
-  && pacman -Syu --noconfirm --needed lib32-sdl2-compat metamod-source sourcemod sourcemod-scripting python-a2s \
+  && pacman -Syu --noconfirm --needed metamod-source sourcemod sourcemod-scripting python-a2s \
     sourcemod-sourcebans-pp sourcemod-sourcebans-pp-discord-forward sourcemod-advertisements \
     sourcemod-multicolors sourcemod-smjansson sourcemod-steamworks \
     lib32-mariadb-connector-c lib32-postgresql-libs lib32-libmaxminddb lib32-pcre2 lib32-curl \
