@@ -72,7 +72,7 @@ repos:
           clang-tidy --quiet "$@" -- -std=c23 -DDOI_PATCH_FILE' --
         types: [c]
       - id: gcc
-        name: gcc -m32 (gcc, lib32-gcc-libs, lib32-glibc)
+        name: gcc, both builds (gcc, lib32-gcc-libs, lib32-glibc)
         language: system
         entry: >-
           bash -c 'status=0; for f; do
