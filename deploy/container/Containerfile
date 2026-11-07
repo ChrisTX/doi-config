@@ -8,6 +8,8 @@
 #                                  which the layer cache keeps otherwise
 #   REPO_NAME                      the name of the pacman repository with the packages (aur), which its
 #                                  database is named after (aur.db)
+#   TESTING                        any value: with Arch Linux's testing repositories, for packages built
+#                                  against them
 # Build context "repo": the pacman repository's folder, secret "repo-key": its signing key
 # Built in Docker's format (podman build --format docker): OCI images have no HEALTHCHECK
 
@@ -17,8 +19,14 @@ FROM docker.io/library/archlinux:base
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # The game's libraries (see README.md) and the servers' user with a fixed ID, which the files of the
-# volumes belong to: a system user's ID depends on the users the base image has
-RUN printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf \
+# volumes belong to: a system user's ID depends on the users the base image has. The testing
+# repositories come before the ones they test.
+ARG TESTING=
+RUN if [ -n "$TESTING" ]; then \
+    sed -i '/^#\[\(core\|extra\)-testing\]$/,/^#Include/ s/^#//' /etc/pacman.conf \
+    && printf '\n[multilib-testing]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf; \
+  fi \
+  && printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf \
   && pacman -Syu --noconfirm --needed lib32-gcc-libs lib32-glibc lib32-sdl3 lib32-zlib-ng-compat tinyxxd \
   && pacman -Scc --noconfirm \
   && groupadd --gid 1000 doi \

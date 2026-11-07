@@ -210,8 +210,10 @@ pod's own address, and the server drops them. `build` and `up` take the packages
 and SourceBans++'s tables from the local pacman repository, which they find like
 aurutils: `aur repo --status`, or without aurutils the one repository of
 pacman.conf with a `file://` server. `AUR_REPO` and `AUR_DBROOT` name its name
-and folder, as for aurutils. `tools/rcon.py` is the RCON client, with the
-password in `RCON_PASSWORD`.
+and folder, as for aurutils. `build --testing` builds the image with Arch
+Linux's testing repositories, for packages built against them on a machine that
+uses them. `tools/rcon.py` is the RCON client, with the password in
+`RCON_PASSWORD`.
 
 The systemd units can be tested on this machine as well, set up as in [Running
 with systemd](#running-with-systemd), with only the test instance's database:

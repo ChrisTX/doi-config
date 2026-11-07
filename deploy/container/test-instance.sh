@@ -3,7 +3,9 @@
 # SourceMod's tables, the server registered in SourceBans++ and optionally an admin. Nothing of it reaches
 # the live servers: the passwords are generated, and without its config the Discord forward stays silent.
 #
-#   build             build the image (podman build, see README.md) from the local pacman repository
+#   build [--testing] build the image (podman build, see README.md) from the local pacman repository;
+#                     with --testing with Arch Linux's testing repositories, for packages built against
+#                     them, as on a machine that uses them
 #   up [--db-only] [CONFIG]
 #                     start the test instance of a config of servers/ (coop-commando by default), anew;
 #                     with --db-only only its database, for the systemd units on this machine
@@ -81,6 +83,11 @@ repo_key() {
 }
 
 cmd_build() {
+	local -a testing=()
+	if [[ ${1:-} == --testing ]]; then
+		testing=(--build-arg TESTING=1)
+		shift
+	fi
 	find_repo
 	local fingerprint
 	fingerprint=$(repo_key)
@@ -93,7 +100,7 @@ cmd_build() {
 	trap 'rm -f "$key"' EXIT
 	gpg --homedir /etc/pacman.d/gnupg --no-permission-warning --export -a "$fingerprint" >"$key"
 	podman build --format docker --build-context repo="$repo_root" --secret id=repo-key,src="$key" \
-		--build-arg REPO_NAME="$repo_name" -f "$repo/deploy/container/Containerfile" -t "$image" "$repo" "$@"
+		--build-arg REPO_NAME="$repo_name" "${testing[@]}" -f "$repo/deploy/container/Containerfile" -t "$image" "$repo" "$@"
 }
 
 # The settings of the live servers' environment files, with the test's ports
