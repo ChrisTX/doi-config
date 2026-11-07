@@ -189,7 +189,9 @@ cmd_up() {
 		echo "The database of the test instance of $config is up at 127.0.0.1:$db_port." \
 			"For doi-server@$config.service, its settings and the server's secrets, as root:"
 		printf '\n  install -D -m 640 -g doi %q /etc/doi-server/%q\n' "$dir/server.env" "$config.env"
+		printf '  install -d -m 750 -g doi /etc/doi-server/secrets\n'
 		printf '  cp -r %q /etc/doi-server/secrets/\n' "$dir/secrets/."
+		printf '  chgrp -R doi /etc/doi-server/secrets\n  chmod -R u=rwX,g=rX,o= /etc/doi-server/secrets\n'
 		return
 	fi
 
