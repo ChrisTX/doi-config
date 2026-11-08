@@ -246,7 +246,9 @@ cmd_up() {
 	[[ -z $db_only ]] || ports=(-p "127.0.0.1:$db_port:3306/tcp")
 	podman pod create --name "$pod" --userns "$userns" --network pasta:-a,10.0.2.100,-n,24,-g,10.0.2.2 \
 		"${ports[@]}" >/dev/null
-	podman run -d --pod "$pod" --name "$pod-db" --env-file "$dir/db.env" \
+	# The database on a tmpfs: it's the test's only, and with the pod's user namespace for the server, a
+	# volume would belong to an ID that MariaDB's user isn't
+	podman run -d --pod "$pod" --name "$pod-db" --env-file "$dir/db.env" --tmpfs /var/lib/mysql:rw,mode=1777 \
 		-v "$dir/init:/docker-entrypoint-initdb.d:ro" docker.io/library/mariadb:lts >/dev/null
 	echo "Waiting for the database"
 	until podman exec "$pod-db" healthcheck.sh --connect --innodb_initialized >/dev/null 2>&1; do
