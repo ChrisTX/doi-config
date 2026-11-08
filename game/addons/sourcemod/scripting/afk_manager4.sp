@@ -116,6 +116,12 @@ int iPlayerAttacker[MAXPLAYERS+1] =						{-1, ...}; // Player Attacker
 int iObserverMode[MAXPLAYERS+1] =						{-1, ...}; // Observer Mode
 int iObserverTarget[MAXPLAYERS+1] =						{-1, ...}; // Observer Target
 AFKImmunity g_iPlayerImmunity[MAXPLAYERS+1] =			{AFKImmunity_None, ...}; // Player Immunity
+// doi: the user ID the slot's immunity was set for: a disconnect the plugin misses, e.g. while it's
+// disabled or of a client it never initialised, would leave the immunity to the slot's next player
+int g_iImmunityUserID[MAXPLAYERS+1] =					{-1, ...};
+// doi: the AFK time's and the spawn time's warning interval of the last warning (see WarningDue)
+int g_iWarnedStep[MAXPLAYERS+1] =						{-1, ...};
+int g_iSpawnWarnedStep[MAXPLAYERS+1] =					{-1, ...};
 bool bPlayerAFK[MAXPLAYERS+1] =							{true, ...}; // Player AFK Status
 bool bPlayerDeath[MAXPLAYERS+1] =						{false, ...};
 int g_iMapEndTime =										-1;
@@ -223,6 +229,9 @@ public int Native_SetClientImmunity(Handle plugin, int numParams) // native void
 
 	if (iClient < 1 || iClient > MaxClients)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index (%d)", iClient);
+	// doi: the immunity is the user's, who has to be in game for their user ID
+	else if (!IsClientInGame(iClient))
+		return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", iClient);
 	else if (iImmunityType < AFKImmunity_None || iImmunityType > AFKImmunity_Full)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid Immunity Type (%d)", iImmunityType);
 	else
@@ -491,6 +500,18 @@ void ResetAFKTimer(int index, bool Full = true)
 		ResetPlayer(index);
 }
 
+// doi: whether a warning is due, once per AFK_WARNING_INTERVAL seconds of the time: when the time
+// reaches another interval than at the last warning, as the timer's ticks can skip a second, which a
+// time%interval of 0 would miss
+bool WarningDue(int time, int &warnedStep)
+{
+	int step = time / AFK_WARNING_INTERVAL;
+	if (step == warnedStep)
+		return false;
+	warnedStep = step;
+	return true;
+}
+
 void ResetAttacker(int index)
 {
 #if _DEBUG > 1
@@ -505,6 +526,7 @@ void ResetSpawn(int index)
 	LogDebug(false, "ResetSpawn - Client: %i", index);
 #endif
 	g_iSpawnTime[index] =	-1;
+	g_iSpawnWarnedStep[index] = -1;
 }
 
 void ResetObserver(int index)
@@ -519,6 +541,7 @@ void ResetObserver(int index)
 void ResetPlayer(int index, bool FullReset = true) // Player Resetting
 {
 	ResetSpawn(index);
+	g_iWarnedStep[index] = -1;
 	bPlayerAFK[index] = true;
 
 	iButtonsArrayIndex[index] = 0;
@@ -583,6 +606,9 @@ void InitializePlayer(int index) // Player Initialization
 			ResetAFKTimer(index);
 			g_iPlayerUserID[index] = iClientUserID;
 		}
+		// doi: an immunity of another user that had the slot is gone
+		if (g_iImmunityUserID[index] != iClientUserID)
+			g_iPlayerImmunity[index] = AFKImmunity_None;
 
 
 		Action ForwardResult = Forward_OnInitializePlayer(index);
@@ -626,6 +652,7 @@ void UnInitializePlayer(int index) // Player UnInitialization
 #endif
 	ResetAFKTimer(index);
 	g_iPlayerImmunity[index] = AFKImmunity_None;
+	g_iImmunityUserID[index] = -1;
 }
 
 int AFK_GetClientCount(bool inGameOnly = true)
@@ -1163,8 +1190,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 		if (IsClientSourceTV(client) || IsFakeClient(client)) // Ignore Source TV & Bots
 			return Plugin_Continue;
 
+		// doi: only ignored, not blocked: Plugin_Handled would drop the player's command
 		if (cmdnum <= 0) // NULL Commands?
-			return Plugin_Handled;
+			return Plugin_Continue;
 
 #if _DEBUG > 2
 		LogDebug(false, "OnPlayerRunCmd - Client: %i Eye Angles: %f %f %f", client, angles[0], angles[1], angles[2]);
@@ -1207,19 +1235,8 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							}
 							else if (iObserverMode[client] != OBS_MODE_IN_EYE) // Check Observer Mode in case it has changed
 								iObserverMode[client] = GetEntProp(client, Prop_Send, "m_iObserverMode");
-
-							if ((iObserverMode[client] == OBS_MODE_IN_EYE) && (iLastButtons == buttons))
-							{
-#if _DEBUG > 1
-								LogDebug(false, "OnPlayerRunCmd - Client: %i in first person spectator view and buttons have not changed.", client);
-#endif
-								return Plugin_Continue;
-							}
-
-							if (iLastButtons == buttons)
-							{
-								return Plugin_Continue;
-							}
+							// doi: the checks of unchanged buttons that followed were dead code, as the
+							// buttons have changed here
 						}
 
 						if (g_iButtonsArraySize > 1)
@@ -1656,7 +1673,7 @@ Action CheckPlayer(int client)
 										else
 											return MoveAFKClient(client);
 									}
-									else if (AFKSpawnTime%AFK_WARNING_INTERVAL == 0) // Warn AFK Spawn Player
+									else if (WarningDue(AFKSpawnTime, g_iSpawnWarnedStep[client])) // Warn AFK Spawn Player
 									{
 #if _DEBUG > 1
 										LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Spawn Move Warning AFK Spawn Timeleft: %i", client, AFKSpawnTimeleft);
@@ -1679,7 +1696,7 @@ Action CheckPlayer(int client)
 								else
 									return MoveAFKClient(client);
 							}
-							else if (AFKTime%AFK_WARNING_INTERVAL == 0) // Warn AFK Player
+							else if (WarningDue(AFKTime, g_iWarnedStep[client])) // Warn AFK Player
 							{
 #if _DEBUG > 1
 								LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Move Warning", client);
@@ -1720,7 +1737,7 @@ Action CheckPlayer(int client)
 									{
 										if (AFKSpawnTime >= cvarSpawnTime) // Take Action on AFK Spawn Player
 											return KickAFKClient(client);
-										else if (AFKSpawnTime%AFK_WARNING_INTERVAL == 0) // Warn AFK Spawn Player
+										else if (WarningDue(AFKSpawnTime, g_iSpawnWarnedStep[client])) // Warn AFK Spawn Player
 										{
 #if _DEBUG > 1
 											LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Spawn Kick Warning AFK Spawn Timeleft: %i", client, AFKSpawnTimeleft);
@@ -1736,7 +1753,7 @@ Action CheckPlayer(int client)
 #endif
 								if (AFKTime >= g_iTimeToKick) // Take Action on AFK Player
 									return KickAFKClient(client);
-								else if (AFKTime%AFK_WARNING_INTERVAL == 0) // Warn AFK Player
+								else if (WarningDue(AFKTime, g_iWarnedStep[client])) // Warn AFK Player
 								{
 #if _DEBUG > 1
 									LogDebug(false, "Timer_CheckPlayer - Client: %i Checking Kick Warning", client);
@@ -1892,6 +1909,8 @@ bool CheckAdminImmunity(int client) // Check Admin Immunity
 
 void SetPlayerImmunity(int client, int type, bool AFKImmunityType = false) // Set Admin Immunity
 {
+	// doi: the immunity is the user's who has the slot now
+	g_iImmunityUserID[client] = IsClientInGame(client) ? GetClientUserId(client) : -1;
 	if ( (AFKImmunityType) && ((view_as<AFKImmunity>(type) >= AFKImmunity_None) && (view_as<AFKImmunity>(type) <= AFKImmunity_Full)) )
 	{
 		g_iPlayerImmunity[client] = view_as<AFKImmunity>(type);
