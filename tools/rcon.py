@@ -41,6 +41,45 @@ def receive(sock: socket.socket) -> tuple[int, int, str]:
     return request_id, kind, data[8:-2].decode(errors="replace")
 
 
+def connect(host: str, port: int, password: str) -> socket.socket:
+    """Connect to a server's RCON and authenticate; a wrong password is a PermissionError."""
+    sock = socket.create_connection((host, port), timeout=10)
+    send(sock, 1, SERVERDATA_AUTH, password)
+    # The server answers the authentication with an empty response value first
+    while True:
+        request_id, kind, _ = receive(sock)
+        if kind == SERVERDATA_AUTH_RESPONSE:
+            break
+    if request_id == -1:
+        sock.close()
+        raise PermissionError("The RCON password is wrong")
+    return sock
+
+
+def run(sock: socket.socket, command: str) -> str:
+    """Run a command and return its answer."""
+    # An answer can take several packets: an empty command after it marks its end, as the server
+    # answers commands in order
+    send(sock, 2, SERVERDATA_EXECCOMMAND, command)
+    send(sock, 3, SERVERDATA_EXECCOMMAND, "")
+    answer = []
+    while True:
+        request_id, _, body = receive(sock)
+        if request_id != 2:
+            break
+        answer.append(body)
+    # The answer to the empty command can take a second packet
+    sock.settimeout(0.05)
+    try:
+        while True:
+            receive(sock)
+    except TimeoutError:
+        pass
+    finally:
+        sock.settimeout(10)
+    return "".join(answer)
+
+
 def main() -> int:
     """Authenticate, run the command and print the answer."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -52,27 +91,13 @@ def main() -> int:
     if not password:
         print("RCON_PASSWORD isn't set", file=sys.stderr)
         return 2
-
-    with socket.create_connection((args.host, args.port), timeout=10) as sock:
-        send(sock, 1, SERVERDATA_AUTH, password)
-        # The server answers the authentication with an empty response value first
-        while True:
-            request_id, kind, _ = receive(sock)
-            if kind == SERVERDATA_AUTH_RESPONSE:
-                break
-        if request_id == -1:
-            print("The RCON password is wrong", file=sys.stderr)
-            return 1
-
-        # An answer can take several packets: an empty command after it marks its end, as the server
-        # answers commands in order
-        send(sock, 2, SERVERDATA_EXECCOMMAND, " ".join(args.command))
-        send(sock, 3, SERVERDATA_EXECCOMMAND, "")
-        while True:
-            request_id, _, body = receive(sock)
-            if request_id != 2:
-                break
-            print(body, end="")
+    try:
+        sock = connect(args.host, args.port, password)
+    except PermissionError as error:
+        print(error, file=sys.stderr)
+        return 1
+    with sock:
+        print(run(sock, " ".join(args.command)), end="")
     return 0
 
 
