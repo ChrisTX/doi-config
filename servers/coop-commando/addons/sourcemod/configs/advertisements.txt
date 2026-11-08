@@ -1,0 +1,32 @@
+// Advertisements 2.1
+// by Tsunami
+//
+// Types
+// -----
+// center: Centre message
+// chat: Chat message
+// hint: Hint message
+// menu: Menu message - WARNING: blocks numrow key inputs while active.
+// top: Top message
+//
+// Flags (optional)
+// -----
+// Accepts flags of admins that will not see the advertisement.
+// When omitted everyone will see the advertisement.
+// When left empty only admins will see the advertisement.
+
+"Advertisements"
+{
+    "1"
+    {
+        "chat"			"{green}We run events on most days of the week on this server. Join our Discord: {default}https://discord.gg/MKNwv3RbMG"
+    }
+    "2"
+    {
+        "chat"			"{olive}If you run into errors, type {green}retry {olive}in the console."
+    }
+    "3"
+    {
+        "hint"          "Join us for team games on most days of the week on our Discord:\nhttps://discord.gg/MKNwv3RbMG"
+    }
+}

@@ -4,7 +4,7 @@
 #
 #   <runtime>          the workshop items of all servers and the shared game install, with a writable
 #                      layer
-#   <runtime>/doi      /etc/doi-server/secrets, servers/<config>, the compiled plugins, the mods made from
+#   <runtime>/doi      /etc/doi-server/secrets, servers/<config> (its links resolved), the compiled plugins, the mods made from
 #                      mods/ (tools/make_mods.py), game/ of this
 #                      repository, /usr/lib/sourcemod, /usr/lib/metamod, the game's doi folder,
 #                      with a writable layer
@@ -67,10 +67,17 @@ rm -rf "$server/upper" "$server/work"
 mkdir -p "$server"/{upper,work}/{root,doi} "$server/state"
 chown "$user:" "$server" "$server"/{upper,work}/{root,doi} "$server/state"
 
+# The server's config, copied with its symbolic links resolved: a link to another server's file, like
+# private-mp's motd.txt, points out of the server's folder, which the overlay wouldn't have
+rm -rf "$server/config"
+if [[ -n $config ]]; then
+	cp -rL "$repo/servers/$config" "$server/config"
+fi
+
 # Top layer first
 lower=()
 [[ -d /etc/doi-server/secrets ]] && lower+=(/etc/doi-server/secrets)
-[[ -n $config ]] && lower+=("$repo/servers/$config")
+[[ -n $config ]] && lower+=("$server/config")
 lower+=("$state/plugins" "$state/mods" "$repo/game" /usr/lib/sourcemod /usr/lib/metamod "$state/game/doi")
 
 root_lower=("$state/game")

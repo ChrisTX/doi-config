@@ -1,0 +1,1 @@
+../../../../mp-battles/addons/sourcemod/configs/advertisements.txt

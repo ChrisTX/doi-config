@@ -62,7 +62,9 @@ if [[ -n ${SERVER_NAME:-} ]]; then
 		echo "Error: Config $SERVER_NAME requested but unknown!" >&2
 		exit 1
 	fi
-	cp -r "$repo/servers/$SERVER_NAME/." "$root/doi/"
+	# With its symbolic links resolved: a link to another server's file, like private-mp's motd.txt,
+	# points out of the server's folder
+	cp -rL "$repo/servers/$SERVER_NAME/." "$root/doi/"
 fi
 if [[ -d /run/secrets/doi-server ]]; then
 	cp -r /run/secrets/doi-server/. "$root/doi/"

@@ -19,8 +19,11 @@ placed on top of a server as they are:
   plugins, their translations and configs in `addons/sourcemod`.
 - `mods` has the rules of the mods, which are made from the game's map scripts
   (see [Mods](#mods)).
-- `servers/<config>` holds what one server adds: its `cfg/server.cfg` and its
-  `motd.txt`.
+- `servers/<config>` holds what one server adds: its `cfg/server.cfg`, its
+  `motd.txt` and its advertisements
+  (`addons/sourcemod/configs/advertisements.txt`). A server that shares a file
+  with another links to it, like `private-mp` to `mp-battles`; the links are
+  resolved when the server is set up, as the server only gets its own folder.
 - `tools` has the scripts that set up and monitor a server, `deploy` the systemd
   units and the servers' user, `patches` the patch of the server library.
 

@@ -1,1 +1,1 @@
-motd_mp-battles.txt
+../mp-battles/motd.txt
