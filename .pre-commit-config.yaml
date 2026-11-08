@@ -17,6 +17,18 @@ repos:
         entry: Downloaded and built files belong into .gitignore
         files: \.(smx|vpk|bsp|zip|tar|tgz|gz|bz2|xz|zst|7z|mmdb|so|dll|exe)$
 
+      # A symbolic link points to a file of the repository: a broken one would leave a server without
+      # the file, like private-mp's motd.txt after the files moved
+      - id: symlinks
+        name: no broken symbolic links
+        language: system
+        entry: >-
+          bash -c 'status=0; for f; do
+          if [[ ! -e $f ]]; then echo "$f: broken symbolic link to $(readlink "$f")"; status=1;
+          elif [[ $(realpath "$f") != "$PWD"/* ]]; then echo "$f: links out of the repository"; status=1;
+          fi; done; exit "$status"' --
+        types: [symlink]
+
       - id: shfmt
         name: shfmt (shfmt)
         language: system
