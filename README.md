@@ -81,8 +81,9 @@ bind-mounted from the server's state folder instead (see
 
 The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
 
-- `doi-update.service` pulls this repository in
-  `/var/lib/doi-server/doi-config` and runs `tools/update_game.sh`, which
+- `doi-update.service` updates the layers (`tools/update_layers.sh`): it pulls
+  this repository in `/var/lib/doi-server/doi-config` and runs
+  `tools/update_game.sh`, which
   installs or updates the game in `/var/lib/doi-server/game` with SteamCMD,
   builds the patcher of its server library (see [Server patch](#server-patch))
   compiles this repository's plugins and makes the mods (see [Mods](#mods)) in
@@ -112,9 +113,22 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
   The hung server has 30 seconds to dump its core first.
 - `doi-servers.target` starts the enabled servers.
-- `doi-restart.timer` stops the servers every day at 06:00, runs
-  `doi-update.service` and starts them again, as the game install mustn't
-  change while servers use it.
+- `doi-restart.timer` updates and restarts the servers every day at 06:00. The
+  layers mustn't change while servers use them, so `doi-stage.service` updates
+  a copy of them in `/var/lib/doi-server/next` while the servers run. The copy
+  is reflinked, on btrfs or XFS: it shares the files' data with the layers, so
+  it takes only the space of what the update changes, and the servers' files
+  stay as they are. Then the servers are stopped, `doi-update.service` puts the
+  copy in place, keeping the layers it replaced in
+  `/var/lib/doi-server/previous`, and the servers start again: they're only
+  down for the restart. Without reflinks, `doi-update.service` updates in place
+  while the servers are stopped.
+- `doi-update-check.timer` checks the game and the workshop items for updates
+  every three hours (`tools/check_updates.py`), and on an update restarts the
+  servers like `doi-restart.timer`. The game's depots are compared, not its
+  build, as the Steam client library's depot changes on its own, and the
+  workshop items must be the versions the players download: theater files that
+  differ break the game.
 
 Setting up a server, as root, with the packages above and `steamcmd`, `git`,
 `python-a2s`, `gcc` and the 32-bit `lib32-glibc` (for the patcher, see [Server
@@ -127,7 +141,8 @@ systemd-sysusers
 install -d -o doi -g doi -m 750 /var/lib/doi-server
 sudo -u doi git clone https://github.com/ChrisTX/doi-config.git /var/lib/doi-server/doi-config
 # The server's settings in /etc/doi-server/coop-commando.env, its secrets in /etc/doi-server/secrets
-systemctl enable --now doi-server@coop-commando.service doi-servers.target doi-restart.timer
+systemctl enable --now doi-server@coop-commando.service doi-servers.target
+systemctl enable --now doi-restart.timer doi-update-check.timer
 ```
 
 ### Running in a container

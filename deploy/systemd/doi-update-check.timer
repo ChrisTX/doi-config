@@ -1,0 +1,9 @@
+[Unit]
+Description=Check the Day of Infamy game install and workshop items for updates every three hours
+
+[Timer]
+# At half past, between the daily restart's hours
+OnCalendar=00/3:30
+
+[Install]
+WantedBy=timers.target

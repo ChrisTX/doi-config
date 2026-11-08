@@ -15,14 +15,8 @@ StateDirectory=doi-server
 StateDirectoryMode=0750
 # SteamCMD keeps its files in the home folder
 Environment=HOME=%S/doi-server
-ExecStart=/usr/bin/git -C %S/doi-server/doi-config pull --ff-only
-ExecStart=%S/doi-server/doi-config/tools/update_game.sh --game %S/doi-server/game --workshop %S/doi-server/workshop --plugins %S/doi-server/plugins --patcher %S/doi-server/doi_patch.so --check-patches %S/doi-server/game
-# The map scripts of the game and the workshop items, checked: the log lists those whose braces are
-# repaired, or can't be, which a mod's fix list can repair. Broken ones fail the check, not the update
-# (-), as the servers run without the maps.
-ExecStart=-/usr/bin/python3 %S/doi-server/doi-config/tools/make_mods.py --game %S/doi-server/game --workshop %S/doi-server/workshop --check
-# The mods of mods/, made from the game's and the workshop items' map scripts
-ExecStart=/usr/bin/python3 %S/doi-server/doi-config/tools/make_mods.py --game %S/doi-server/game --workshop %S/doi-server/workshop %S/doi-server/mods %S/doi-server/doi-config/mods
+# Puts an update that doi-stage.service staged in place, or updates in place, e.g. at boot
+ExecStart=%S/doi-server/doi-config/tools/update_layers.sh %S/doi-server
 TimeoutStartSec=infinity
 PrivateTmp=yes
 PrivateDevices=yes

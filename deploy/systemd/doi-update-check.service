@@ -1,0 +1,23 @@
+[Unit]
+Description=Check the Day of Infamy game install and workshop items for updates
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=doi
+StateDirectory=doi-server
+StateDirectoryMode=0750
+# SteamCMD keeps its files in the home folder
+Environment=HOME=%S/doi-server
+# Skips the rest unless there are updates (exit status 1 skips, 255, when it can't tell, fails): the
+# game's depots, the Steam client library's included, and the workshop items. Workshop items must be
+# the versions the players download, as theater files that differ break the game.
+ExecCondition=/usr/bin/python3 %S/doi-server/doi-config/tools/check_updates.py --game %S/doi-server/game --workshop %S/doi-server/workshop
+ExecStart=+/usr/bin/systemctl start --no-block doi-restart.service
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+

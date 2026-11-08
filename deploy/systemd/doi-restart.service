@@ -3,6 +3,9 @@ Description=Update and restart the Day of Infamy servers
 
 [Service]
 Type=oneshot
+# The update first, while the servers run, so that they're only down for the restart. Without a staged
+# update, e.g. on a file system without reflinks, doi-update.service updates in place.
+ExecStart=-/usr/bin/systemctl start doi-stage.service
 ExecStart=/usr/bin/systemctl stop doi-servers.target
 ExecStart=/usr/bin/systemctl restart doi-update.service
 ExecStart=/usr/bin/systemctl start doi-servers.target

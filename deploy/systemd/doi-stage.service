@@ -1,0 +1,21 @@
+[Unit]
+Description=Stage an update of the Day of Infamy game install and doi-config
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=doi
+StateDirectory=doi-server
+StateDirectoryMode=0750
+# SteamCMD keeps its files in the home folder
+Environment=HOME=%S/doi-server
+# The update goes into a reflinked copy of the layers while the servers run on them, which
+# doi-update.service puts in place once doi-restart.service has stopped them
+ExecStart=%S/doi-server/doi-config/tools/update_layers.sh --stage %S/doi-server
+TimeoutStartSec=infinity
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
