@@ -69,6 +69,7 @@ enum AFKImmunity
 };
 
 // Defines
+// The suffix tells this modified copy apart from the upstream release
 #define AFKM_VERSION									"4.3.0-doi1"
 
 #define AFK_WARNING_INTERVAL							5
@@ -1086,6 +1087,7 @@ public void OnPluginStart() // AFK Manager Plugin has started
 	RequireFeature(FeatureType_Capability, FEATURECAP_PLAYERRUNCMD_11PARAMS, "This plugin requires a newer version of SourceMod.");
 
 	RegisterCvars(); // Register Cvars
+	// Start disabled: the 1 that AutoExecConfig then sets is a change, and the change hook enables the plugin
 	hCvarLogWarnings.IntValue = 0;
 	hCvarEnabled.IntValue = 0;
 
@@ -1234,6 +1236,7 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 							}
 							iButtonsArray[client][iButtonsArrayIndex[client]] = buttons;
 
+							// doi: incremented before the comparison, so the index stays below sm_afk_buttons
 							if (++iButtonsArrayIndex[client] >= g_iButtonsArraySize) // Increment Array Index
 								iButtonsArrayIndex[client] = 0;
 
@@ -1880,6 +1883,7 @@ bool CheckAdminImmunity(int client) // Check Admin Immunity
 
 		if (StrEqual(sFlags, "")) // No admin flags set
 			return true;
+		// doi: parenthesised, as != binds tighter than &
 		else if ((iUserFlagBits & (ReadFlagString(sFlags)|ADMFLAG_ROOT)) != 0) // Compare Flag Bits
 			return true;
 	}
