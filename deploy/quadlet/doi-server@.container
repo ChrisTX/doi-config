@@ -22,7 +22,7 @@ UserNS=keep-id:uid=1000,gid=1000
 # start, the mods read-only
 Volume=%S/doi-server/game:/srv/doi:O
 Volume=%S/doi-server/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O
-Volume=%S/doi-server/mods/custom:/srv/doi/doi/custom:ro
+Volume=%S/doi-server/mods:/srv/mods:ro
 Volume=%E/doi-server/secrets:/run/secrets/doi-server:ro
 # What the server writes and keeps
 Volume=doi-server-%i-dumps:/srv/doi-data/dumps

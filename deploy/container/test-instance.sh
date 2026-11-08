@@ -23,6 +23,8 @@
 # DOI_TEST_DIR: the test instance's files (${XDG_STATE_HOME:-~/.local/state}/doi-config-test)
 # DOI_STATE: the state folder with the game, the workshop items and the mods
 # (${XDG_STATE_HOME:-~/.local/state}/doi-server, as for the Quadlet units of deploy/quadlet)
+# DISABLE_PLUGINS: plugins the server starts without, by name, e.g. doi_cvar_unlocker for the game's own
+# bounds in tools/dump_cvars.py
 # TEST_ADMIN: a SteamID (STEAM_0:…) that gets root admin
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 set -euo pipefail
@@ -278,9 +280,15 @@ cmd_up() {
 		geoip=(-v /var/lib/GeoIP:/var/lib/GeoIP:ro)
 	fi
 	# The state's game and workshop items with an overlay of the container's own, its mods read-only
+	# Plugins prepare_server.sh disables, e.g. for tools/dump_cvars.py
+	local -a disable=()
+	if [[ -n ${DISABLE_PLUGINS:-} ]]; then
+		disable=(-e DISABLE_PLUGINS="$DISABLE_PLUGINS")
+	fi
 	podman run -d --pod "$pod" --name "$pod-server" --env-file "$dir/server.env" -e SERVER_NAME="$config" \
+		"${disable[@]}" \
 		-v "$state/game:/srv/doi:O" -v "$state/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O" \
-		-v "$state/mods/custom:/srv/doi/doi/custom:ro" \
+		-v "$state/mods:/srv/mods:ro" \
 		-v "$dir/secrets:/run/secrets/doi-server:ro" "${geoip[@]}" "${volumes[@]}" \
 		--health-on-failure restart "$image" >/dev/null
 	echo "Waiting for the server"

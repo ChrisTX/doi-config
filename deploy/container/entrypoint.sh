@@ -11,9 +11,9 @@
 #
 # The server's mounts, the state's folders: game at /srv/doi and workshop/steamapps/workshop at
 # /srv/doi/steamapps/workshop, both with Podman's overlay (:O), so that the server's writes stay in its
-# container, and mods/custom at /srv/doi/doi/custom, read-only. Its start copies the image's files of
-# the doi folder (/opt/doi-layer: SourceMod, Metamod:Source, the plugins and game/ of this
-# repository), the server's config of this repository and the secrets into the doi folder, then runs
+# container, and mods at /srv/mods, read-only. Its start copies the image's files of the doi folder
+# (/opt/doi-layer: SourceMod, Metamod:Source, the plugins and game/ of this repository), the mods (the
+# map scripts in custom/, the playlists' configs in cfg/), the server's config of this repository and the secrets into the doi folder, then runs
 # prepare_server.sh and the server, run by srcds_watchdog.py, which passes the container's stop signal
 # on.
 #
@@ -49,6 +49,9 @@ if [[ ! -x $root/srcds_linux ]]; then
 	exit 1
 fi
 cp -a /opt/doi-layer/. "$root/doi/"
+if [[ -d /srv/mods ]]; then
+	cp -r /srv/mods/. "$root/doi/"
+fi
 # What the server keeps, in volumes at /srv/doi-data: mounted there rather than in the game's folders,
 # where Podman would make the folders above them root's, so the folders are linked
 for kept in dumps:dumps logs:doi/logs sourcemod/logs:doi/addons/sourcemod/logs \
