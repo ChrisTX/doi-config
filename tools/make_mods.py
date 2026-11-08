@@ -3,7 +3,7 @@
 
 A map's script, maps/<map>.txt, configures its game modes, a block each: the teams, the control points
 in the order they're taken, the spawn zones and the entities. The game ships the scripts in its VPKs
-(doi/*_dir.vpk), a workshop map in its item. A mod copies a block under the name of another game mode,
+(doi/*_dir.vpk), a workshop map in its item, as a file or in a VPK. A mod copies a block under the name of another game mode,
 e.g. offensive as invasion, which the map doesn't have, and adjusts the copy. The mods are made from
 the installed game, so they follow its updates, and this repository only holds the rules.
 
@@ -12,6 +12,10 @@ Each mods/<mod>.toml makes the mod folder custom/<mod> of the output, with the s
     # A map's script comes from the game, unless the map is from the workshop: map = item ID
     [workshop]
     tobruk = 823637416
+
+    # Maps whose scripts are only repaired and formatted, without copies
+    [fix]
+    maps = ["tobruk"]
 
     # The copies, applied in order; each copies one block of the maps it lists
     [[copy]]
@@ -27,10 +31,16 @@ Each mods/<mod>.toml makes the mod folder custom/<mod> of the output, with the s
 
 The output is the rest of the script as it is, with the copies after the blocks they're made from, in
 the game's format, indented anew and without comments. Braces in the wrong place are repaired, as far
-as the keys of a level show where a block ends (see parse_script()). A copy whose block the map doesn't have, or which names a control
-point that the block doesn't have, is an error, e.g. after a game update that changed the map.
+as the keys of a level show where a block ends (see parse_script()). A copy whose block the map
+doesn't have, or which names a control point that the block doesn't have, is an error, e.g. after a
+game update that changed the map.
+
+With --check, nothing is made: every map script of the game and of the workshop items is parsed, and
+those whose braces had to be repaired, or can't be, are listed, the latter with an exit status of 1. A
+broken script of a workshop map can be repaired with a mod that has the map in its fix list.
 
 Usage: make_mods.py --game DIR --workshop DIR OUTPUT MODS...
+       make_mods.py --game DIR --workshop DIR --check
 
 --game is the game's install, with doi/ in it, --workshop SteamCMD's folder of the workshop items
 (steamapps/workshop/content/447820/<item> in it). MODS are the mods' .toml files, or folders of them.
@@ -44,6 +54,7 @@ import struct
 import sys
 import tomllib
 import zlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -228,13 +239,13 @@ def format_keyvalues(pairs: Pairs, depth: int = 0) -> str:
     return "".join(lines)
 
 
-def read_vpk(directory: Path, wanted: str) -> bytes | None:
-    """Read a file from a VPK by its path in it, from its directory file (<name>_dir.vpk), version 1 or
-    2; None if it doesn't have the file."""
-    data = directory.read_bytes()
+def vpk_files(vpk: Path) -> dict[str, Callable[[], bytes]]:
+    """List a VPK's files, version 1 or 2, by their paths, with a function each that reads the file: of
+    a VPK of several files, its directory file (<name>_dir.vpk), or a VPK of one file."""
+    data = vpk.read_bytes()
     signature, version, tree_size = struct.unpack_from("<III", data)
     if signature != VPK_SIGNATURE or version not in (1, 2):
-        raise ModError(f"{directory} isn't a VPK of version 1 or 2")
+        raise ModError(f"{vpk} isn't a VPK of version 1 or 2")
     # Version 2's header has four more fields, the sizes of the sections after the tree
     position = 12 if version == 1 else 28
     tree_end = position + tree_size
@@ -242,14 +253,33 @@ def read_vpk(directory: Path, wanted: str) -> bytes | None:
     def string() -> str:
         nonlocal position
         end = data.index(b"\0", position)
-        text = data[position:end].decode()
+        text = data[position:end].decode(errors="replace")
         position = end + 1
         return text
 
+    def reader(
+        path: str, crc: int, preload: bytes, archive: int, offset: int, size: int
+    ) -> Callable[[], bytes]:
+        def read() -> bytes:
+            if archive == VPK_IN_DIRECTORY:
+                body = data[tree_end + offset : tree_end + offset + size]
+            else:
+                stem = vpk.name.removesuffix("_dir.vpk")
+                with vpk.with_name(f"{stem}_{archive:03}.vpk").open("rb") as file:
+                    file.seek(offset)
+                    body = file.read(size)
+            content = preload + body
+            if zlib.crc32(content) != crc:
+                raise ModError(f"{path} in {vpk} doesn't match its checksum")
+            return content
+
+        return read
+
     # The tree: by extension, then by path, the files, each a list ending with an empty string. A
     # single space stands for no extension or path.
+    files = {}
     while extension := string():
-        while path := string():
+        while directory := string():
             while name := string():
                 crc, preload_size, archive, offset, size, _ = struct.unpack_from(
                     "<IHHIIH", data, position
@@ -258,54 +288,78 @@ def read_vpk(directory: Path, wanted: str) -> bytes | None:
                 preload = data[position : position + preload_size]
                 position += preload_size
                 file = name if extension == " " else f"{name}.{extension}"
-                if (file if path == " " else f"{path}/{file}") != wanted:
-                    continue
-                if archive == VPK_IN_DIRECTORY:
-                    body = data[tree_end + offset : tree_end + offset + size]
-                else:
-                    stem = directory.name.removesuffix("_dir.vpk")
-                    with directory.with_name(f"{stem}_{archive:03}.vpk").open(
-                        "rb"
-                    ) as archive_file:
-                        archive_file.seek(offset)
-                        body = archive_file.read(size)
-                content = preload + body
-                if zlib.crc32(content) != crc:
-                    raise ModError(
-                        f"{wanted} in {directory} doesn't match its checksum"
-                    )
-                return content
-    return None
+                path = (file if directory == " " else f"{directory}/{file}").lower()
+                files[path] = reader(path, crc, preload, archive, offset, size)
+    return files
+
+
+def map_scripts(folder: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
+    """List the map scripts of the game's doi folder or of a workshop item, by their paths
+    (maps/<map>.txt), with where each is from and a function that reads it: its files first, then its
+    VPKs. The numbered archives of a VPK (<name>_000.vpk) are read through its directory file."""
+    scripts = {}
+    for path in sorted(folder.glob("maps/*.txt")):
+        scripts[f"maps/{path.name.lower()}"] = (str(path), path.read_bytes)
+    for vpk in sorted(folder.glob("*.vpk")):
+        if re.search(r"_\d{3}\.vpk$", vpk.name):
+            continue
+        for path, read in vpk_files(vpk).items():
+            if re.fullmatch(r"maps/[^/]+\.txt", path) and path not in scripts:
+                scripts[path] = (f"{vpk}/{path}", read)
+    return scripts
+
+
+def item_folder(workshop: Path, item: int) -> Path:
+    """The folder of a workshop item in SteamCMD's folder of the workshop items."""
+    return workshop / "steamapps/workshop/content" / str(GAME_APP) / str(item)
 
 
 def read_script(
     game: Path, workshop: Path, workshop_maps: dict[str, int], name: str
 ) -> tuple[Pairs, list[str]]:
     """Read and parse a map's script, see parse_script(): a workshop map's from its item, a map of the
-    game's from its doi folder or its VPKs."""
-    wanted = f"maps/{name}.txt"
+    game's from its doi folder."""
+    wanted = f"maps/{name.lower()}.txt"
     if name in workshop_maps:
-        item = workshop_maps[name]
-        path = (
-            workshop / "steamapps/workshop/content" / str(GAME_APP) / str(item) / wanted
-        )
-        if not path.is_file():
-            raise ModError(f"{name}: the workshop item {item} has no {wanted}")
-        content, source = path.read_bytes(), str(path)
-    elif (game / "doi" / wanted).is_file():
-        content, source = (
-            (game / "doi" / wanted).read_bytes(),
-            str(game / "doi" / wanted),
-        )
+        scripts = map_scripts(item_folder(workshop, workshop_maps[name]))
+        where = f"the workshop item {workshop_maps[name]}"
     else:
-        for directory in sorted((game / "doi").glob("*_dir.vpk")):
-            found = read_vpk(directory, wanted)
-            if found is not None:
-                content, source = found, f"{directory.name}/{wanted}"
-                break
-        else:
-            raise ModError(f"{name}: the game has no {wanted}")
-    return parse_script(content.decode("utf-8", errors="replace"), source)
+        scripts = map_scripts(game / "doi")
+        where = "the game"
+    if wanted not in scripts:
+        raise ModError(f"{name}: {where} has no {wanted}")
+    source, read = scripts[wanted]
+    return parse_script(read().decode("utf-8", errors="replace"), source)
+
+
+def check_scripts(game: Path, workshop: Path) -> int:
+    """Parse every map script of the game and of the workshop items, and report those that had to be
+    repaired, or can't be: they'd need a mod that has their maps in its fix list. Returns the number of
+    scripts that can't be repaired."""
+    folders = [game / "doi"]
+    content = workshop / "steamapps/workshop/content" / str(GAME_APP)
+    if content.is_dir():
+        folders += sorted(path for path in content.iterdir() if path.is_dir())
+    checked = repaired = broken = 0
+    for folder in folders:
+        for source, read in map_scripts(folder).values():
+            checked += 1
+            try:
+                _, repairs = parse_script(
+                    read().decode("utf-8", errors="replace"), source
+                )
+            except ModError as error:
+                broken += 1
+                print(f"error: {error}", file=sys.stderr)
+                continue
+            if repairs:
+                repaired += 1
+                print(f"repaired: {source}: {', '.join(repairs)}", file=sys.stderr)
+    print(
+        f"{checked} map scripts, {repaired} repaired, {broken} that can't be",
+        file=sys.stderr,
+    )
+    return broken
 
 
 @dataclass
@@ -396,12 +450,22 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> None:
     mod = config.stem
     with config.open("rb") as file:
         settings = tomllib.load(file)
-    unknown = set(settings) - {"workshop", "copy"}
+    unknown = set(settings) - {"workshop", "fix", "copy"}
     if unknown:
         raise ModError(f"{mod}: unknown tables {', '.join(sorted(unknown))}")
+    # Tables, so that a key after one doesn't end up in it by mistake: TOML's keys after a table's
+    # header are the table's
     workshop_maps = settings.get("workshop", {})
+    for name, item in workshop_maps.items():
+        if not isinstance(item, int):
+            raise ModError(f"{mod}: the workshop item of {name} isn't an ID: {item!r}")
+    fix = settings.get("fix", {})
+    if not isinstance(fix, dict) or set(fix) - {"maps"}:
+        raise ModError(f"{mod}: fix is a table with the maps' list only")
     copies = [Copy.from_table(table, mod) for table in settings.get("copy", [])]
-    maps = dict.fromkeys(name for copy in copies for name in copy.maps)
+    maps = dict.fromkeys(
+        [*fix.get("maps", []), *(name for copy in copies for name in copy.maps)]
+    )
     for name in maps:
         script, repairs = read_script(game, workshop, workshop_maps, name)
         for repair in repairs:
@@ -429,11 +493,28 @@ def main() -> int:
         required=True,
         help="SteamCMD's folder of the workshop items",
     )
-    parser.add_argument("output", type=Path, help="the folder of the mods, replaced")
     parser.add_argument(
-        "mods", type=Path, nargs="+", help="the mods' .toml files, or folders of them"
+        "--check",
+        action="store_true",
+        help="check every map script of the game and the workshop items instead",
+    )
+    parser.add_argument(
+        "output", type=Path, nargs="?", help="the folder of the mods, replaced"
+    )
+    parser.add_argument(
+        "mods", type=Path, nargs="*", help="the mods' .toml files, or folders of them"
     )
     arguments = parser.parse_args()
+    if arguments.check:
+        if arguments.output is not None:
+            parser.error("--check takes no output or mods")
+        try:
+            return 1 if check_scripts(arguments.game, arguments.workshop) else 0
+        except (ModError, OSError) as error:
+            print(f"make_mods.py: {error}", file=sys.stderr)
+            return 1
+    if arguments.output is None or not arguments.mods:
+        parser.error("the output and the mods are required")
 
     # Made next to the output first, so that a failure leaves the mods as they were
     new = arguments.output.with_name(arguments.output.name + ".new")

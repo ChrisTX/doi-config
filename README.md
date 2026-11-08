@@ -331,10 +331,19 @@ remove_controlpoints = ["regroup_cap"]
 
 Braces in the wrong place are repaired where the keys show where a block ends,
 e.g. a game mode that starts inside another one, which isn't closed. The tool
-says what it repaired.
+says what it repaired. A map whose script only needs that goes into a mod's
+`fix` table, e.g. `[fix]` with `maps = ["tobruk"]`: its script is repaired and
+formatted, without copies.
+
+With `--check`, the tool makes nothing, but parses every map script of the game
+and of the workshop items, as files or in VPKs, and lists those it had to repair
+and those it can't, the latter with an exit status of 1. `doi-update.service`
+runs it after each update, so its log shows broken scripts of new workshop
+maps.
 
 ```bash
 tools/make_mods.py --game GAME --workshop WORKSHOP OUTPUT mods
+tools/make_mods.py --game GAME --workshop WORKSHOP --check
 ```
 
 `GAME` is the game's install, with `doi` in it, `WORKSHOP` SteamCMD's folder of
