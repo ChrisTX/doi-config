@@ -16,8 +16,19 @@ Out of memory! Attempted to allocate 127401984 bytes
 --------------------------- OK ---------------------------
 ```
 
-The 64-bit game has much more memory available than the 32-bit one, so the
-crash practically only happens with the 32-bit game. Use the 64-bit game, or add
+The problem is specific to the 32-bit builds of the game and its server: the
+64-bit game has much more memory available, so it practically never crashes this
+way. Which build you run depends on the platform:
+
+- Windows: the game comes in 32-bit and 64-bit, and Steam starts the 64-bit one
+  by default.
+- Linux: the native game is 32-bit only, so it's affected. Playing through
+  Proton runs the 64-bit Windows game instead, which is what we recommend for
+  Day of Infamy on Linux.
+- The dedicated server only exists as a 32-bit Linux build, which is why our
+  servers set `r_hunkalloclightmaps 0` themselves.
+
+With a 32-bit game, the native Linux one or the 32-bit one on Windows, add
 `+r_hunkalloclightmaps 0` to the game's launch options in Steam.
 
 ## Keys for SourceMod menus
