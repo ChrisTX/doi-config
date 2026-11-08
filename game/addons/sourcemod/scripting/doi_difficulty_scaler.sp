@@ -1,6 +1,10 @@
 // SPDX-FileCopyrightText: Christian Pfeiffer
 // SPDX-License-Identifier: MIT OR GPL-3.0-only WITH LicenseRef-SourceMod-exception
 
+// Scales the number of bots in the coop modes to the number of human players at the start of
+// each round, independently of the map's scripting. The game mode comes from the
+// server_<gamemode>.cfg the game executes for it, see README.md.
+
 #include <sourcemod>
 #include <sdktools>
 
@@ -14,10 +18,12 @@ public Plugin myinfo =
 }
 
 public OnPluginStart() {
+    // The bot counts are set anew at every round start
     HookEvent("round_start", EventHandler, EventHookMode_Post);
     AddCommandListener(exec, "exec");
 }
 
+// The human players in game; bots and players still connecting don't count
 GetPlayerCount()
 {
     int players = 0;
@@ -33,9 +39,13 @@ public EventHandler(Handle:event, const String:name[], bool:dontBroadcast) {
     AdjustDifficulty();
 }
 
+// The game mode of the last server_<gamemode>.cfg executed, empty until one is
 char CurrentGameMode[30];
 
-// We need to identify the game mode if possible.
+// We need to identify the game mode if possible. The game executes server_<gamemode>.cfg when
+// a game mode starts; its argument string is taken to be quoted, "server_<gamemode>.cfg", so
+// "server_" starts at index 1 and the mode at index 8, after the quote and "server_". The
+// mode ends at the last dot, which also drops the closing quote.
 public Action exec(int client, const char[] command, int arg)
 {
     char cfgfilename[MAX_NAME_LENGTH];
@@ -54,11 +64,19 @@ public Action exec(int client, const char[] command, int arg)
     return Plugin_Continue;
 }
 
+// Sets a cvar silently, without announcing the change to the players
 public SetVarValue(const String:name[], int value) {
     Handle my_cvar = FindConVar(name);
+    // A cvar a game update removed would stop the remaining changes with a native error
+    if (my_cvar == null) {
+        LogError("Can't find the cvar %s", name);
+        return;
+    }
     SetConVarInt(my_cvar, value, false, false);
 }
 
+// Sets the bots of each side, the same count for the fewest and the most players, so the game's
+// own scaling by players doesn't change it; the override makes the game use these counts
 public SetBotCounts(int friendly_count, int enemy_count) {
     SetVarValue("doi_bot_count_override", 1);
 
@@ -69,6 +87,8 @@ public SetBotCounts(int friendly_count, int enemy_count) {
     SetVarValue("doi_bot_count_default_friendly_max_players", friendly_count);
 }
 
+// At most 32 bots in all, which fits the 49 slots of basic_coop.cfg with its lobby of 16 players
+// and SourceTV, the enemies first: 3 enemies and 2 more per player, 5 friendlies and 1 more per player
 public SetBotsForStronghold(int playercount) {
     int botcount = 3 + playercount * 2;
     if(botcount > 32)
@@ -82,6 +102,7 @@ public SetBotsForStronghold(int playercount) {
     SetBotCounts(friendly_botcount, botcount);
 }
 
+// Like Stronghold, with 6 enemies and 3 friendlies to start with
 public SetBotsForEntrenchment(int playercount) {
     int botcount = 6 + playercount * 2;
     if(botcount > 32)
@@ -95,6 +116,7 @@ public SetBotsForEntrenchment(int playercount) {
     SetBotCounts(friendly_botcount, botcount);
 }
 
+// Only the coop modes are scaled, raid like Stronghold
 public AdjustDifficulty() {
 
     int playercount = GetPlayerCount();
