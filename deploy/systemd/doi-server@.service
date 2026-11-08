@@ -38,6 +38,8 @@ ExecStart=/usr/bin/python3 %S/doi-server/doi-config/tools/srcds_watchdog.py -- /
 KillSignal=SIGINT
 # The stop signal to srcds_watchdog.py only, which passes it on to the server
 KillMode=mixed
+# The server ends on it, which srcds_watchdog.py reports as 128 + SIGINT: a stop, not a failure
+SuccessExitStatus=130
 PrivateTmp=yes
 PrivateDevices=yes
 NoNewPrivileges=yes
