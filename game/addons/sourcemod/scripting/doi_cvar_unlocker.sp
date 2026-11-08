@@ -7,6 +7,7 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include <doi>
 
 public Plugin myinfo =
 {
@@ -18,6 +19,7 @@ public Plugin myinfo =
 }
 
 public OnPluginStart() {
+    DOI_RequireGame();
     // The changes are applied again at these events in case the game resets the bounds or flags,
     // e.g. on a map change; the pre hooks apply them before the event reaches other listeners.
     HookEvent("server_spawn", Event_GameStart, EventHookMode_Pre);
@@ -31,7 +33,7 @@ public Event_GameStart(Handle:event, const String:name[], bool:dontBroadcast) {
     AdjustDOICVars();
 }
 
-// Sets the upper bound of a cvar, replacing the game's own
+// Sets the upper bound of a cvar, replacing the game's own; a value above it is lowered to it
 public SetVarUpperBound(const String:name[], const float fMax) {
     Handle my_cvar = FindConVar(name);
     // A cvar a game update removed would stop the remaining changes with a native error
@@ -40,6 +42,8 @@ public SetVarUpperBound(const String:name[], const float fMax) {
         return;
     }
     SetConVarBounds(my_cvar, ConVarBound_Upper, true, fMax);
+    if (GetConVarFloat(my_cvar) > fMax)
+        SetConVarFloat(my_cvar, fMax);
 }
 
 // Clears a flag (FCVAR_*) of a cvar
@@ -65,10 +69,11 @@ public RemoveNotifyFlag(const String:name[]) {
 }
 
 public AdjustDOICVars() {
-    // The coop lobby (the human players) can take all of the server's slots (+maxplayers) but
-    // 24, which stay free for the bots
-    SetVarUpperBound("doi_coop_lobby_size", MaxClients - 24.0);
-    SetVarUpperBound("mp_coop_lobbysize", MaxClients - 24.0);
+    // The coop lobby, the human players, can take the slots of their team (doi.inc): 16 by the
+    // game's rules, with maxplayers 33 (basic_coop.cfg), but fewer with fewer slots. The game's own
+    // bound is 25. mp_coop_lobbysize is Insurgency's, which Day of Infamy may not use any more.
+    SetVarUpperBound("doi_coop_lobby_size", float(DOI_TeamSlots(DOI_COOP_TEAM_SLOTS)));
+    SetVarUpperBound("mp_coop_lobbysize", float(DOI_TeamSlots(DOI_COOP_TEAM_SLOTS)));
     // Allow the round and game phase timers up to ten minutes
     SetVarUpperBound("mp_timer_pregame", 600.0);
     SetVarUpperBound("mp_timer_postgame", 600.0);
