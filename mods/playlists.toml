@@ -1,0 +1,28 @@
+# The settings of the game's playlists that the servers take over, from the settings each playlist
+# forces (see tools/make_mods.py): the patch of the server library stops the game forcing them, so the
+# servers get the playlist's gameplay as a baseline, which our configs change where they want to.
+# Settings that would get in the way aren't taken over: the theater override and the workshop, which
+# the servers use, BattlEye, stats (basic_settings.cfg), and the rules we set differently, like dead
+# talk, voice and team kill punishment.
+
+[[playlist]]
+name = "nwi/coop_commando"
+include = [
+  # Elite bots, their rankings, respawn time and difficulty
+  "doi_*",
+  "sv_firesupport_cooldown_frac",
+  "sv_hud_targetindicator*",
+  "mp_supply_gain_*",
+  "mp_stronghold_bot_respawn_friendly",
+]
+
+[[playlist]]
+name = "nwi/mp_battles"
+include = [
+  # No bots on an empty server's teams
+  "doi_bot_quota",
+  # Supply, and per game mode the supply of a capture
+  "mp_supply_*",
+  "sv_hud_*",
+  "sv_allow_jumpshot",
+]

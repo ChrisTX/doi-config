@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make the mods of mods/*.toml from the game's map scripts.
+"""Make the mods of mods/*.toml from the game's map scripts and playlists.
 
 A map's script, maps/<map>.txt, configures its game modes, a block each: the teams, the control points
 in the order they're taken, the spawn zones and the entities. The game ships the scripts in its VPKs
@@ -29,6 +29,22 @@ Each mods/<mod>.toml makes the mod folder custom/<mod> of the output, with the s
     # Spawn zones of the copy set or added, by their number
     spawnzones = { 3 = "sz_offensive_c" }
 
+A mod's [[playlist]] tables make configs of a playlist's settings instead, of scripts/playlists/<name>.playlist:
+the settings of its forced_cvars and forced_cvars_dedicated whose names match the include globs and none
+of the exclude ones. The patch of the server library stops the game forcing them (see
+patches/server_srv.patches), so a server takes over the ones it wants, as a baseline it can change:
+
+    [[playlist]]
+    name = "nwi/coop_commando"
+    include = ["doi_*", "sv_firesupport_cooldown_frac"]
+    exclude = ["doi_bot_quota"]
+
+They make cfg/doi-config/playlists/<name>.cfg of the output, which sets sv_playlist and the settings,
+for the init-*.cfg of a configuration, and cfg/doi-config/playlists/<name>-<mode>.cfg for each game mode
+whose block of settings has some, with doi_mode_cvar, for the game mode's configs (see
+doi_mode_config.sp). An include glob that matches nothing is an error, e.g. after a game update that
+changed the playlist.
+
 The output is the rest of the script as it is, with the copies after the blocks they're made from, in
 the game's format, indented anew and without comments. Braces in the wrong place are repaired, as far
 as the keys of a level show where a block ends (see parse_script()). A copy whose block the map
@@ -48,6 +64,7 @@ OUTPUT is replaced.
 """
 
 import argparse
+import fnmatch
 import re
 import shutil
 import struct
@@ -79,6 +96,10 @@ GAME_MODES = {
     "sandbox",
     "stronghold",
 }
+
+PLAYLIST_KEYS = {"name", "include", "exclude"}
+# The blocks of a playlist with the settings it forces, the latter only on dedicated servers
+PLAYLIST_FORCED = ("forced_cvars", "forced_cvars_dedicated")
 
 COPY_KEYS = {
     "maps",
@@ -160,12 +181,14 @@ SCRIPT_LEVEL = Level(
 FILE_LEVEL = Level("the file", other_blocks=SCRIPT_LEVEL)
 
 
-def parse_script(text: str, source: str) -> tuple[Pairs, list[str]]:
+def parse_script(
+    text: str, source: str, level: Level | None = FILE_LEVEL
+) -> tuple[Pairs, list[str]]:
     """Parse a map's script into its pairs, without its comments, and repair its braces: a key that
     its level doesn't have, but a level it's in, closes the blocks up to that level, e.g. a game mode in
     a game mode that isn't closed, and a closing brace after the file's block is dropped. Returns the
     pairs and what was repaired; a script whose blocks still don't match, or that has a key no level
-    takes, is an error."""
+    takes, is an error. With level None, any key goes, for other files of the game's format."""
     # (brace, text): a brace is "{" or "}", not a quoted "{"
     tokens = [
         (
@@ -177,7 +200,7 @@ def parse_script(text: str, source: str) -> tuple[Pairs, list[str]]:
     ]
     file: Pairs = []
     # The open blocks, the file's first: their level, their pairs and their key
-    stack: list[tuple[Level | None, Pairs, str]] = [(FILE_LEVEL, file, "the file")]
+    stack: list[tuple[Level | None, Pairs, str]] = [(level, file, "the file")]
     repairs = []
     index = 0
     while index < len(tokens):
@@ -332,6 +355,18 @@ def read_script(
     return parse_script(read().decode("utf-8", errors="replace"), source)
 
 
+def game_file(game: Path, path: str) -> tuple[str, bytes]:
+    """Read a file of the game's doi folder, with where it's from: the file itself, or from a VPK."""
+    loose = game / "doi" / path
+    if loose.is_file():
+        return str(loose), loose.read_bytes()
+    for vpk in sorted((game / "doi").glob("*_dir.vpk")):
+        read = vpk_files(vpk).get(path.lower())
+        if read is not None:
+            return f"{vpk}/{path}", read()
+    raise ModError(f"the game has no {path}")
+
+
 def check_scripts(game: Path, workshop: Path) -> int:
     """Parse every map script of the game and of the workshop items, and report those that had to be
     repaired, or can't be: they'd need a mod that has their maps in its fix list. Returns the number of
@@ -445,12 +480,100 @@ class Copy:
         blocks.insert(index + 1, (self.target, block))
 
 
+@dataclass
+class Playlist:
+    """The settings of a playlist that a server takes over, from a mod's [[playlist]] table."""
+
+    name: str
+    include: list[str]
+    exclude: list[str]
+
+    @classmethod
+    def from_table(cls, table: dict, mod: str) -> "Playlist":
+        unknown = set(table) - PLAYLIST_KEYS
+        if unknown:
+            raise ModError(
+                f"{mod}: unknown keys in a playlist: {', '.join(sorted(unknown))}"
+            )
+        if "name" not in table or not table.get("include"):
+            raise ModError(f"{mod}: a playlist needs a name and include globs")
+        return cls(
+            name=table["name"],
+            include=list(table["include"]),
+            exclude=list(table.get("exclude", [])),
+        )
+
+    def takes(self, name: str) -> bool:
+        name = name.lower()
+        return any(
+            fnmatch.fnmatchcase(name, glob.lower()) for glob in self.include
+        ) and not any(fnmatch.fnmatchcase(name, glob.lower()) for glob in self.exclude)
+
+    def make(self, game: Path, output: Path, mod: str) -> None:
+        """Write the playlist's configs, see the module's documentation."""
+        source, data = game_file(game, f"scripts/playlists/{self.name}.playlist")
+        (_, root), *_ = parse_script(
+            data.decode("utf-8", errors="replace"), source, level=None
+        )[0]
+        if isinstance(root, str):
+            raise ModError(f"{source} isn't a block")
+        settings: dict[str, str] = {}
+        modes: dict[str, dict[str, str]] = {}
+        for key, block in root:
+            if key.lower() not in PLAYLIST_FORCED or isinstance(block, str):
+                continue
+            for name, value in block:
+                if isinstance(value, str):
+                    if self.takes(name):
+                        settings[name] = value
+                # A game mode's block; others, like the plugins', aren't settings
+                elif name.lower() in GAME_MODES:
+                    for setting, mode_value in value:
+                        if isinstance(mode_value, str) and self.takes(setting):
+                            modes.setdefault(name.lower(), {})[setting] = mode_value
+        taken = [*settings, *(name for block in modes.values() for name in block)]
+        unused = [
+            glob
+            for glob in self.include
+            if not any(
+                fnmatch.fnmatchcase(name.lower(), glob.lower()) for name in taken
+            )
+        ]
+        if unused:
+            raise ModError(
+                f"{mod}: {self.name} has no forced settings matching {', '.join(unused)}"
+            )
+        folder = output / "cfg/doi-config/playlists"
+        header = (
+            f"// Made by tools/make_mods.py from the game's scripts/playlists/{self.name}.playlist:\n"
+            f"// the settings it forces that mods/{mod}.toml takes over"
+        )
+        path = folder / f"{self.name}.cfg"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        lines = [header, "", f'sv_playlist "{self.name}"']
+        lines += [f'{name} "{value}"' for name, value in settings.items()]
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        for mode, block in modes.items():
+            lines = [f"{header}, for {mode}", ""]
+            lines += [
+                f'doi_mode_cvar "{name}" "{value}"' for name, value in block.items()
+            ]
+            (folder / f"{self.name}-{mode}.cfg").write_text(
+                "\n".join(lines) + "\n", encoding="utf-8"
+            )
+        print(
+            f"{mod}: {self.name}: {len(settings)} settings, game modes {', '.join(modes) or 'none'}",
+            file=sys.stderr,
+        )
+
+
 def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> None:
-    """Make the mod of a mods/<mod>.toml in output/custom/<mod>."""
+    """Make the mod of a mods/<mod>.toml in output/custom/<mod>, and its playlists' configs in
+    output/cfg/doi-config/playlists."""
     mod = config.stem
     with config.open("rb") as file:
         settings = tomllib.load(file)
-    unknown = set(settings) - {"workshop", "fix", "copy"}
+    unknown = set(settings) - {"workshop", "fix", "copy", "playlist"}
     if unknown:
         raise ModError(f"{mod}: unknown tables {', '.join(sorted(unknown))}")
     # Tables, so that a key after one doesn't end up in it by mistake: TOML's keys after a table's
@@ -463,6 +586,8 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> None:
     if not isinstance(fix, dict) or set(fix) - {"maps"}:
         raise ModError(f"{mod}: fix is a table with the maps' list only")
     copies = [Copy.from_table(table, mod) for table in settings.get("copy", [])]
+    for table in settings.get("playlist", []):
+        Playlist.from_table(table, mod).make(game, output, mod)
     maps = dict.fromkeys(
         [*fix.get("maps", []), *(name for copy in copies for name in copy.maps)]
     )
@@ -477,12 +602,13 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> None:
         path = output / "custom" / mod / "maps" / f"{name}.txt"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(format_keyvalues([(root, blocks)]), encoding="utf-8")
-    print(f"{mod}: {len(maps)} maps", file=sys.stderr)
+    if maps:
+        print(f"{mod}: {len(maps)} maps", file=sys.stderr)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Make the mods of mods/*.toml from the game's map scripts."
+        description="Make the mods of mods/*.toml from the game's map scripts and playlists."
     )
     parser.add_argument(
         "--game", type=Path, required=True, help="the game's install, with doi/ in it"
