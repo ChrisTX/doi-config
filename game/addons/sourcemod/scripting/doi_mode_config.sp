@@ -26,6 +26,9 @@
 // one, which doesn't set it. The values are those of the server's configuration (init-*.cfg) or of
 // the game, whatever the cvars had before a game mode's config first set them.
 //
+// The game doesn't run cfg/server_<mode>.cfg for the first map after the server starts, so the plugin
+// runs it then, with the game mode of the map of the command line (+map "<map> <mode>").
+//
 // The current game mode is in doi_mode_current, e.g. for doi_difficulty_scaler.sp.
 
 #include <sourcemod>
@@ -52,6 +55,8 @@ ConVar g_playlist;
 // first set, with the values they had before
 ArrayList g_names;
 StringMap g_previous;
+// Whether the first map's configs ran
+bool g_started = false;
 
 public void OnPluginStart()
 {
@@ -65,6 +70,26 @@ public void OnPluginStart()
         "doi_mode <coop|pvp> <mode>: run the configs of a game mode, see doi_mode_config.sp");
     RegServerCmd("doi_mode_cvar", Command_ModeCvar,
         "doi_mode_cvar <cvar> <value>: set a cvar until the game mode changes");
+}
+
+public void OnConfigsExecuted()
+{
+    if (g_started)
+        return;
+    g_started = true;
+    char current[32];
+    g_current.GetString(current, sizeof(current));
+    if (current[0] != '\0')
+        return;
+    char map[PLATFORM_MAX_PATH];
+    GetCommandLineParam("+map", map, sizeof(map));
+    int space = FindCharInString(map, ' ');
+    if (space == -1)
+        return;
+    char path[PLATFORM_MAX_PATH];
+    Format(path, sizeof(path), "cfg/server_%s.cfg", map[space + 1]);
+    if (FileExists(path, true))
+        ServerCommand("exec \"server_%s.cfg\"", map[space + 1]);
 }
 
 public Action Command_Mode(int args)
@@ -98,13 +123,12 @@ public Action Command_Mode(int args)
         Format(configs[3], sizeof(configs[]), "doi-config/mode_%s.cfg", name);
         Format(configs[4], sizeof(configs[]), "doi-config/mode_%s-%s.cfg", name, mode);
     }
-    // InsertServerCommand puts a command before those waiting, so the configs are inserted from the
-    // last to the first, to run right after this command in their order
-    for (int i = sizeof(configs) - 1; i >= 0; i--) {
+    // Appended to the commands waiting, in their order (InsertServerCommand ran them the other way round)
+    for (int i = 0; i < sizeof(configs); i++) {
         char path[PLATFORM_MAX_PATH];
         Format(path, sizeof(path), "cfg/%s", configs[i]);
         if (configs[i][0] != '\0' && FileExists(path, true))
-            InsertServerCommand("exec \"%s\"", configs[i]);
+            ServerCommand("exec \"%s\"", configs[i]);
     }
     PrintToServer("doi_mode: %s (%s), playlist %s", mode, category, playlist[0] != '\0' ? playlist : "none");
     return Plugin_Handled;
