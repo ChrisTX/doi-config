@@ -49,11 +49,11 @@ USER 0:0
 RUN printf '#!/bin/sh\nexec /opt/steamcmd/steamcmd.sh "$@"\n' >/usr/local/bin/steamcmd \
   && chmod 755 /usr/local/bin/steamcmd
 
-# The game, patched, then the workshop items, each with only the files of this repository it needs, so
-# that other changes don't download them again
+# The game, then the workshop items, each with only the files of this repository it needs, so that
+# other changes don't download them again. The game stays as SteamCMD installs it: the patcher patches
+# its server library in memory.
 USER 1000:1000
 COPY --chown=doi:doi tools/update_game.sh /opt/doi-config/tools/
-COPY --chown=doi:doi patches/ /opt/doi-config/patches/
 ARG GAME_UPDATE=
 RUN /opt/doi-config/tools/update_game.sh --game /srv/doi
 COPY --chown=doi:doi game/cfg/doi-config/workshop-ids-*.txt /opt/doi-config/game/cfg/doi-config/
