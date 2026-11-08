@@ -2,25 +2,37 @@
 // SPDX-License-Identifier: MIT OR GPL-3.0-only WITH LicenseRef-SourceMod-exception
 
 // Scales the number of bots in the coop modes to the number of human players at the start of
-// each round, independently of the map's scripting. The game mode comes from the
-// server_<gamemode>.cfg the game executes for it, see README.md.
+// each round, independently of the map's scripting. The game mode comes from doi_mode_config.smx,
+// which the game modes' configs tell it (doi_mode_current).
 
 #include <sourcemod>
 #include <sdktools>
+#include <doi>
 
 public Plugin myinfo =
 {
     name    = "DOI difficulty scaler",
     author    = "DOI revival project",
     description = "Scale difficulty dynamically",
-    version   = "1.1",
+    version   = "1.2",
     url   = "https://rev-crew.info"
 }
 
+// doi_mode_config.smx's game mode
+ConVar g_mode = null;
+// Whether the bot counts are this plugin's, which a game mode it doesn't scale gives back to the game
+bool g_scaled = false;
+
 public OnPluginStart() {
+    DOI_RequireGame();
     // The bot counts are set anew at every round start
     HookEvent("round_start", EventHandler, EventHookMode_Post);
-    AddCommandListener(exec, "exec");
+}
+
+public OnAllPluginsLoaded() {
+    g_mode = FindConVar("doi_mode_current");
+    if (g_mode == null)
+        SetFailState("Needs doi_mode_config.smx for the game mode");
 }
 
 // The human players in game; bots and players still connecting don't count
@@ -37,31 +49,6 @@ GetPlayerCount()
 
 public EventHandler(Handle:event, const String:name[], bool:dontBroadcast) {
     AdjustDifficulty();
-}
-
-// The game mode of the last server_<gamemode>.cfg executed, empty until one is
-char CurrentGameMode[30];
-
-// We need to identify the game mode if possible. The game executes server_<gamemode>.cfg when
-// a game mode starts; its argument string is taken to be quoted, "server_<gamemode>.cfg", so
-// "server_" starts at index 1 and the mode at index 8, after the quote and "server_". The
-// mode ends at the last dot, which also drops the closing quote.
-public Action exec(int client, const char[] command, int arg)
-{
-    char cfgfilename[MAX_NAME_LENGTH];
-    GetCmdArgString(cfgfilename, sizeof(cfgfilename));
-
-    if(StrContains(cfgfilename, ".cfg") < 8 || StrContains(cfgfilename, "server_") != 1)
-        return Plugin_Continue;
-
-
-    Format(CurrentGameMode, sizeof(CurrentGameMode), "%s", cfgfilename[8]);
-    int dot = FindCharInString(CurrentGameMode, '.', true);
-
-    if(dot != -1)
-        CurrentGameMode[dot] = '\0';
-
-    return Plugin_Continue;
 }
 
 // Sets a cvar silently, without announcing the change to the players
@@ -87,52 +74,43 @@ public SetBotCounts(int friendly_count, int enemy_count) {
     SetVarValue("doi_bot_count_default_friendly_max_players", friendly_count);
 }
 
-// At most 32 bots in all, which fits the 49 slots of basic_coop.cfg with its lobby of 16 players
-// and SourceTV, the enemies first: 3 enemies and 2 more per player, 5 friendlies and 1 more per player
-public SetBotsForStronghold(int playercount) {
-    int botcount = 3 + playercount * 2;
-    if(botcount > 32)
-        botcount = 32;
+// The enemies: enemy_base and 2 more per player; the friendlies: friendly_base and 1 more per player.
+// Each side has the slots of a team (doi.inc), which the friendlies share with the players.
+public SetBots(int playercount, int enemy_base, int friendly_base) {
+    int slots = DOI_TeamSlots(DOI_COOP_TEAM_SLOTS);
 
-    int friendly_botcount = 5 + playercount;
-    int botlimit = 32 - botcount;
-    if(friendly_botcount > botlimit)
-        friendly_botcount = botlimit;
+    int botcount = enemy_base + playercount * 2;
+    if(botcount > slots)
+        botcount = slots;
 
-    SetBotCounts(friendly_botcount, botcount);
-}
-
-// Like Stronghold, with 6 enemies and 3 friendlies to start with
-public SetBotsForEntrenchment(int playercount) {
-    int botcount = 6 + playercount * 2;
-    if(botcount > 32)
-        botcount = 32;
-
-    int friendly_botcount = 3 + playercount;
-    int botlimit = 32 - botcount;
-    if(friendly_botcount > botlimit)
-        friendly_botcount = botlimit;
+    int friendly_botcount = friendly_base + playercount;
+    int friendly_slots = slots - playercount;
+    if(friendly_botcount > friendly_slots)
+        friendly_botcount = friendly_slots > 0 ? friendly_slots : 0;
 
     SetBotCounts(friendly_botcount, botcount);
 }
 
-// Only the coop modes are scaled, raid like Stronghold
+// Only the coop modes are scaled: Stronghold and Raid with 3 enemies and 5 friendlies to start
+// with, Entrenchment with 6 and 3
 public AdjustDifficulty() {
-
     int playercount = GetPlayerCount();
-    bool have_scaled = false;
+    char mode[32];
+    g_mode.GetString(mode, sizeof(mode));
 
-    if(StrEqual(CurrentGameMode, "stronghold") || StrEqual(CurrentGameMode, "raid"))
+    if(StrEqual(mode, "stronghold") || StrEqual(mode, "raid"))
+        SetBots(playercount, 3, 5);
+    else if(StrEqual(mode, "entrenchment"))
+        SetBots(playercount, 6, 3);
+    else
     {
-        SetBotsForStronghold(playercount);
-        have_scaled = true;
-    }
-    else if(StrEqual(CurrentGameMode, "entrenchment"))
-    {
-        SetBotsForEntrenchment(playercount);
-        have_scaled = true;
+        // Another game mode gets the game's own bot counts back
+        if(g_scaled)
+            SetVarValue("doi_bot_count_override", 0);
+        g_scaled = false;
+        return;
     }
 
-    if(have_scaled)
-        PrintToServer("Difficulty Scaler: Scaling for %d players", playercount);
+    g_scaled = true;
+    PrintToServer("Difficulty Scaler: Scaling for %d players", playercount);
 }
