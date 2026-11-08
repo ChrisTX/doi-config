@@ -1,11 +1,9 @@
-# The Day of Infamy server, with SourceMod and the plugins from their packages and this configuration.
-# The image's layers are what overlayfs puts together for the systemd units, lowest first: the game, the
-# workshop items of all servers, the packages and this repository. Containers of the image share them, and
-# a container's writable layer starts anew whenever it's created. See README.md for building and running.
+# The Day of Infamy server, with SourceMod and the plugins from their packages and this configuration,
+# without the game and the workshop items: those are the state folder's, which the updater of the same
+# image fills with SteamCMD, as doi-update.service does for the systemd units (see entrypoint.sh). The
+# image has nothing of the game's, which may not be passed on. See README.md for building and running.
 #
 # Build arguments:
-#   GAME_UPDATE, WORKSHOP_UPDATE   any new value (e.g. the date) updates the game or the workshop items,
-#                                  which the layer cache keeps otherwise
 #   REPO_NAME                      the name of the pacman repository with the packages (aur), which its
 #                                  database is named after (aur.db)
 #   TESTING                        any value: with Arch Linux's testing repositories, for packages built
@@ -16,14 +14,16 @@
 ARG TESTING=
 
 # The patcher of the server library (tools/doi_patch.c), built in a stage of its own, so that the image
-# has no compiler, against the same repositories as the image
+# has no compiler, against the same repositories as the image: the library srcds preloads, and the
+# program the updater checks the patch list with
 FROM docker.io/library/archlinux:base AS patcher
 ARG TESTING
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 COPY deploy/container/enable-repos.sh tools/update_game.sh tools/doi_patch.c /src/tools/
 RUN /src/tools/enable-repos.sh "$TESTING" \
   && pacman -Syu --noconfirm --needed gcc lib32-gcc-libs lib32-glibc \
-  && /src/tools/update_game.sh --patcher /src/doi_patch.so
+  && /src/tools/update_game.sh --patcher /src/doi_patch.so \
+  && gcc -std=c23 -O2 -Wall -Wextra -DDOI_PATCH_FILE -o /src/doi_patch /src/tools/doi_patch.c
 
 FROM docker.io/library/archlinux:base
 ARG TESTING
@@ -39,7 +39,8 @@ RUN /usr/local/lib/doi/enable-repos.sh "$TESTING" \
   && pacman -Scc --noconfirm \
   && groupadd --gid 1000 doi \
   && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/doi doi \
-  && install -d -o doi -g doi /srv/doi /opt/steamcmd
+  && install -d -o doi -g doi /srv/doi /srv/state /opt/steamcmd \
+    /srv/doi-data/dumps /srv/doi-data/logs /srv/doi-data/sourcemod/logs /srv/doi-data/sourcemod/data
 
 # SteamCMD, which updates itself on its first run (and may exit with an error status after that)
 USER 1000:1000
@@ -49,26 +50,10 @@ USER 0:0
 RUN printf '#!/bin/sh\nexec /opt/steamcmd/steamcmd.sh "$@"\n' >/usr/local/bin/steamcmd \
   && chmod 755 /usr/local/bin/steamcmd
 
-# The game, then the workshop items, each with only the files of this repository it needs, so that
-# other changes don't download them again. The game stays as SteamCMD installs it: the patcher patches
-# its server library in memory.
-USER 1000:1000
-COPY --chown=doi:doi tools/update_game.sh /opt/doi-config/tools/
-ARG GAME_UPDATE=
-RUN /opt/doi-config/tools/update_game.sh --game /srv/doi
-COPY --chown=doi:doi game/cfg/doi-config/workshop-ids-*.txt /opt/doi-config/game/cfg/doi-config/
-# The workshop items are kept in a cache of the builds, so that a new layer only downloads the items
-# that changed; one build at a time updates it. The layer gets a copy of the items, without SteamCMD's
-# other files of the cache's steamapps.
-ARG WORKSHOP_UPDATE=
-RUN --mount=type=cache,id=doi-workshop,target=/var/cache/doi-workshop,uid=1000,gid=1000,sharing=locked \
-  /opt/doi-config/tools/update_game.sh --workshop /var/cache/doi-workshop \
-  && cp -a /var/cache/doi-workshop/steamapps/workshop /srv/doi/steamapps/
-
 # The packages from the repository, verified with its key. SourceMod's optional dependencies, those of
-# its MySQL, PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source are copied
-# into the game's doi folder, owned by the servers' user, who changes the plugins and configs on every
-# start.
+# its MySQL, PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source go into
+# /opt/doi-layer, the image's files of the game's doi folder, which the server's entrypoint copies into
+# it on every start.
 USER 0:0
 ARG REPO_NAME=aur
 RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key \
@@ -83,21 +68,22 @@ RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key
     lib32-mariadb-connector-c lib32-postgresql-libs lib32-libmaxminddb lib32-pcre2 lib32-curl \
   && mv /etc/pacman.conf.orig /etc/pacman.conf \
   && pacman -Scc --noconfirm \
-  && cp -a --no-preserve=ownership /usr/lib/metamod/. /usr/lib/sourcemod/. /srv/doi/doi/ \
-  && chown -R doi:doi /srv/doi/doi/addons /srv/doi/doi/cfg
+  && install -d -o doi -g doi /opt/doi-layer \
+  && cp -a --no-preserve=ownership /usr/lib/metamod/. /usr/lib/sourcemod/. /opt/doi-layer/ \
+  && chown -R doi:doi /opt/doi-layer
 
-# This repository, its plugins and its mods, made from the map scripts of the game and the workshop items
+# This repository and its plugins, on top of SourceMod in /opt/doi-layer, and the patcher
 USER 1000:1000
 COPY --chown=doi:doi . /opt/doi-config
 RUN /opt/doi-config/tools/update_game.sh --plugins /tmp/plugins \
-  && python3 /opt/doi-config/tools/make_mods.py --game /srv/doi --workshop /srv/doi /tmp/mods \
-    /opt/doi-config/mods \
-  && cp -a /tmp/plugins/. /tmp/mods/. /opt/doi-config/game/. /srv/doi/doi/ \
-  && rm -rf /tmp/plugins /tmp/mods
-COPY --from=patcher /src/doi_patch.so /opt/doi-patch/
+  && cp -a /tmp/plugins/. /opt/doi-config/game/. /opt/doi-layer/ \
+  && rm -rf /tmp/plugins
+COPY --from=patcher /src/doi_patch.so /src/doi_patch /opt/doi-patch/
 
 WORKDIR /srv/doi
 ENV LD_LIBRARY_PATH=/srv/doi:/srv/doi/bin
+# The updater's check of the patch list, without a compiler
+ENV DOI_PATCH_CHECKER=/opt/doi-patch/doi_patch
 # SRCDS shuts down on SIGINT, which srcds_watchdog.py passes on
 STOPSIGNAL SIGINT
 # The server answers A2S queries, as the systemd units' watchdog checks; the port is SERVER_PORT

@@ -6,6 +6,9 @@
 #   build [--testing] build the image (podman build, see README.md) from the local pacman repository;
 #                     with --testing with Arch Linux's testing repositories, for packages built against
 #                     them, as on a machine that uses them
+#   update [--stage]  update the game, the workshop items and the mods of the state folder with the
+#                     image's updater (entrypoint.sh update), which the server mounts; the first
+#                     downloads the game and the items
 #   up [--db-only] [CONFIG]
 #                     start the test instance of a config of servers/ (coop-commando by default), anew;
 #                     with --db-only only its database, for the systemd units on this machine
@@ -18,6 +21,8 @@
 # the SourceBans++ web panel has the tables, and the signature of its database names its key
 # AUR_REPO, AUR_DBROOT: the repository's name and folder, as for aurutils
 # DOI_TEST_DIR: the test instance's files (${XDG_STATE_HOME:-~/.local/state}/doi-config-test)
+# DOI_STATE: the state folder with the game, the workshop items and the mods
+# (${XDG_STATE_HOME:-~/.local/state}/doi-server, as for the Quadlet units of deploy/quadlet)
 # TEST_ADMIN: a SteamID (STEAM_0:…) that gets root admin
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 set -euo pipefail
@@ -27,6 +32,9 @@ repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
 repo_name=''
 repo_root=''
 dir=${DOI_TEST_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/doi-config-test}
+state=${DOI_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/doi-server}
+# The image's user is this one, who owns the state folder
+userns=keep-id:uid=1000,gid=1000
 image=localhost/doi-server
 pod=doi-test
 db_port=${TEST_DB_PORT:-3306}
@@ -189,6 +197,15 @@ write_secrets() {
 	} >"$dir/secrets/addons/sourcemod/configs/databases.cfg"
 }
 
+cmd_update() {
+	if ! podman image exists "$image"; then
+		echo "Error: no image $image, build it first: $0 build" >&2
+		exit 1
+	fi
+	mkdir -p "$state"
+	podman run --rm --userns "$userns" --health-cmd none -v "$state:/srv/state" "$image" update "$@"
+}
+
 cmd_up() {
 	if [[ ${1:-} == --db-only ]]; then
 		db_only=1
@@ -197,6 +214,10 @@ cmd_up() {
 	local config=${1:-coop-commando} db_password volume
 	if [[ -z $db_only ]] && ! podman image exists "$image"; then
 		echo "Error: no image $image, build it first: $0 build" >&2
+		exit 1
+	fi
+	if [[ -z $db_only && ! -x $state/game/srcds_linux ]]; then
+		echo "Error: no game in $state, download it first: $0 update" >&2
 		exit 1
 	fi
 	if podman pod exists "$pod"; then
@@ -223,7 +244,8 @@ cmd_up() {
 	# address, and the server ignores connections that seem to come from its own address
 	local -a ports=(-p 27015:27015/udp -p 27015:27015/tcp -p 27020:27020/udp)
 	[[ -z $db_only ]] || ports=(-p "127.0.0.1:$db_port:3306/tcp")
-	podman pod create --name "$pod" --network pasta:-a,10.0.2.100,-n,24,-g,10.0.2.2 "${ports[@]}" >/dev/null
+	podman pod create --name "$pod" --userns "$userns" --network pasta:-a,10.0.2.100,-n,24,-g,10.0.2.2 \
+		"${ports[@]}" >/dev/null
 	podman run -d --pod "$pod" --name "$pod-db" --env-file "$dir/db.env" \
 		-v "$dir/init:/docker-entrypoint-initdb.d:ro" docker.io/library/mariadb:lts >/dev/null
 	echo "Waiting for the database"
@@ -245,15 +267,18 @@ cmd_up() {
 	fi
 
 	local -a volumes=()
-	for volume in dumps:/srv/doi/dumps logs:/srv/doi/doi/logs sm-logs:/srv/doi/doi/addons/sourcemod/logs \
-		sm-data:/srv/doi/doi/addons/sourcemod/data; do
+	for volume in dumps:/srv/doi-data/dumps logs:/srv/doi-data/logs sm-logs:/srv/doi-data/sourcemod/logs \
+		sm-data:/srv/doi-data/sourcemod/data; do
 		volumes+=(-v "$pod-$volume")
 	done
 	local -a geoip=()
 	if [[ -d /var/lib/GeoIP ]]; then
 		geoip=(-v /var/lib/GeoIP:/var/lib/GeoIP:ro)
 	fi
+	# The state's game and workshop items with an overlay of the container's own, its mods read-only
 	podman run -d --pod "$pod" --name "$pod-server" --env-file "$dir/server.env" -e SERVER_NAME="$config" \
+		-v "$state/game:/srv/doi:O" -v "$state/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O" \
+		-v "$state/mods/custom:/srv/doi/doi/custom:ro" \
 		-v "$dir/secrets:/run/secrets/doi-server:ro" "${geoip[@]}" "${volumes[@]}" \
 		--health-on-failure restart "$image" >/dev/null
 	echo "Waiting for the server"
@@ -293,6 +318,6 @@ cmd_logs() {
 command=$1
 shift
 case $command in
-	build | up | down | rcon | logs) "cmd_$command" "$@" ;;
+	build | update | up | down | rcon | logs) "cmd_$command" "$@" ;;
 	*) usage ;;
 esac

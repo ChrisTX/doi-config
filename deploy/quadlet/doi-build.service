@@ -1,0 +1,16 @@
+# Builds the image anew from a clone of this repository, the containers' counterpart of the pull of
+# doi-update.service: the next start of a container uses it. DOI_CONFIG is the clone, which is pulled
+# first, by default ~/.local/state/doi-server/doi-config; a drop-in can set another, e.g. a checkout
+# (systemctl --user edit doi-build.service). The build needs the local pacman repository of
+# deploy/container/test-instance.sh build.
+[Unit]
+Description=Build the Day of Infamy server's image
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=DOI_CONFIG=%S/doi-server/doi-config
+ExecStart=/usr/bin/git -C ${DOI_CONFIG} pull --ff-only
+ExecStart=/usr/bin/bash -c 'exec "$DOI_CONFIG/deploy/container/test-instance.sh" build'
+TimeoutStartSec=infinity

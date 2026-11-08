@@ -1,0 +1,13 @@
+# Rebuilds the image, stages the update while the servers run, stops them, puts the update in place and
+# starts them again, like doi-restart.service of the systemd units: the servers are only down for the
+# restart. A failed build or stage leaves the image as it was or the update to doi-update.service.
+[Unit]
+Description=Update and restart the Day of Infamy servers, in containers
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/bin/systemctl --user start doi-build.service
+ExecStart=-/usr/bin/systemctl --user start doi-stage.service
+ExecStart=/usr/bin/systemctl --user stop doi-servers.target
+ExecStart=/usr/bin/systemctl --user restart doi-update.service
+ExecStart=/usr/bin/systemctl --user start doi-servers.target

@@ -1,0 +1,44 @@
+# A server in a container, the image's counterpart of doi-server@.service, as a user unit (Quadlet):
+# ~/.config/containers/systemd/. Its settings are ~/.config/doi-server/<server>.env, as for
+# doi-server@.service, its secrets ~/.config/doi-server/secrets (may be empty), the game, the workshop
+# items and the mods those of the state folder, ~/.local/state/doi-server, which doi-update.service fills.
+[Unit]
+Description=Day of Infamy server (%i), in a container
+Wants=network-online.target doi-update.service
+After=network-online.target doi-update.service
+PartOf=doi-servers.target
+
+[Container]
+Image=localhost/doi-server
+ContainerName=doi-server-%i
+Environment=SERVER_NAME=%i
+EnvironmentFile=%E/doi-server/%i.env
+# The ports of the environment file on the host's network: through a pod's port forwarding, connections
+# would come from an address the server ignores as its own
+Network=host
+# The image's user is the host's, who owns the state folder
+UserNS=keep-id:uid=1000,gid=1000
+# The game and the workshop items with an overlay of the container's own, which starts empty on every
+# start, the mods read-only
+Volume=%S/doi-server/game:/srv/doi:O
+Volume=%S/doi-server/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O
+Volume=%S/doi-server/mods/custom:/srv/doi/doi/custom:ro
+Volume=%E/doi-server/secrets:/run/secrets/doi-server:ro
+# What the server writes and keeps
+Volume=doi-server-%i-dumps:/srv/doi-data/dumps
+Volume=doi-server-%i-logs:/srv/doi-data/logs
+Volume=doi-server-%i-sm-logs:/srv/doi-data/sourcemod/logs
+Volume=doi-server-%i-sm-data:/srv/doi-data/sourcemod/data
+# Ready once the image's health check (A2S) passes; a server that stops answering is stopped and
+# restarted, like the systemd units' watchdog
+Notify=healthy
+HealthOnFailure=kill
+StopTimeout=30
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=15min
+
+[Install]
+WantedBy=doi-servers.target

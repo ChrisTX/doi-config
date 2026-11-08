@@ -87,13 +87,16 @@ update_patcher() {
 
 # The patch list, patches/server_srv.patches, checked against the library it names with
 # tools/doi_patch.c built as a program: after a game update that moved a patched function, the update
-# fails rather than the servers when they start
+# fails rather than the servers when they start. DOI_PATCH_CHECKER: the program, built already, as in the
+# container image, which has no compiler
 check_patches() {
-	local game=$1 list=$repo/patches/server_srv.patches library checker
+	local game=$1 list=$repo/patches/server_srv.patches library checker=${DOI_PATCH_CHECKER:-}
 	library=$(awk '$1 == "library" { print $2 }' "$list")
-	checker=$(mktemp)
-	trap 'rm -f "$checker"' RETURN
-	gcc -std=c23 -O2 -Wall -Wextra -DDOI_PATCH_FILE -o "$checker" "$repo/tools/doi_patch.c"
+	if [[ -z $checker ]]; then
+		checker=$(mktemp)
+		trap 'rm -f "$checker"' RETURN
+		gcc -std=c23 -O2 -Wall -Wextra -DDOI_PATCH_FILE -o "$checker" "$repo/tools/doi_patch.c"
+	fi
 	"$checker" --check "$list" "$game/doi/bin/$library"
 }
 

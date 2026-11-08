@@ -1,0 +1,18 @@
+# Stages an update of the state folder in a reflinked copy (next/) while the servers run, which
+# doi-update.service puts in place once doi-restart.service has stopped them
+[Unit]
+Description=Stage an update of the Day of Infamy game install, workshop items and mods, in a container
+Wants=network-online.target
+After=network-online.target doi-build.service
+
+[Container]
+Image=localhost/doi-server
+Exec=update --stage
+UserNS=keep-id:uid=1000,gid=1000
+Volume=%S/doi-server:/srv/state
+HealthCmd=none
+
+[Service]
+Type=oneshot
+StateDirectory=doi-server
+TimeoutStartSec=infinity

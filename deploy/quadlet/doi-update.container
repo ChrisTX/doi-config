@@ -1,0 +1,23 @@
+# Updates the game, the workshop items and the mods in the state folder ~/.local/state/doi-server: puts
+# an update that doi-stage.service staged in place, or updates in place, e.g. at boot, the image's
+# counterpart of doi-update.service (tools/update_layers.sh --image)
+[Unit]
+Description=Update the Day of Infamy game install, workshop items and mods, in a container
+Wants=network-online.target
+After=network-online.target doi-build.service
+# The servers run on the state folder, which mustn't change while they run
+Before=doi-servers.target
+
+[Container]
+Image=localhost/doi-server
+Exec=update
+UserNS=keep-id:uid=1000,gid=1000
+Volume=%S/doi-server:/srv/state
+HealthCmd=none
+
+[Service]
+Type=oneshot
+# Active once done, so a server that starts or restarts on its own doesn't run it again
+RemainAfterExit=yes
+StateDirectory=doi-server
+TimeoutStartSec=infinity

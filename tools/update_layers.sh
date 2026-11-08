@@ -11,6 +11,10 @@
 #                                   keeping the layers it replaces in STATE/previous, or without one,
 #                                   update the layers in place
 #
+# With --image first, for the container image (deploy/container), the layers are only the game, the
+# workshop items and the mods: the repository, its plugins and the patcher are the image's, and the
+# repository is the one this script is in.
+#
 # doi-restart.service stages, stops the servers, runs doi-update.service, which runs this without
 # --stage, and starts them again: the servers are only down for the restart. At boot, doi-update.service
 # updates in place, before the servers start.
@@ -18,21 +22,30 @@ set -euo pipefail
 
 # The layers, as the units and tools/mount_server.sh name them in STATE
 layers=(doi-config game workshop plugins mods doi_patch.so)
+image=
+if [[ ${1:-} == --image ]]; then
+	layers=(game workshop mods)
+	image=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
+	shift
+fi
 
 # The update of the layers in DIR, with the tools of the clone in DIR once it's pulled, as the
-# repository may have changed them
+# repository may have changed them, or those of the image
 update() {
-	local dir=$1
-	git -C "$dir/doi-config" pull --ff-only
-	"$dir/doi-config/tools/update_game.sh" --game "$dir/game" --workshop "$dir/workshop" \
-		--plugins "$dir/plugins" --patcher "$dir/doi_patch.so" --check-patches "$dir/game"
+	local dir=$1 repo=${image:-$1/doi-config}
+	if [[ -n $image ]]; then
+		"$repo/tools/update_game.sh" --game "$dir/game" --workshop "$dir/workshop" --check-patches "$dir/game"
+	else
+		git -C "$repo" pull --ff-only
+		"$repo/tools/update_game.sh" --game "$dir/game" --workshop "$dir/workshop" \
+			--plugins "$dir/plugins" --patcher "$dir/doi_patch.so" --check-patches "$dir/game"
+	fi
 	# The map scripts of the game and the workshop items: the log lists those whose braces are repaired,
 	# or can't be, which a mod's fix table repairs. Broken ones don't fail the update, as the servers run
 	# without the maps.
-	python3 "$dir/doi-config/tools/make_mods.py" --game "$dir/game" --workshop "$dir/workshop" --check ||
+	python3 "$repo/tools/make_mods.py" --game "$dir/game" --workshop "$dir/workshop" --check ||
 		echo "Warning: map scripts that can't be repaired, see above" >&2
-	python3 "$dir/doi-config/tools/make_mods.py" --game "$dir/game" --workshop "$dir/workshop" \
-		"$dir/mods" "$dir/doi-config/mods"
+	python3 "$repo/tools/make_mods.py" --game "$dir/game" --workshop "$dir/workshop" "$dir/mods" "$repo/mods"
 }
 
 stage() {
@@ -67,14 +80,14 @@ swap() {
 
 case ${1:-} in
 	--stage)
-		stage "${2:?Usage: $0 [--stage] STATE}"
+		stage "${2:?Usage: $0 [--image] [--stage] STATE}"
 		;;
 	-*)
-		echo "Usage: $0 [--stage] STATE" >&2
+		echo "Usage: $0 [--image] [--stage] STATE" >&2
 		exit 2
 		;;
 	*)
-		state=${1:?Usage: $0 [--stage] STATE}
+		state=${1:?Usage: $0 [--image] [--stage] STATE}
 		if [[ -f $state/next/.complete ]]; then
 			swap "$state"
 		else

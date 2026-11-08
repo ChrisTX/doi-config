@@ -147,15 +147,15 @@ systemctl enable --now doi-restart.timer doi-update-check.timer
 
 ### Running in a container
 
-`deploy/container/Containerfile` builds an image of a server, with the same
-layers as the systemd units: the game, the workshop items of all servers,
-SourceMod, Metamod:Source and the plugins from their packages, and this
-repository. Containers of the image share its layers, and a container's
-writable layer starts anew whenever the container is created. The packages come
-from a local pacman repository, like the one of aurutils, verified with its
-signing key: the build context `repo` is its folder, `REPO_NAME` its name. With
-Podman, from the repository's root, for aurutils' `aur` repository in
-`/var/lib/aurutils-repo`:
+`deploy/container/Containerfile` builds an image of a server: SourceMod,
+Metamod:Source and the plugins from their packages, this repository and its
+compiled plugins, and the patcher. The game and the workshop items aren't part
+of it, as they may not be passed on: they're in a state folder on the host,
+which the image's updater fills with SteamCMD, like `doi-update.service` for
+the systemd units, and which the servers mount. The packages come from a local
+pacman repository, like the one of aurutils, verified with its signing key: the
+build context `repo` is its folder, `REPO_NAME` its name. With Podman, from the
+repository's root, for aurutils' `aur` repository in `/var/lib/aurutils-repo`:
 
 ```bash
 gpg --homedir /etc/pacman.d/gnupg --export -a <key> >repo-key.asc
@@ -164,48 +164,45 @@ podman build --format docker --build-context repo=/var/lib/aurutils-repo \
   -f deploy/container/Containerfile -t doi-server .
 ```
 
-The layer cache keeps the game and the workshop items until the build
-arguments `GAME_UPDATE` and `WORKSHOP_UPDATE` change, e.g.
-`--build-arg WORKSHOP_UPDATE=$(date +%F)` to update the workshop items. The
-workshop items are kept in a cache mount of the builds as well, so a new layer
-only downloads the items that changed. Rootless Podman keeps it in
-`/var/tmp/buildah-cache-<uid>`, and systemd-tmpfiles removes files in `/var/tmp`
-that nothing used for 30 days, which would leave items broken. Exclude the
-cache from that, e.g. with `/etc/tmpfiles.d/buildah-cache.conf`:
+`deploy/container/test-instance.sh build` does the same with the repository
+aurutils uses. The image's commands (`deploy/container/entrypoint.sh`) are the
+server, `update [--stage]` and `check`: the updater and the check of
+`tools/update_layers.sh` and `tools/check_updates.py` on the state folder,
+mounted at `/srv/state`.
 
-```text
-x /var/tmp/buildah-cache-*
-```
+`deploy/quadlet` has the units for rootless Podman, the containers'
+counterparts of `deploy/systemd`, with the state folder
+`~/.local/state/doi-server` and the settings in `~/.config/doi-server`:
 
-`buildah prune` removes it, with the other caches of the builds.
-
-A container takes the variables of the systemd units' environment file, with
-`SOURCEBANS_SERVER_IP` set to the server's public address (the container only
-sees its private one), the server's config in `servers` as `SERVER_NAME` and
-the secrets, laid out like the
-`doi` folder, in `/run/secrets/doi-server`. What the server keeps between
-containers goes into volumes. The GeoIP2 databases come from the host's
-`/var/lib/GeoIP`, kept current by geoipupdate there (see
-[GeoIP2 databases](#geoip2-databases)): it needs the MaxMind account's
-credentials, which don't belong into the container.
+- `doi-update.container` and `doi-stage.container` update the state folder in
+  place or stage the update in a reflinked copy, as their systemd counterparts.
+- `doi-server@<server>.container` runs a server: its settings in
+  `~/.config/doi-server/<server>.env`, as for `doi-server@.service`, its secrets
+  in `~/.config/doi-server/secrets` (which may be empty), on the host's
+  network. The game and the workshop items are mounted with an overlay of the
+  container's own (`:O`), the mods read-only. It's ready once the image's
+  health check, A2S like the systemd units' watchdog, passes, and restarted
+  when the server stops answering. What it keeps goes into volumes.
+- `doi-build.service` pulls a clone of this repository and builds the image
+  anew; `doi-restart.service` builds, stages, stops the servers, puts the
+  update in place and starts them again, with the new image, every day with
+  `doi-restart.timer`; `doi-update-check.timer` checks for updates every three
+  hours, as for the systemd units.
 
 ```bash
-podman run -d --name doi-coop-commando \
-  --env-file coop-commando.env -e SERVER_NAME=coop-commando \
-  -p 27015:27015/udp -p 27015:27015/tcp -p 27020:27020/udp \
-  -v /etc/doi-server/secrets:/run/secrets/doi-server:ro \
-  -v /var/lib/GeoIP:/var/lib/GeoIP:ro \
-  -v doi-coop-commando-dumps:/srv/doi/dumps \
-  -v doi-coop-commando-logs:/srv/doi/doi/logs \
-  -v doi-coop-commando-sm-logs:/srv/doi/doi/addons/sourcemod/logs \
-  -v doi-coop-commando-sm-data:/srv/doi/doi/addons/sourcemod/data \
-  --health-on-failure restart \
-  doi-server
+cp deploy/quadlet/*.container ~/.config/containers/systemd/
+cp deploy/quadlet/*.service deploy/quadlet/*.timer deploy/quadlet/*.target \
+  ~/.config/systemd/user/
+systemctl --user daemon-reload
+# The server's settings in ~/.config/doi-server/coop-commando.env
+systemctl --user start doi-update.service
+systemctl --user enable --now doi-server@coop-commando.service doi-servers.target
+systemctl --user enable --now doi-restart.timer doi-update-check.timer
+loginctl enable-linger
 ```
 
-The image's health check queries the server with A2S like the systemd units'
-watchdog, and `--health-on-failure restart` restarts the container when it
-stops answering. Images in the OCI format have no health check, hence
+`SOURCEBANS_SERVER_IP` of the settings is the server's public address, if the
+host's is a private one. Images in the OCI format have no health check, hence
 `--format docker`.
 
 ### Testing locally
@@ -218,6 +215,8 @@ reaches the live servers. `TEST_ADMIN` makes a SteamID root admin:
 
 ```bash
 deploy/container/test-instance.sh build
+# The game and the workshop items into the state folder: about 20 GB at first
+deploy/container/test-instance.sh update
 TEST_ADMIN=STEAM_0:0:123 deploy/container/test-instance.sh up coop-commando
 deploy/container/test-instance.sh rcon sm plugins list
 deploy/container/test-instance.sh down
