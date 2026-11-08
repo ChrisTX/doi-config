@@ -68,6 +68,17 @@ repos:
           done; exit "$status"' --
         files: ^game/addons/sourcemod/scripting/[^/]+\.sp$
 
+      # The game's configs: formatted, the cvar bare and its arguments quoted, and checked against the
+      # game's cvars and commands (tools/cvars.json, made with tools/dump_cvars.py) and those of our
+      # plugins, see tools/check_configs.py. It checks all configs, as a change of the cvars or the
+      # plugins can make any of them wrong.
+      - id: check-configs
+        name: the game's configs (tools/check_configs.py)
+        language: system
+        entry: python3 tools/check_configs.py
+        pass_filenames: false
+        files: \.cfg$|^tools/(cvars\.json|check_configs\.py)$|^game/addons/sourcemod/scripting/
+
       # The patcher of the server library (tools/doi_patch.c): formatted with clang-format, checked with
       # clang-tidy (.clang-tidy) and compiled with gcc and clang, warnings as errors, both of its builds:
       # the library for srcds, 32-bit, and the program (DOI_PATCH_FILE)

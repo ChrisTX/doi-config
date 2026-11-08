@@ -15,8 +15,9 @@ The repository is laid out like the server's `doi` folder, so its folders can be
 placed on top of a server as they are:
 
 - `game` holds what all servers share: the configs in `cfg/doi-config`, the
-  configs of the game modes (`cfg/server_<gamemode>.cfg`) and the SourceMod
-  plugins, their translations and configs in `addons/sourcemod`.
+  configs the game runs for the game modes (`cfg/server_<mode>.cfg`, see
+  [Configs](#configs)) and the SourceMod plugins, their translations and
+  configs in `addons/sourcemod`.
 - `mods` has the rules of the mods, which are made from the game's map scripts
   (see [Mods](#mods)).
 - `servers/<config>` holds what one server adds: its `cfg/server.cfg`, its
@@ -42,7 +43,7 @@ Commando configuration, for example:
 hostname "MY-SERVER-NAME"
 rcon_password "MY-PASSWORD"
 
-exec doi-config/init-coop-commando.cfg
+exec "doi-config/init-coop-commando.cfg"
 ```
 
 The live Coop Commando server's
@@ -66,7 +67,7 @@ from read-only layers, top first:
   `addons/sourcemod/configs/databases.cfg`
 - the server's folder in `servers`, if there's one
 - this repository's plugins, compiled by `doi-update.service`
-- the mods of `mods`, made by `doi-update.service`
+- the mods of `mods` and the playlists' configs, made by `doi-update.service`
 - `game` of this repository
 - `/usr/lib/sourcemod` and `/usr/lib/metamod`: SourceMod, Metamod:Source and
   the plugins from their packages (`sourcemod`, `metamod-source`,
@@ -303,6 +304,41 @@ until [a second
 update](https://steamdb.info/depot/462311/history/?changeid=M:1007577009454669389)
 fixed it the next day.
 
+### Configs
+
+A configuration, like Coop Commando's `init-coop-commando.cfg`, runs once,
+when the server starts: SourceTV's settings, the settings the playlist forces,
+as far as we take them over, then ours, those all servers share
+(`basic_settings.cfg`) and those of the coop or PvP servers (`basic_coop.cfg`,
+`basic_pvp.cfg`). The game forces a playlist's settings, but the server
+library's patch stops it, so `mods/playlists.toml` says which of them the
+servers take over; `tools/make_mods.py` makes the playlist's config of them
+from the installed game, `cfg/doi-config/playlists/<playlist>.cfg`.
+
+At every map start the game runs `cfg/server_<mode>.cfg`, which only names the
+game mode, for the `doi_mode_config` plugin to run the game mode's configs that
+exist, each later one replacing an earlier one's settings:
+
+1. `basic_mode_<coop|pvp>.cfg`: all coop or PvP game modes
+2. `basic_mode_<coop|pvp>-<mode>.cfg`: the game mode, in every playlist
+3. `playlists/<playlist>-<mode>.cfg`: the settings the playlist forces in the
+   game mode, made by `tools/make_mods.py`
+4. `mode_<playlist>.cfg`: all game modes of the playlist, e.g.
+   `mode_coop_commando.cfg`
+5. `mode_<playlist>-<mode>.cfg`: the game mode in the playlist
+
+These configs set their cvars with `doi_mode_cvar`, which keeps each cvar's
+value from before. When the game mode changes, the cvars get those values back,
+so a setting of one game mode doesn't stay for the next one.
+
+`tools/check_configs.py`, a check before each commit, formats the configs (the
+cvar bare, its value quoted) and checks them against the game's cvars and
+commands in `tools/cvars.json`: unknown names, values out of their bounds, cheat
+cvars and the rules above. `tools/dump_cvars.py` makes `tools/cvars.json` from
+a running server, after a game update; for the game's own bounds, start it
+without the unlocker, e.g. with
+`DISABLE_PLUGINS=doi_cvar_unlocker deploy/container/test-instance.sh up`.
+
 ### Tickrate
 
 Don't change the tickrate of Day of Infamy. The game can run at 128 tick, but
@@ -313,9 +349,9 @@ else seems fine.
 ### Difficulty scaler
 
 The `doi_difficulty_scaler` SourceMod plugin adjusts the number of bots to the
-number of players, independently of the map's scripting. For this to work, the
-active game mode needs its `server_<gamemode>.cfg` from the `game/cfg`
-folder, which `prepare_server.sh` links into the server.
+number of players, independently of the map's scripting, within the 16 players
+of a coop team. It takes the game mode from `doi_mode_config`, see
+[Configs](#configs).
 
 ### Mods
 

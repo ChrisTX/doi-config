@@ -1,0 +1,11583 @@
+{
+ "cvars": {
+  "achievement_debug": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "achievement_disable": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "action_progress_reset_interval": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ai_debug_los": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ai_debug_ragdoll_magnets": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ai_debug_shoot_positions": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "ai_debug_speech": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ai_expression_frametime": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ai_expression_optimization": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ai_force_serverside_ragdoll": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ai_los_mode": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ai_sequence_debug": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ai_setupbones_debug": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ai_shot_bias_max": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ai_shot_bias_min": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ai_show_hull_attacks": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ai_use_visibility_cache": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "anim_3wayblend": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "anim_showstate": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "anim_showstatelog": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "anim_spewdesired": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "anim_twistbones_enabled": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "async_allow_held_files": {
+   "flags": []
+  },
+  "async_mode": {
+   "flags": []
+  },
+  "async_serialize": {
+   "flags": []
+  },
+  "async_simulate_delay": {
+   "flags": []
+  },
+  "autoaim_max_deflect": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "autoaim_max_dist": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "blackbox": {
+   "flags": []
+  },
+  "blendbonesmode": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "bot_aim_aimtracking_base": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_aimtracking_frac_easy": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_aimtracking_frac_hard": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_aimtracking_frac_impossible": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_aimtracking_frac_sprinting_target": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_angularvelocity_base": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 2000.0
+  },
+  "bot_aim_angularvelocity_base_ooc": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 2000.0
+  },
+  "bot_aim_angularvelocity_frac_easy": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_angularvelocity_frac_hard": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_angularvelocity_frac_impossible": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_angularvelocity_frac_sprinting_target": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_aim_angularvelocity_uber": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 2000.0
+  },
+  "bot_aim_attack_aimtolerance_frac_easy": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 5.0
+  },
+  "bot_aim_attack_aimtolerance_frac_hard": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 5.0
+  },
+  "bot_aim_attack_aimtolerance_frac_impossible": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 5.0
+  },
+  "bot_aim_attack_aimtolerance_frac_normal": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 5.0
+  },
+  "bot_aimtracking_frac_survival_end": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_aimtracking_frac_survival_start": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_aimtracking_uber": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_attack_aimpenalty_amt_close": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_amt_far": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_amt_frac_dark": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_amt_frac_easy": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_amt_frac_hard": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_amt_frac_impossible": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_amt_frac_light": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_time_close": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_time_far": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_time_frac_dark": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimpenalty_time_frac_light": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimtolerance_newthreat_amt": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimtolerance_newthreat_amt_solo": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimtolerance_newthreat_time": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_aimtolerance_newthreat_time_solo": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_attack_burst_maxtime": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attack_burst_maxtime_solo": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attack_burst_mintime": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attack_burst_mintime_solo": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attack_retarget_maxtime": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attack_retarget_mintime": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_base": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_desiredrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_difficulty_easy": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_difficulty_hard": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_difficulty_impossible": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_doi": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_hipfirerange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "0.07",
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_maxrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_outofrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_outsidefov": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_survival_end": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_attackdelay_frac_survival_start": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_damage": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1.0"
+  },
+  "bot_debug_aimpenalty": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_artillery": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_bipod": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_body_and_locomotion": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_bounding": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_chatter": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_combat": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_combat_decisions": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_commander": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_corner_check": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_cover_entities": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_cover_search": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_cover_search_angle": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_cover_search_radius": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_cover_search_type": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_doorways": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_flank_points": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_grenade_targets": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_investigations": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_kicking": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_morale": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_movement_requests": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "bot_debug_officer_quarter": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_patrol": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_patrol_points": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_rocket_targets": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_runner": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_silhouette": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_special_nav_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_debug_tactical_role": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_fov_frac_survival_end": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_fov_frac_survival_start": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_grenade_think_time": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_hearing_flashbang_effect_max_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_hearing_flashbang_effect_max_time": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_hearing_grenade_hearing_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_hearing_silenced_weapon_sound_reduction": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_investigate_sneak_lightvalue": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 1.0
+  },
+  "bot_loco_hurry_sprinthold_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 2.0
+  },
+  "bot_loco_hurry_sprinthold_min": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 2.0
+  },
+  "bot_loco_path_max_retreat_length": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "bot_loco_path_minlookahead": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 2000.0
+  },
+  "bot_loco_pronehold_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 20.0
+  },
+  "bot_loco_pronehold_min": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 20.0
+  },
+  "bot_loco_slowdown_walkhold_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 2.0
+  },
+  "bot_loco_slowdown_walkhold_min": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 2.0
+  },
+  "bot_mimic": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "bot_range_frac_desiredrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_range_frac_hipfirerange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_range_frac_maxrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_recognizetime_frac_survival_end": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_recognizetime_frac_survival_start": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_recoil_multiplier": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "bot_rpg_spawn_attackdelay": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 60.0
+  },
+  "bot_silhouette_discover_timer": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 10.0
+  },
+  "bot_silhouette_light_threshold_low": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 1.0
+  },
+  "bot_silhouette_light_threshold_medium": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 1.0
+  },
+  "bot_silhouette_range_close": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 3000.0
+  },
+  "bot_silhouette_range_far": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 6000.0
+  },
+  "bot_silhouette_range_movement": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 6000.0
+  },
+  "bot_silhouette_readtime_clear": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 10.0
+  },
+  "bot_silhouette_readtime_dark": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 10.0
+  },
+  "bot_silhouette_readtime_fuzzy": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 10.0
+  },
+  "bot_silhouette_scan_frequency": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 2.0
+  },
+  "bot_targeting_noise_x_base": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 100.0
+  },
+  "bot_targeting_noise_x_base_solo": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 100.0
+  },
+  "bot_targeting_noise_x_frac_desiredrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_targeting_noise_x_frac_hipfirerange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_targeting_noise_x_frac_maxrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_targeting_noise_y_base": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 100.0
+  },
+  "bot_targeting_noise_y_base_solo": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 100.0
+  },
+  "bot_targeting_noise_y_frac_desiredrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_targeting_noise_y_frac_hipfirerange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_targeting_noise_y_frac_maxrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_targeting_noise_z_base": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 100.0
+  },
+  "bot_targeting_noise_z_base_solo": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 100.0
+  },
+  "bot_targeting_noise_z_frac_desiredrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_targeting_noise_z_frac_hipfirerange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_targeting_noise_z_frac_maxrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "bot_vis_foliage_threshold": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1024.0
+  },
+  "bot_vis_fov_attack_base": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 45.0,
+   "max": 100.0
+  },
+  "bot_vis_fov_frac_easy": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 3.0
+  },
+  "bot_vis_fov_frac_hard": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 3.0
+  },
+  "bot_vis_fov_frac_impossible": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 3.0
+  },
+  "bot_vis_fov_idle_base": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 90.0,
+   "max": 200.0
+  },
+  "bot_vis_recognizetime_base": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_vis_recognizetime_frac_doi": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_vis_recognizetime_frac_easy": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_vis_recognizetime_frac_hard": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "bot_vis_recognizetime_frac_impossible": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 2.0
+  },
+  "breakable_disable_gib_limit": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "breakable_multiplayer": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "bullet_ff_through_walls": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "cc_norepeat": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "cc_showmissing": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "chet_debug_idle": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "choreo_spew_filter": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "cl_clock_correction": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_clock_correction_adjustment_max_amount": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_clock_correction_adjustment_max_offset": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_clock_correction_adjustment_min_offset": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_clock_correction_force_server_tick": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_clock_showdebuginfo": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_clockdrift_max_ms": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_clockdrift_max_ms_threadmode": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_csm_auto_entity": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "cl_particles_debug_overdraw": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "cl_playlists_verbose": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "cl_resend": {
+   "flags": [],
+   "min": 1.5,
+   "max": 20.0
+  },
+  "cl_resend_timeout": {
+   "flags": [],
+   "min": 1.5,
+   "max": 20000.0
+  },
+  "cl_simdbones": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "cl_skipslowpath": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "cl_use_simd_bones": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "clientport": {
+   "flags": [],
+   "default": "27005"
+  },
+  "collision_shake_amp": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "collision_shake_freq": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "collision_shake_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "con_logfile": {
+   "flags": []
+  },
+  "con_proportionalfont": {
+   "flags": []
+  },
+  "con_timestamp": {
+   "flags": []
+  },
+  "coop": {
+   "flags": [
+    "nf"
+   ]
+  },
+  "cpu_level": {
+   "flags": []
+  },
+  "csm_quality_level": {
+   "flags": []
+  },
+  "curve_bias": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "datacachesize": {
+   "flags": [],
+   "min": 0.0,
+   "max": 128.0
+  },
+  "dbg_demofile": {
+   "flags": []
+  },
+  "deathmatch": {
+   "flags": [
+    "nf"
+   ],
+   "default": "0"
+  },
+  "debug_materialmodifycontrol": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "debug_overlay_fullposition": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "debug_physimpact": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "debug_touchlinks": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "debug_visibility_monitor": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "decalfrequency": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "developer": {
+   "flags": []
+  },
+  "disable_static_prop_loading": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "disp_dynamic": {
+   "flags": []
+  },
+  "disp_smoothnormals": {
+   "flags": []
+  },
+  "dispcoll_drawplane": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "display_game_events": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "displaysoundlist": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "dod_grenadegravity": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": -2000.0,
+   "max": -300.0
+  },
+  "doi_bot_aim_aimtracking_base": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0.5",
+   "min": 0.1,
+   "max": 2.0
+  },
+  "doi_bot_allow_attack": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_artillery_min_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_artillery_min_enemies_in_radius": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_attack_burst_maxtime": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "doi_bot_attack_burst_maxtime_close": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "doi_bot_attack_burst_mintime": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "doi_bot_attack_burst_mintime_close": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "doi_bot_attack_delay_carefully_indoors": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_attack_delay_flamethrower": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_attack_delay_maxrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_attack_delay_maxrange_wasvisible": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_attack_delay_minrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_attack_delay_minrange_wasvisible": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_awareness_conversation_range": {
+   "flags": [
+    "a",
+    "sv"
+   ],
+   "default": "300.0"
+  },
+  "doi_bot_combat_advance_timer_assault": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_combat_advance_timer_frontline": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_combat_advance_timer_overwatch": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_combat_end_suppression_alone": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_combat_end_suppression_teammates": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_combat_start_suppression_alone": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_combat_start_suppression_teammates": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_combat_suppress_fire_duration": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_combat_tickrate": {
+   "flags": [
+    "sv"
+   ],
+   "default": "4.0"
+  },
+  "doi_bot_commander_radius": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_communication_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_communication_range_blocked_frac": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_count_default_enemy_max_players": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_count_default_enemy_min_players": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_count_default_friendly_max_players": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_count_default_friendly_min_players": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_count_override": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_count_solo_enemy": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_count_solo_friendly": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_combat_search_radius": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_combat_search_radius_overwatch": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_deathintensity_abort_threshold": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_deathintensity_search_threshold": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_fortify_search_radius_patrol": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_nearby_threshold": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_closest_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_cp_overwatch_frac": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_danger_zone": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_death_zone": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_has_los_per_cp": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_has_nolos_per_cp": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_max_height": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_nearby": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_cover_ranking_suppressed": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_debug_moonwalking": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_debug_movement_requests": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_difficulty": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "doi_bot_follow_close_radius": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_follow_far_radius": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_follow_medium_radius": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_fov_combat": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 45.0,
+   "max": 180.0
+  },
+  "doi_bot_fov_idle": {
+   "flags": [
+    "sv"
+   ],
+   "min": 90.0,
+   "max": 200.0
+  },
+  "doi_bot_grenade_max_range": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_investigation_grace_time": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_investigation_max_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_launcher_bloat": {
+   "flags": [
+    "sv"
+   ],
+   "default": "80.0"
+  },
+  "doi_bot_melee_ammo_threshold": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_melee_attack_range": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_melee_bayonet_range": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_melee_only": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_newthreat_search_interval": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0.25"
+  },
+  "doi_bot_overwatch_height_ranking_frac": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_path_compute_throttle_combat": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0.5f"
+  },
+  "doi_bot_path_compute_throttle_idle": {
+   "flags": [
+    "sv"
+   ],
+   "default": "5.0f"
+  },
+  "doi_bot_path_deathintensity_frac": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_path_distance_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_path_follow_aimahead": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_path_minlookahead": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 2000.0
+  },
+  "doi_bot_path_sneak_combat_frac": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_bot_patrol_path_distance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_patrol_proximity_to_target": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_patrol_proximity_to_target_destroyed": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_bot_quota": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_range_frac_desiredrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "doi_bot_range_frac_hipfirerange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "doi_bot_range_frac_maxrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 10.0
+  },
+  "doi_bot_rank_combat_bonus": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_rocket_grace_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_rocket_minimum_firing_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_rocket_minimum_player_cluster": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_rocket_player_cluster_bloat": {
+   "flags": [
+    "sv"
+   ],
+   "default": "20.0"
+  },
+  "doi_bot_rocket_player_cluster_radius": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_shooting_weapon_sound_reduction": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_silenced_weapon_sound_reduction": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_silhouette_discover_timer": {
+   "flags": [
+    "a",
+    "sv"
+   ],
+   "default": "3.0",
+   "min": 0.01,
+   "max": 10.0
+  },
+  "doi_bot_silhouette_light_threshold_low": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 1.0
+  },
+  "doi_bot_silhouette_light_threshold_medium": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 1.0
+  },
+  "doi_bot_silhouette_range_close": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 3000.0
+  },
+  "doi_bot_silhouette_range_far": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 6000.0
+  },
+  "doi_bot_silhouette_range_movement": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 6000.0
+  },
+  "doi_bot_silhouette_readtime_clear": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 10.0
+  },
+  "doi_bot_silhouette_readtime_dark": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 10.0
+  },
+  "doi_bot_silhouette_readtime_fuzzy": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ],
+   "min": 0.01,
+   "max": 10.0
+  },
+  "doi_bot_silhouette_scan_frequency": {
+   "flags": [
+    "a",
+    "sv"
+   ],
+   "default": "0.5",
+   "min": 0.01,
+   "max": 2.0
+  },
+  "doi_bot_spread_frac": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_bot_spread_frac_maxrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "3.0"
+  },
+  "doi_bot_spread_frac_minrange": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1.0"
+  },
+  "doi_bot_spread_mg_zeroed": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "0.1"
+  },
+  "doi_bot_spread_mg_zerotimer": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1.5"
+  },
+  "doi_bot_spread_suppressed": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0.75"
+  },
+  "doi_bot_spread_target_moving": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0.25"
+  },
+  "doi_bot_spread_target_not_aiming": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0.75"
+  },
+  "doi_bot_spread_target_sprinting": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0.5"
+  },
+  "doi_bot_turn_speed": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 2000.0
+  },
+  "doi_bot_vis_foliage_threshold": {
+   "flags": [
+    "a",
+    "sv"
+   ],
+   "default": "250.0",
+   "min": 0.1,
+   "max": 1024.0
+  },
+  "doi_coop_bot_ranking": {
+   "flags": [
+    "nf",
+    "sv"
+   ],
+   "default": "1",
+   "min": 1.0,
+   "max": 6.0
+  },
+  "doi_coop_bot_ranking_officer": {
+   "flags": [
+    "nf",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 6.0
+  },
+  "doi_coop_cp_proximity_check_frequency": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "doi_coop_elitebots": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0"
+  },
+  "doi_coop_elitebots_loadout_chance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_coop_lobby_size": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "8",
+   "min": 1.0,
+   "max": 25.0
+  },
+  "doi_coop_respawn_frac": {
+   "flags": [
+    "sv"
+   ],
+   "default": "1.0"
+  },
+  "doi_coop_resupplytime_postspawn": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 30.0
+  },
+  "doi_debug_aircraft": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_debug_controlpoints": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_fake_human_players": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_flamethrower_debug": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_flamethrower_dynamic_lighting": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_bullet_damage_frac": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_burn_boost_threshold": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_burn_radius": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_explosion_damage": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_explosion_radius": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_fire_spread_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_fuel_leaked_fx_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_fuel_leaked_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_fuel_dump_health": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_newbots": {
+   "flags": [
+    "a",
+    "cheat",
+    "sv"
+   ]
+  },
+  "doi_offensive_regroup_point_cooldown": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_offensive_regroup_point_notification_frequency": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_offensive_regroup_point_proximity_check_frequency": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_officer_quarters_defense_radius": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_raid_discovery_check_frequency": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_raid_objective_discovery_range": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_raid_objective_discovery_trace_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_raid_objective_spacing_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_sabotage_capture_time_extension": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "doi_sabotage_defenders_dead_spawn_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_sabotage_defense_reinforcements_dpr": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_sabotage_regroup_point_check_frequency": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_sabotage_regroup_point_cooldown": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "doi_target_discovery_radius": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_target_he_damage_multiplier": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "doi_target_health": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "dt_showpartialchangeents": {
+   "flags": []
+  },
+  "dt_usepartialchangeents": {
+   "flags": []
+  },
+  "dtwarning": {
+   "flags": []
+  },
+  "dtwatchclass": {
+   "flags": []
+  },
+  "dtwatchdecode": {
+   "flags": []
+  },
+  "dtwatchencode": {
+   "flags": []
+  },
+  "dtwatchent": {
+   "flags": []
+  },
+  "dtwatchvar": {
+   "flags": []
+  },
+  "durationcache_debug": {
+   "flags": []
+  },
+  "engine_no_focus_sleep": {
+   "flags": [
+    "a"
+   ]
+  },
+  "ent_debugkeys": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ent_messages_draw": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ent_show_contexts": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "filesystem_buffer_size": {
+   "flags": []
+  },
+  "filesystem_max_stdio_read": {
+   "flags": []
+  },
+  "filesystem_native": {
+   "flags": []
+  },
+  "filesystem_report_buffered_io": {
+   "flags": []
+  },
+  "filesystem_unbuffered_io": {
+   "flags": []
+  },
+  "fire_absorbrate": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_dmgbase": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_dmginterval": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_dmgscale": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_extabsorb": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_extscale": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_growthrate": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_heatscale": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_incomingheatscale": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fire_maxabsorb": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fish_dormant": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "flex_expression": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "flex_talk": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fog_enable_water_fog": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "fog_volume_debug": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fps_max": {
+   "flags": []
+  },
+  "fps_max_splitscreen": {
+   "flags": []
+  },
+  "fs_monitor_read_from_pack": {
+   "flags": []
+  },
+  "fs_report_sync_opens": {
+   "flags": []
+  },
+  "fs_warning_mode": {
+   "flags": []
+  },
+  "func_break_max_pieces": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "func_break_reduction_factor": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "func_breakdmg_bullet": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "func_breakdmg_club": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "func_breakdmg_explosive": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "fx_new_sparks": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "g_debug_angularsensor": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "g_debug_constraint_sounds": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "g_debug_doors": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "g_debug_npc_vehicle_roles": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "g_debug_ragdoll_removal": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "g_debug_transitions": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "g_debug_vehiclebase": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "g_debug_vehicleexit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "g_debug_vehiclesound": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "g_language": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "g_ragdoll_important_maxcount": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "g_ragdoll_maxcount": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "gamestats_file_output_directory": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "global_event_log_enabled": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "gpu_level": {
+   "flags": []
+  },
+  "gpu_mem_level": {
+   "flags": []
+  },
+  "grenade_debug_aoe": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "hide_server": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "hl2_episodic": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "host_flush_threshold": {
+   "flags": []
+  },
+  "host_framerate": {
+   "flags": []
+  },
+  "host_limitlocal": {
+   "flags": []
+  },
+  "host_map": {
+   "flags": [],
+   "default": ""
+  },
+  "host_print_frame_times": {
+   "flags": []
+  },
+  "host_profile": {
+   "flags": []
+  },
+  "host_runframe_input_parcelremainder": {
+   "flags": []
+  },
+  "host_showcachemiss": {
+   "flags": []
+  },
+  "host_showipccallcount": {
+   "flags": []
+  },
+  "host_sleep": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "host_speeds": {
+   "flags": []
+  },
+  "host_threaded_sound": {
+   "flags": []
+  },
+  "host_threaded_sound_simplethread": {
+   "flags": []
+  },
+  "host_timescale": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "hostfile": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "hostip": {
+   "flags": [],
+   "default": ""
+  },
+  "hostname": {
+   "flags": [],
+   "default": ""
+  },
+  "hostport": {
+   "flags": []
+  },
+  "hunk_track_allocation_types": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "in_forceuser": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "ins_base_vehicle_max_turn_rate": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_base_vehicle_speed": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bipod_view_length_forward": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bipod_view_length_up": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_combat_falloff": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_combat_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_default_falloff": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_firing_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimpenalty_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimpenalty_med": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimpenalty_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimtolerance_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimtolerance_med": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimtolerance_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimtracking_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimtracking_med": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_aimtracking_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_angularvelocity_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_angularvelocity_med": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_angularvelocity_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_attackdelay_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_attackdelay_med": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_attackdelay_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_recognizetime_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_recognizetime_med": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_frac_recognizetime_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_suppression_falloff": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_arousal_suppression_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_attack_pistol_fire_rate": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_attack_reload_ratio": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_attack_slide_cooldown": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_change_difficulty": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "ins_bot_count_checkpoint": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_checkpoint_default": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_checkpoint_max": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_checkpoint_min": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_conquer": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_conquer_default": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_conquer_max": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_conquer_min": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_conquer_solo": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_hunt": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_hunt_default": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_hunt_max": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_hunt_min": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_hunt_solo": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_outpost": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_outpost_default": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_outpost_level_multiplier": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_outpost_max": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_outpost_start_max": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_outpost_start_min": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_survival": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_survival_day_start_max": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_survival_day_start_min": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_survival_default": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_survival_level_multiplier": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_survival_max": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_survival_start_max": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_count_survival_start_min": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_debug_combat_decisions": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_debug_combat_target": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_debug_escort_formations": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_debug_movement_requests": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_debug_silhouette": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_debug_visibility_blockers": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_difficulty": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_enemy_seen_notify_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_friendly_death_hearing_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_ignore_human_triggers": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_knives_only": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_knives_only_enable_slide": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_knives_only_sprint_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_max_grenade_range": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_bot_max_setup_gate_defend_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_min_setup_gate_defend_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_min_setup_gate_sniper_defend_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_compute_throttle_combat": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_compute_throttle_ooc": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_conquer": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_entrenchment": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_hunt": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_outpost": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_patrol": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_sabotage": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_stronghold": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_distance_survival": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_simplify_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_path_update_interval": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_pathfollower_aimahead": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_pistols_only": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_pistols_only_enable_slide": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_pistols_only_sprint_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_radio_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_radio_range_blocked_fraction": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_rpg_grace_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_rpg_minimum_firing_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_rpg_minimum_player_cluster": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_rpg_player_cluster_bloat": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_rpg_player_cluster_radius": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_bot_suppress_visible_requirement": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_suppressing_fire_duration": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_survival_cache_notify_radius_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_bot_survival_cache_notify_radius_min": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_cache_buy_zone_size": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_cache_explosion_damage": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_cache_explosion_radius": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_cache_health": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_deadcam_modes": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 3.0
+  },
+  "ins_debug_centermass": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "ins_debug_head": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "ins_debug_prone_angles": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_debug_spawnchange": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_nav_cp_surrounding_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_nav_death_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_nav_debug_cover_entities": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_nav_debug_distance_to_cp": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_nav_enable_distancetocp_pathing": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_nav_enable_pathfinding_debug_times": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_nav_enable_pathfinding_updates": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_nav_hiding_spot_update_rate": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_nav_in_combat_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "ins_object_destroyed_damage_amount_default": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_object_destroyed_damage_radius_default": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_object_health_default": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_attack_wave_dpr_end": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_outpost_attack_wave_dpr_start": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_hurry_final_distance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_hurry_initial_distance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_max_cache_destroyers": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_amount_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_amount_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_amount_total": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_interval_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_interval_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_length_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_length_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_scale_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_scale_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_smoke_variance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_spawn_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_spawn_update_interval": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_walk_final_distance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_outpost_bot_walk_initial_distance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_outpost_last_deployment_timer": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "ins_outpost_random_location_each_round": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_outpost_supply_frequency": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_bot_spawn_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_bot_spawn_update_interval": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_cache_distance_threshold_attacking": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_cache_distance_threshold_defending": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_cache_secure_cooldown_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_cache_secure_team_ratio": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_coordinated_attack_time_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_coordinated_attack_time_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_human_spawn_update_interval": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_next_cache_min_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_safehouse_tip_delay_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_survival_safehouse_tip_delay_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_teamsize": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 32.0
+  },
+  "ins_terminal_access_zone_size": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_terminal_health": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ins_vehicle_minibus_health": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "ip": {
+   "flags": []
+  },
+  "item_flag_respawntime": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "joy_deadzone_mode": {
+   "flags": [],
+   "default": "0"
+  },
+  "joy_xcontroller_found": {
+   "flags": [],
+   "default": "1"
+  },
+  "ladder_autocenter": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "loader_spew_info": {
+   "flags": []
+  },
+  "loader_spew_info_ex": {
+   "flags": []
+  },
+  "loader_throttle_io": {
+   "flags": []
+  },
+  "loopsingleplayermaps": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "lservercfgfile": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "map_noareas": {
+   "flags": []
+  },
+  "mapcycledisabled": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mapcyclefile": {
+   "flags": [
+    "sv"
+   ],
+   "default": "mapcycle.txt"
+  },
+  "mat_aaquality": {
+   "flags": []
+  },
+  "mat_antialias": {
+   "flags": []
+  },
+  "mat_bufferprimitives": {
+   "flags": []
+  },
+  "mat_bumpbasis": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_bumpmap": {
+   "flags": []
+  },
+  "mat_compressedtextures": {
+   "flags": []
+  },
+  "mat_debugalttab": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_debugdepth": {
+   "flags": []
+  },
+  "mat_depthbias_normal": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_depthfeather_enable": {
+   "flags": []
+  },
+  "mat_detail_tex": {
+   "flags": []
+  },
+  "mat_diffuse": {
+   "flags": []
+  },
+  "mat_drawflat": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_dynamicpaintmaps": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_envmapsize": {
+   "flags": []
+  },
+  "mat_envmaptgasize": {
+   "flags": []
+  },
+  "mat_exclude_async_update": {
+   "flags": []
+  },
+  "mat_excludetextures": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_fastnobump": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_fastspecular": {
+   "flags": []
+  },
+  "mat_fillrate": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_filterlightmaps": {
+   "flags": []
+  },
+  "mat_filtertextures": {
+   "flags": []
+  },
+  "mat_forceaniso": {
+   "flags": []
+  },
+  "mat_forcedynamic": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_forcehardwaresync": {
+   "flags": []
+  },
+  "mat_fullbright": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_levelflush": {
+   "flags": []
+  },
+  "mat_lightmap_pfms": {
+   "flags": []
+  },
+  "mat_loadtextures": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_lodin_hidden_pop": {
+   "flags": []
+  },
+  "mat_lodin_time": {
+   "flags": []
+  },
+  "mat_luxels": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_maxframelatency": {
+   "flags": []
+  },
+  "mat_measurefillrate": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_mipmaptextures": {
+   "flags": []
+  },
+  "mat_monitorgamma": {
+   "flags": [
+    "a"
+   ],
+   "min": 1.6,
+   "max": 2.6
+  },
+  "mat_monitorgamma_tv_enabled": {
+   "flags": [
+    "a"
+   ]
+  },
+  "mat_monitorgamma_tv_exp": {
+   "flags": [],
+   "min": 1.0,
+   "max": 4.0
+  },
+  "mat_monitorgamma_tv_range_max": {
+   "flags": []
+  },
+  "mat_monitorgamma_tv_range_min": {
+   "flags": []
+  },
+  "mat_morphstats": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_motion_blur_enabled": {
+   "flags": []
+  },
+  "mat_norendering": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_normalmaps": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_normals": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_paint_enabled": {
+   "flags": []
+  },
+  "mat_parallaxmap": {
+   "flags": []
+  },
+  "mat_phong": {
+   "flags": []
+  },
+  "mat_picmip": {
+   "flags": [],
+   "min": -10.0,
+   "max": 4.0
+  },
+  "mat_powersavingsmode": {
+   "flags": [
+    "a"
+   ]
+  },
+  "mat_print_top_model_vert_counts": {
+   "flags": []
+  },
+  "mat_processtoolvars": {
+   "flags": []
+  },
+  "mat_proxy": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_queue_mode": {
+   "flags": []
+  },
+  "mat_queue_priority": {
+   "flags": []
+  },
+  "mat_reducefillrate": {
+   "flags": []
+  },
+  "mat_reduceparticles": {
+   "flags": []
+  },
+  "mat_rendered_faces_count": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_report_queue_status": {
+   "flags": []
+  },
+  "mat_resolvefullframedepth": {
+   "flags": []
+  },
+  "mat_reversedepth": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_shadowstate": {
+   "flags": []
+  },
+  "mat_showenvmapmask": {
+   "flags": []
+  },
+  "mat_showmiplevels": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_software_aa_strength": {
+   "flags": []
+  },
+  "mat_softwarelighting": {
+   "flags": []
+  },
+  "mat_softwareskin": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_specular": {
+   "flags": []
+  },
+  "mat_spew_on_texture_size": {
+   "flags": []
+  },
+  "mat_spewalloc": {
+   "flags": [
+    "a"
+   ]
+  },
+  "mat_superbloom": {
+   "flags": []
+  },
+  "mat_tessellation_accgeometrytangents": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_tessellation_cornertangents": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_tessellation_update_buffers": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mat_texture_reload_frame_swap_workaround": {
+   "flags": []
+  },
+  "mat_texture_tracking": {
+   "flags": []
+  },
+  "mat_triplebuffered": {
+   "flags": []
+  },
+  "mat_vsync": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mat_wireframe": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "melee_combo_reset_time": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "melee_show_hits": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "melee_show_swing": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "mem_dumpstats": {
+   "flags": []
+  },
+  "mem_force_flush": {
+   "flags": []
+  },
+  "mem_force_flush_section": {
+   "flags": []
+  },
+  "mem_incremental_compact_rate": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "mem_level": {
+   "flags": []
+  },
+  "mem_max_heapsize": {
+   "flags": []
+  },
+  "mem_max_heapsize_dedicated": {
+   "flags": []
+  },
+  "mem_min_heapsize": {
+   "flags": []
+  },
+  "mem_periodicdumps": {
+   "flags": []
+  },
+  "mem_test_each_frame": {
+   "flags": []
+  },
+  "mem_test_every_n_seconds": {
+   "flags": []
+  },
+  "mem_test_quiet": {
+   "flags": []
+  },
+  "metamod_version": {
+   "flags": [
+    "nf",
+    "sp"
+   ],
+   "default": "1.12.0-dev+1229"
+  },
+  "mm_basedir": {
+   "flags": [
+    "sp"
+   ]
+  },
+  "mm_csgo_community_search_players_min": {
+   "flags": [
+    "a"
+   ]
+  },
+  "mm_heartbeat_seconds": {
+   "flags": []
+  },
+  "mm_heartbeat_seconds_xlsp": {
+   "flags": []
+  },
+  "mm_heartbeat_timeout": {
+   "flags": []
+  },
+  "mm_heartbeat_timeout_legacy": {
+   "flags": []
+  },
+  "mm_pluginsfile": {
+   "flags": [
+    "sp"
+   ]
+  },
+  "mm_server_search_lan_ports": {
+   "flags": [
+    "a"
+   ]
+  },
+  "mod_check_vcollide": {
+   "flags": []
+  },
+  "mod_dont_load_vertices": {
+   "flags": []
+  },
+  "mod_forcedata": {
+   "flags": []
+  },
+  "mod_forcetouchdata": {
+   "flags": []
+  },
+  "mod_load_anims_async": {
+   "flags": []
+  },
+  "mod_load_fakestall": {
+   "flags": []
+  },
+  "mod_load_mesh_async": {
+   "flags": []
+  },
+  "mod_load_preload": {
+   "flags": []
+  },
+  "mod_load_showstall": {
+   "flags": []
+  },
+  "mod_load_vcollide_async": {
+   "flags": []
+  },
+  "mod_lock_mdls_on_load": {
+   "flags": []
+  },
+  "mod_lock_meshes_on_load": {
+   "flags": []
+  },
+  "mod_log_filesystem": {
+   "flags": []
+  },
+  "mod_test_mesh_not_available": {
+   "flags": []
+  },
+  "mod_test_not_available": {
+   "flags": []
+  },
+  "mod_test_verts_not_available": {
+   "flags": []
+  },
+  "mod_touchalldata": {
+   "flags": []
+  },
+  "mod_trace_load": {
+   "flags": []
+  },
+  "morph_debug": {
+   "flags": []
+  },
+  "morph_path": {
+   "flags": []
+  },
+  "mortar_visualize": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "motdfile": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "movement_anim_playback_minrate": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_allownpcs": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_allowspectators": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1.0"
+  },
+  "mp_ambush_single_point_max": {
+   "flags": [
+    "a",
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_artillery_cooldown_attack": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_artillery_cooldown_defend": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_artillery_spawnzone_cancel_radius": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_assassination_single_point_max": {
+   "flags": [
+    "a",
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_autocrosshair": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_autokick": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1"
+  },
+  "mp_autokick_idlers": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_autokick_tk_cooldown": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_autokick_tk_limit": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_autoteambalance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_checkpoint_counterattack_always": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_checkpoint_counterattack_capture_speedup": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_checkpoint_counterattack_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_checkpoint_counterattack_delay_finale": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_checkpoint_counterattack_disable": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_checkpoint_counterattack_duration": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_checkpoint_counterattack_duration_finale": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_checkpoint_counterattack_wave_finale": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_clan_ready_signal": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_clan_readyrestart": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_auto_reinforce_at_bot_count": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_cache_destroyed_response_distance_high_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_cache_destroyed_response_distance_low_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_capture_finished_response_distance_high_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_capture_finished_response_distance_low_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_capture_start_followup_response_distance_high_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_capture_start_followup_response_distance_low_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_capture_start_response_distance_high_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_capture_start_response_distance_low_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_debug_gamemode": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "mp_conquer_enemy_strength_all_caches": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_enemy_strength_all_caches_solo": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_enemy_strength_no_caches": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_enemy_strength_no_caches_solo": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_followup_wave_time_high_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_followup_wave_time_low_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_hostile_objective_response_distance_high_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_hostile_objective_response_distance_high_strength_solo": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_hostile_objective_response_distance_low_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_hostile_objective_response_distance_low_strength_solo": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_last_man_standing_capture_speedup": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_losing_objective_response_distance_high_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_losing_objective_response_distance_high_strength_solo": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_losing_objective_response_distance_low_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_losing_objective_response_distance_low_strength_solo": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_obj_recapture_distance_high_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_conquer_obj_recapture_distance_low_strength": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_coop_ai_teammate_count": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_coop_ai_teammate_handicap": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_coop_ai_teammates": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_coop_ai_teammates_debug": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_coop_lobbysize": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "6",
+   "min": 1.0,
+   "max": 25.0
+  },
+  "mp_coop_max_bots": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_coop_min_bots": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_cp_capture_time": {
+   "flags": [
+    "nf",
+    "sv"
+   ],
+   "default": "2",
+   "min": 1.0
+  },
+  "mp_cp_deteriorate_time": {
+   "flags": [
+    "nf",
+    "sv"
+   ],
+   "default": "8",
+   "min": 0.0
+  },
+  "mp_cp_proximity_check_frequency": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_cp_proximity_distance": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_cp_proximity_distance_sabotage": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_cp_radio_speedup_rate": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0.50"
+  },
+  "mp_cp_speedup_max": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "5"
+  },
+  "mp_cp_speedup_rate": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0.25"
+  },
+  "mp_death_fade_in_duration": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_death_fade_in_duration_critical": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_death_fade_out_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_death_fade_out_delay_critical": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_death_fade_out_duration": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_defaultteam": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_entrenchment_bot_respawn_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_entrenchment_bot_spawn_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_entrenchment_bot_spawn_update_interval": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_entrenchment_defense_reinforcements_dpr": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_entrenchment_regroup_point_cooldown": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_entrenchment_regroup_point_proximity_check_frequency": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_entrenchment_round_extend_timer": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_entrenchment_supply_timer": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_entrenchment_wave_max_delay": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_entrenchment_wave_min_delay": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_extract_point": {
+   "flags": [
+    "a",
+    "nf",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 3.0
+  },
+  "mp_fadetoblack": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_fall_damage_threshold": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 100.0
+  },
+  "mp_fall_speed_fatal": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.0
+  },
+  "mp_fall_speed_safe": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.0
+  },
+  "mp_fall_speed_safe_iron": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.0
+  },
+  "mp_falldamage": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_firesupport_personal_cooldown": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_flashlight": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_footsteps": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_forcecamera": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_forcerespawn": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_fraglimit": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_freezetime": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 30.0
+  },
+  "mp_friendlyfire": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_friendlyfire_damage": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0.25"
+  },
+  "mp_friendlyfire_damage_spawnarea": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_friendlyfire_explosives": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "mp_frontline_all_dead_spawn_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_hunt_autoattack_bot_frac": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_hunt_autoattack_distance_too_close": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_hunt_autoattack_start_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_hunt_counterattack_distance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_hunt_nav_spawning": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_hunt_patrol_proximity_to_cache": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_hunt_patrol_proximity_to_cache_destroyed": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_ignore_timer_conditions": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_ignore_win_conditions": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_invasion_capture_time_extension": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "mp_invasion_counter_round": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_invasion_deferred_advance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_invasion_final_holdout_spawn_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_joinwaittime": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_liberation_all_dead_spawn_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_lobbytime": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 10.0,
+   "max": 30.0
+  },
+  "mp_match_restart_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 120.0
+  },
+  "mp_maxgames": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0
+  },
+  "mp_maxrounds": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "1",
+   "min": 0.0
+  },
+  "mp_minteamplayers": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_occupy_bonus_wave": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_offensive_all_dead_spawn_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_offensive_capture_time_extension": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "mp_offensive_defenders_dead_spawn_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_offensive_deferred_advance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_offensive_final_holdout_spawn_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_outpost_nav_spawning": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_patrol_final_waypoint_enemy_clearance": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_patrol_waypoint_secure_ratio": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_player_resupply_coop_delay_base": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_coop_delay_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_coop_delay_penalty": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_coop_grace": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_coop_grace_initial": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_coop_penalty_reset": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_delay_base": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_delay_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_delay_penalty": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_grace": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_grace_initial": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_player_resupply_penalty_reset": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_push_capture_time_extension": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "mp_push_counter_round": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_push_deferred_advance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_push_final_holdout_spawn_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_raid_auto_reinforce_at_bot_count": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_raid_bot_respawn_frequency_normal": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_raid_counterattack_extra_count": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_raid_counterattack_radio_only": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_raid_counterattack_timer": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_raid_respawn_on_capture": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_respawnwavetime_max": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_respawnwavetime_min": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_restartgame": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_restartround": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_restricted_area_wpn_time": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_roundlives": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_roundtime": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "210",
+   "min": 0.0,
+   "max": 3600.0
+  },
+  "mp_scrambleteams_auto": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_scrambleteams_auto_windifference": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_searchdestroy_capture_time_extension": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "mp_searchdestroy_single_cache_max": {
+   "flags": [
+    "a",
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_showgestureslots": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_slammoveyaw": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_spawnprotectiontime_navspawn": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 60.0
+  },
+  "mp_spawnprotectontime": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 60.0
+  },
+  "mp_spawns_per_frame": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_spectator_allow_chase": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_strike_capture_time_extension": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "mp_strike_capture_wave_decrement": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "mp_stronghold_auto_reinforce_at_bot_count": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_bot_respawn_friendly": {
+   "flags": [
+    "sv"
+   ],
+   "default": "1"
+  },
+  "mp_stronghold_bot_respawn_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_counterattack_artillery_chance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_stronghold_counterattack_chance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_counterattack_extra_count": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_counterattack_max_per_round": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_counterattack_radio_only": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_counterattack_super_chance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_counterattack_super_max_per_round": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_counterattack_timer": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_last_man_standing_capture_speedup": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_stronghold_respawn_on_capture": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_supply_gain": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_gain_kill_assist_amount": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_gain_kill_assist_threshold": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "5"
+  },
+  "mp_supply_gain_obj_cap": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_gain_obj_destroyed": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_gain_obj_hero_cap": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_gain_regroup": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_rate_losing_team_high": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_rate_losing_team_low": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_rate_winning_team_high": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_rate_winning_team_low": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_token_base": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_token_bot_base": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_supply_token_max": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_survival_nav_spawning": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_survival_patrol_proximity_to_active_safehouse": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_survival_patrol_proximity_to_potential_safehouse": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_switchteams_each_game": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_switchteams_each_round": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_switchteams_reset_supply": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_teamlist": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_teamoverride": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_teamplay": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_teams_auto_join": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_teams_unbalance_limit": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 16.0
+  },
+  "mp_theater_force_holiday": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_theater_override": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_timelimit": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_timelimit_waiting": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "3600"
+  },
+  "mp_timelimit_waiting_random": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "mp_timer_postgame": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 600.0
+  },
+  "mp_timer_postround": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 600.0
+  },
+  "mp_timer_pregame": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 600.0
+  },
+  "mp_timer_preround": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 600.0
+  },
+  "mp_timer_preround_first": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 600.0
+  },
+  "mp_timer_preround_switch": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 600.0
+  },
+  "mp_timer_taglines": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 600.0
+  },
+  "mp_timer_voting": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "15",
+   "min": 0.0,
+   "max": 600.0
+  },
+  "mp_tkpunish": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_voice_bias": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_blocked_lineofsight_enemy_volume": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_blocked_lineofsight_friendly_volume": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_friendly_volume_bias": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_max_distance_enemy": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_voice_max_distance_friendly": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_voice_max_distance_friendly_radio": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_voice_max_enemy_volume_local": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_max_friendly_volume_local": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_max_squad_volume_local": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_max_squad_volume_radio": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_min_distance_enemy": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_voice_min_distance_friendly": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_voice_min_enemy_volume_local": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_min_friendly_volume_local": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_min_squad_volume_local": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_min_squad_volume_radio": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_voice_radio_filter": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_voice_relay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_voice_squad_radio": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "mp_voice_use_3d_voip": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1"
+  },
+  "mp_waitingforplayers_cancel": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_waitingforplayers_restart": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_waitingforplayers_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "mp_wave_capture_increment": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_count_attackers": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_count_defenders": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_count_defenders_per_obj": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_count_perteam": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_attackers": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_attackers_finale": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_defenders": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_defenders_finale": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_defenders_regroup": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_defenders_regroup_auto": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_perteam": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_survival_end": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_dpr_survival_start": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_grace_period": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_max_wait_attackers": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_max_wait_defenders": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_max_wait_perteam": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_wave_spawn_instant": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "mp_waves_enabled": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "mp_weaponstay": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "mp_winlimit": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0
+  },
+  "mp_winlimit_coop": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0
+  },
+  "name": {
+   "flags": [
+    "a",
+    "print",
+    "server_can_execute",
+    "ss",
+    "user"
+   ]
+  },
+  "nav_area_bgcolor": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_area_max_size": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_danger_zone_cooldown_player_gunshot": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_danger_zone_increment_gunshot": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_danger_zone_increment_shoot_player": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_death_trap_increment_blown_up": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_death_trap_increment_shot": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_increment_neighbor_falloff": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_suppression_increment_bullet_impact": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_suppression_increment_explosion": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_areas_suppression_increment_friendly_take_damage": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_coplanar_slope_limit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_coplanar_slope_limit_displacement": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_corner_adjust_adjacent": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_create_area_at_feet": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_create_place_on_ground": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_debug_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_debug_blocked": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_debug_dangerzone": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_debug_deathtraps": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_debug_flanker": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_debug_pathing": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_displacement_test": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_drag_selection_volume_zmax_offset": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "nav_drag_selection_volume_zmin_offset": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "nav_draw_limit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_edit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_generate_fencetops": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_generate_fixup_jump_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_generate_incremental_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_generate_incremental_tolerance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_max_view_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_max_vis_delta_list_length": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_potentially_visible_dot_tolerance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_quicksave": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_selected_set_border_color": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_selected_set_color": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_approach_points": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_area_info": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_compass": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_continguous": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_cursor_position": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_danger": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_func_nav_avoid": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_func_nav_prefer": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_light_intensity": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_node_grid": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_node_id": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_nodes": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_player_counts": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_show_potentially_visible": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_slope_limit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_slope_tolerance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_snap_to_grid": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_solid_props": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_generation": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_generation_details": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_scoring": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_scoring_details": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_selection": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_selection_details": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_show_discards": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_show_spawns": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_debug_squad_spawning": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_max_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_maximum_distance_conquer": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_maximum_distance_hunt": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_maximum_distance_outpost": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_maximum_distance_survival": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_min_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_min_distance_start_frac": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_conquer": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_frac_conquer": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_frac_conquer_start": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_frac_hunt_start": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_frac_outpost": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_frac_outpost_start": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_frac_survival": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_frac_survival_start": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_hunt": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_outpost": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_enemy_minimum_distance_survival": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_fill_empty_rate": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_frequency_bot": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_frequency_human": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_generate_location_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_max_per_controlpoint": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_max_player_distance_default": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_min_area_size": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_min_bot_spawn_frequency": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_min_human_spawn_frequency": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_min_per_controlpoint": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_min_player_distance_default": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_min_spacing_sq": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_proximity_penalty": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_recollect_time": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_rescore_rate": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_rescore_time": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_base": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_cachepoint_bonus": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_controlpoint_bonus": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_controlpoint_proximity": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_cp_locked": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_cp_proximity_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_cp_proximity_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_cp_score_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_cp_score_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_decoy_score_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_decoy_score_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_decrement_combat_high": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_decrement_combat_medium": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_decrement_light_intensity_high": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_decrement_light_intensity_medium": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_decrement_no_hiding_spots": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_decrement_occupied": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_discard": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_enemy_player_proximity_bonus": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_enemy_player_proximity_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_enemy_player_proximity_falloff": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_enemy_spawn_dist_ideal": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_enemy_spawn_dist_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_enemy_spawn_score_ideal": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_enemy_spawn_score_ideal_falloff": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_frequency": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_friendly_spawn_bonus": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_friendly_spawn_bonus_max_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_hiding_bonus": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_inside": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_los_check": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_min": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_multiplier_outdoors": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_outpost_bonus": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_player_proximity_bonus": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_player_proximity_distance": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_player_proximity_outpost_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_player_proximity_outpost_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_player_proximity_penalty": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_player_proximity_sustained_max": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_player_proximity_sustained_min": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_score_potentially_visible": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_random_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_random_min": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_spawn_point_bonus": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_spawn_score_sustained_bonus": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_stored_spawn_expiration": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_spawn_verify_rate": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nav_split_place_on_ground": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_test_node": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_test_node_crouch": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_test_node_crouch_dir": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nav_update_visibility_on_edit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_allow_avoiding": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_allow_climbing": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_allow_gap_jumping": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_blind": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_debug_climbing": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_debug_history": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_debug_known_entities": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_debug_spectatefilter": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_goal_look_ahead_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_head_aim_resettle_angle": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_head_aim_resettle_time": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_head_aim_settle_duration": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_head_aim_steady_max_rate": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_ladder_align_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_combat_build_rate": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_combat_decay_rate": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_death_build_rate": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_death_decay_rate": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_hiding_spot_show_cover": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_hiding_spot_show_score": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_in_combat_duration": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_actor_potential_visibility": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_blocked_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_bomb_drop_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_bomb_target_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_control_points": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_death_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_enemy_invasion_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_gate_defense_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_in_combat_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_incursion_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_incursion_flow": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_incursion_flow_gradient": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_incursion_flow_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_incursion_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_incursion_range_max": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_incursion_range_min": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_mesh_decoration": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_mesh_decoration_manual": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_point_defense_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_sentry_danger": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_sniper_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_sniper_areas_safety_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_sweeped_areas": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_turf_ownership": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_nav_show_valid_spawn_points": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "nb_path_draw_inc": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_path_draw_segment_count": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_path_segment_influence_radius": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_player_crouch": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_player_move": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_player_move_direct": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "nb_player_stop": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_player_walk": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_saccade_speed": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_saccade_time": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_speed_look_ahead_range": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_stop": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "nb_update_debug": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_update_framelimit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_update_frequency": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "nb_update_maxslide": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "net_allow_multicast": {
+   "flags": [
+    "a"
+   ]
+  },
+  "net_blockmsg": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "net_compressvoice": {
+   "flags": []
+  },
+  "net_drawslider": {
+   "flags": []
+  },
+  "net_droppackets": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "net_fakejitter": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "net_fakelag": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "net_fakeloss": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "net_maxcleartime": {
+   "flags": []
+  },
+  "net_maxfilesize": {
+   "flags": [],
+   "min": 0.0,
+   "max": 64.0
+  },
+  "net_maxfragments": {
+   "flags": [],
+   "min": 256.0,
+   "max": 1200.0
+  },
+  "net_maxroutable": {
+   "flags": [
+    "a",
+    "user"
+   ],
+   "min": 576.0,
+   "max": 1200.0
+  },
+  "net_megasnapshot": {
+   "flags": []
+  },
+  "net_public_adr": {
+   "flags": []
+  },
+  "net_queue_trace": {
+   "flags": []
+  },
+  "net_queued_packet_thread": {
+   "flags": []
+  },
+  "net_showeventlisteners": {
+   "flags": []
+  },
+  "net_showevents": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "net_showfragments": {
+   "flags": []
+  },
+  "net_showpeaks": {
+   "flags": []
+  },
+  "net_showreliablesounds": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "net_showsplits": {
+   "flags": []
+  },
+  "net_showtcp": {
+   "flags": []
+  },
+  "net_showudp": {
+   "flags": []
+  },
+  "net_showudp_oob": {
+   "flags": []
+  },
+  "net_showudp_remoteonly": {
+   "flags": []
+  },
+  "net_splitrate": {
+   "flags": []
+  },
+  "net_usesocketsforloopback": {
+   "flags": []
+  },
+  "next": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "nextlevel": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "noclip_fixup": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "npc_height_adjust": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "npc_vphysics": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "obj_ammo_crate_drag": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "obj_ammo_crate_health": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "obj_ammo_crate_lifetime": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "obj_ammo_crate_mass": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "obj_ammo_crate_resupply_zone_size": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "obj_capture_damage": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "obj_show_damage": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "old_radiusdamage": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "paintsplat_bias": {
+   "flags": [
+    "cheat",
+    "rep"
+   ]
+  },
+  "paintsplat_max_alpha_noise": {
+   "flags": [
+    "cheat",
+    "rep"
+   ]
+  },
+  "paintsplat_noise_enabled": {
+   "flags": [
+    "cheat",
+    "rep"
+   ]
+  },
+  "particle_test_attach_attachment": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "particle_test_attach_mode": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "particle_test_file": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "password": {
+   "flags": [
+    "a",
+    "norecord"
+   ]
+  },
+  "perf_fire_bullet_firstpredictedonly": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "perf_fire_bullet_single": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "phys_debug_check_contacts": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "phys_impactforcescale": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "phys_penetration_error_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "phys_pushscale": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "phys_show_active": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "phys_speeds": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "phys_stressbodyweights": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "phys_timescale": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "phys_upimpactforcescale": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "physicsshadowupdate_render": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "pipeline_static_props": {
+   "flags": []
+  },
+  "player_debug_print_damage": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "player_old_armor": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "player_prone_pushaway_debug": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "player_prone_pushaway_distance": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "player_prone_pushaway_speed": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "player_prone_pushaway_speed_ads": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "player_prone_pushaway_sufacezmax": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "player_prone_pushaway_zmin": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "player_slide_cooldown": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "player_slide_duration": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "player_slide_impact_epsilon": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "player_slide_probe_distance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "player_slide_probe_dot": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "player_slide_sample_period": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "player_slide_speed_acceleration": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "player_slide_speedfrac_max": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "player_slide_speedfrac_warmup": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "player_slide_warmup_interval": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "player_use_radius": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "player_use_tolerance": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "plr_debug": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "plr_debug_inventory": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "prop_active_gib_limit": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "prop_active_gib_max_fade_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "prop_break_disable_float": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "prop_sprinkler_debug": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "props_break_max_pieces": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "props_break_max_pieces_perframe": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "qa_force_mvp": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "r_ambientboost": {
+   "flags": []
+  },
+  "r_ambientfactor": {
+   "flags": []
+  },
+  "r_ambientfraction": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_ambientmin": {
+   "flags": []
+  },
+  "r_colorstaticprops": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_debugrandomstaticlighting": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_decal_cover_count": {
+   "flags": []
+  },
+  "r_decal_overlap_area": {
+   "flags": []
+  },
+  "r_decal_overlap_count": {
+   "flags": []
+  },
+  "r_decals": {
+   "flags": []
+  },
+  "r_decalstaticprops": {
+   "flags": []
+  },
+  "r_dispbuildable": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_dispcombinecalls": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_dispwalkable": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawbatchdecals": {
+   "flags": []
+  },
+  "r_drawbrushmodels": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawdecals": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawdisp": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawentities": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawfuncdetail": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawleaf": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawlightcache": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawmodeldecals": {
+   "flags": []
+  },
+  "r_drawmodellightorigin": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawmodelstatsoverlay": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawmodelstatsoverlaydistance": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawmodelstatsoverlayfilter": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawmodelstatsoverlaymax": {
+   "flags": [
+    "a"
+   ]
+  },
+  "r_drawmodelstatsoverlaymin": {
+   "flags": [
+    "a"
+   ]
+  },
+  "r_drawspecificstaticprop": {
+   "flags": []
+  },
+  "r_drawstaticprops": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawtranslucentworld": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_drawworld": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_dscale_basefov": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_dscale_fardist": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_dscale_farscale": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_dscale_neardist": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_dscale_nearscale": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_dynamic": {
+   "flags": []
+  },
+  "r_emulategl": {
+   "flags": []
+  },
+  "r_eyeglintlodpixels": {
+   "flags": []
+  },
+  "r_eyemove": {
+   "flags": [
+    "a"
+   ]
+  },
+  "r_eyes": {
+   "flags": []
+  },
+  "r_eyeshift_x": {
+   "flags": [
+    "a"
+   ]
+  },
+  "r_eyeshift_y": {
+   "flags": [
+    "a"
+   ]
+  },
+  "r_eyeshift_z": {
+   "flags": [
+    "a"
+   ]
+  },
+  "r_eyesize": {
+   "flags": [
+    "a"
+   ]
+  },
+  "r_fastzreject": {
+   "flags": []
+  },
+  "r_fastzrejectdisp": {
+   "flags": []
+  },
+  "r_flashlightdepthtexture": {
+   "flags": []
+  },
+  "r_flashlightscissor": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_flex": {
+   "flags": []
+  },
+  "r_forcerestore": {
+   "flags": []
+  },
+  "r_glint_alwaysdraw": {
+   "flags": []
+  },
+  "r_glint_procedural": {
+   "flags": []
+  },
+  "r_hidepaintedsurfaces": {
+   "flags": []
+  },
+  "r_hunkalloclightmaps": {
+   "flags": [],
+   "default": "1"
+  },
+  "r_hwmorph": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_itemblinkmax": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_itemblinkrate": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_jeepfov": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "r_keepstyledlightmapsonly": {
+   "flags": []
+  },
+  "r_lightaverage": {
+   "flags": []
+  },
+  "r_lightcachemodel": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_lightinterp": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_lightmap": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_lightstyle": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_lockpvs": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_lod": {
+   "flags": []
+  },
+  "r_maxmodeldecal": {
+   "flags": []
+  },
+  "r_modelambientmin": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_modelwireframedecal": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_nohw": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_norefresh": {
+   "flags": []
+  },
+  "r_nosw": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_novis": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_occludeemaxarea": {
+   "flags": []
+  },
+  "r_occluderminarea": {
+   "flags": []
+  },
+  "r_occludermincount": {
+   "flags": []
+  },
+  "r_occlusion": {
+   "flags": []
+  },
+  "r_occlusionspew": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_partition_level": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_portal_use_pvs_optimization": {
+   "flags": []
+  },
+  "r_proplightingfromdisk": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_proplightingpooling": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_queued_decals": {
+   "flags": []
+  },
+  "r_randomflex": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_rootlod": {
+   "flags": []
+  },
+  "r_shadow_deferred": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_shadowrendertotexture": {
+   "flags": []
+  },
+  "r_showenvcubemap": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_skin": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_skybox_draw_last": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_slowpathwireframe": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_spray_lifetime": {
+   "flags": []
+  },
+  "r_staticlight_streams": {
+   "flags": []
+  },
+  "r_staticpropinfo": {
+   "flags": []
+  },
+  "r_teeth": {
+   "flags": []
+  },
+  "r_unloadlightmaps": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_vehiclebrakerate": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "r_vehicleviewdampen": {
+   "flags": [
+    "cheat",
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "r_visocclusion": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "r_visualizetraces": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "rcon_password": {
+   "flags": [
+    "norecord"
+   ],
+   "default": ""
+  },
+  "res_restrict_access": {
+   "flags": []
+  },
+  "rr_debugresponseconcept": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "rr_debugresponses": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "rr_debugrule": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "rr_dumpresponses": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "rr_followup_maxdist": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "rr_thenany_score_slop": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sb_id": {
+   "flags": [],
+   "min": -1.0
+  },
+  "sb_version": {
+   "flags": [
+    "nf",
+    "rep",
+    "sp"
+   ]
+  },
+  "sbchecker_version": {
+   "flags": [
+    "nf"
+   ]
+  },
+  "sbpp_discord_banhook": {
+   "flags": [
+    "prot"
+   ]
+  },
+  "sbpp_discord_commshook": {
+   "flags": [
+    "prot"
+   ]
+  },
+  "sbpp_discord_pp_url": {
+   "flags": []
+  },
+  "sbpp_discord_reporthook": {
+   "flags": [
+    "prot"
+   ]
+  },
+  "sbpp_discord_roleid": {
+   "flags": []
+  },
+  "sbpp_discord_username": {
+   "flags": []
+  },
+  "sbpp_discord_version": {
+   "flags": [
+    "nf",
+    "norecord",
+    "rep",
+    "sp"
+   ]
+  },
+  "sbpp_report_cooldown": {
+   "flags": [],
+   "min": 0.0
+  },
+  "sbpp_report_minlen": {
+   "flags": [],
+   "min": 0.0
+  },
+  "sbpp_report_version": {
+   "flags": [
+    "nf",
+    "norecord",
+    "rep",
+    "sp"
+   ]
+  },
+  "sbpp_website_url": {
+   "flags": []
+  },
+  "sc_debug_sets": {
+   "flags": [
+    "a"
+   ]
+  },
+  "sc_joystick_map": {
+   "flags": [
+    "a"
+   ]
+  },
+  "scene_async_prefetch_spew": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "scene_clientflex": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "scene_clientplayback": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "scene_forcecombined": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "scene_maxcaptionradius": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "scene_print": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "scene_showlook": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "scene_showmoveto": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "scene_showunlock": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "servercfgfile": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "showtriggers": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "simulate_capturezone_pointindex": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "simulate_capturezone_team0": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "simulate_capturezone_team1": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "singlestep": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "sk_autoaim_mode": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ]
+  },
+  "sk_player_arm": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sk_player_chest": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sk_player_head": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sk_player_leg": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sk_player_stomach": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "skill": {
+   "flags": [
+    "a"
+   ],
+   "default": "1",
+   "min": 1.0,
+   "max": 3.0
+  },
+  "sleep_when_meeting_framerate": {
+   "flags": []
+  },
+  "sm_advertisements_enabled": {
+   "flags": []
+  },
+  "sm_advertisements_file": {
+   "flags": []
+  },
+  "sm_advertisements_interval": {
+   "flags": [],
+   "default": "30"
+  },
+  "sm_advertisements_random": {
+   "flags": []
+  },
+  "sm_advertisements_version": {
+   "flags": [
+    "nf"
+   ]
+  },
+  "sm_afk_admins_flag": {
+   "flags": []
+  },
+  "sm_afk_admins_immune": {
+   "flags": [],
+   "default": "1"
+  },
+  "sm_afk_buttons": {
+   "flags": [],
+   "min": 0.0,
+   "max": 30.0
+  },
+  "sm_afk_enable": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_exclude_dead": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_force_language": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_kick_announce": {
+   "flags": [],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "sm_afk_kick_min_players": {
+   "flags": [],
+   "default": "6"
+  },
+  "sm_afk_kick_players": {
+   "flags": [],
+   "default": "1"
+  },
+  "sm_afk_kick_time": {
+   "flags": [],
+   "default": "120.0"
+  },
+  "sm_afk_kick_warn_time": {
+   "flags": []
+  },
+  "sm_afk_log_days": {
+   "flags": []
+  },
+  "sm_afk_log_kicks": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_log_moves": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_log_warnings": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_move_announce": {
+   "flags": [],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "sm_afk_move_min_players": {
+   "flags": [],
+   "default": "4"
+  },
+  "sm_afk_move_spec": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_move_time": {
+   "flags": [],
+   "default": "60.0"
+  },
+  "sm_afk_move_warn_time": {
+   "flags": [],
+   "default": "30.0"
+  },
+  "sm_afk_move_warn_unassigned": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_prefix_color": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_prefix_short": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_afk_spawn_time": {
+   "flags": [],
+   "default": "20.0"
+  },
+  "sm_afk_spawn_warn_time": {
+   "flags": []
+  },
+  "sm_afkm_version": {
+   "flags": [
+    "nf",
+    "norecord",
+    "rep",
+    "sp"
+   ]
+  },
+  "sm_basepath": {
+   "flags": []
+  },
+  "sm_beacon_radius": {
+   "flags": [],
+   "min": 50.0,
+   "max": 1500.0
+  },
+  "sm_burn_duration": {
+   "flags": [],
+   "min": 0.5,
+   "max": 20.0
+  },
+  "sm_chat_mode": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_corecfgfile": {
+   "flags": []
+  },
+  "sm_datetime_format": {
+   "flags": []
+  },
+  "sm_deadtalk": {
+   "flags": [],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "sm_debug_connect": {
+   "flags": []
+  },
+  "sm_firebomb_mode": {
+   "flags": [],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "sm_firebomb_radius": {
+   "flags": [],
+   "min": 50.0,
+   "max": 3000.0
+  },
+  "sm_firebomb_ticks": {
+   "flags": [],
+   "min": 5.0,
+   "max": 120.0
+  },
+  "sm_flood_time": {
+   "flags": []
+  },
+  "sm_freeze_duration": {
+   "flags": [],
+   "min": 1.0,
+   "max": 120.0
+  },
+  "sm_freezebomb_mode": {
+   "flags": [],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "sm_freezebomb_radius": {
+   "flags": [],
+   "min": 50.0,
+   "max": 3000.0
+  },
+  "sm_freezebomb_ticks": {
+   "flags": [],
+   "min": 5.0,
+   "max": 120.0
+  },
+  "sm_hide_slots": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_immunity_mode": {
+   "flags": [
+    "sp"
+   ]
+  },
+  "sm_maphistory_size": {
+   "flags": []
+  },
+  "sm_menu_sounds": {
+   "flags": []
+  },
+  "sm_nextmap": {
+   "flags": [
+    "nf"
+   ]
+  },
+  "sm_reserve_kicktype": {
+   "flags": [],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "sm_reserve_maxadmins": {
+   "flags": [],
+   "min": 0.0
+  },
+  "sm_reserve_type": {
+   "flags": [],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "sm_reserved_slots": {
+   "flags": [],
+   "min": 0.0
+  },
+  "sm_show_activity": {
+   "flags": [
+    "sp"
+   ]
+  },
+  "sm_sleuth_actions": {
+   "flags": [],
+   "min": 1.0,
+   "max": 5.0
+  },
+  "sm_sleuth_adminbypass": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_sleuth_bansallowed": {
+   "flags": []
+  },
+  "sm_sleuth_bantype": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_sleuth_duration": {
+   "flags": []
+  },
+  "sm_sleuth_excludeold": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_sleuth_excludetime": {
+   "flags": [],
+   "min": 1.0
+  },
+  "sm_sleuth_prefix": {
+   "flags": []
+  },
+  "sm_sourcesleuth_version": {
+   "flags": [
+    "nf",
+    "norecord",
+    "rep",
+    "sp"
+   ]
+  },
+  "sm_time_adjustment": {
+   "flags": []
+  },
+  "sm_timebomb_mode": {
+   "flags": [],
+   "min": 0.0,
+   "max": 2.0
+  },
+  "sm_timebomb_radius": {
+   "flags": [],
+   "min": 50.0,
+   "max": 3000.0
+  },
+  "sm_timebomb_ticks": {
+   "flags": [],
+   "min": 5.0,
+   "max": 120.0
+  },
+  "sm_timeleft_interval": {
+   "flags": [],
+   "default": "0.0",
+   "min": 0.0,
+   "max": 1800.0
+  },
+  "sm_trigger_show": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_vote_alltalk": {
+   "flags": [],
+   "min": 0.05,
+   "max": 1.0
+  },
+  "sm_vote_ban": {
+   "flags": [],
+   "min": 0.05,
+   "max": 1.0
+  },
+  "sm_vote_burn": {
+   "flags": [],
+   "min": 0.05,
+   "max": 1.0
+  },
+  "sm_vote_delay": {
+   "flags": []
+  },
+  "sm_vote_ff": {
+   "flags": [],
+   "min": 0.05,
+   "max": 1.0
+  },
+  "sm_vote_gravity": {
+   "flags": [],
+   "min": 0.05,
+   "max": 1.0
+  },
+  "sm_vote_kick": {
+   "flags": [],
+   "min": 0.05,
+   "max": 1.0
+  },
+  "sm_vote_map": {
+   "flags": [],
+   "min": 0.05,
+   "max": 1.0
+  },
+  "sm_vote_progress_chat": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_vote_progress_client_console": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_vote_progress_console": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_vote_progress_hintbox": {
+   "flags": [],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sm_vote_slay": {
+   "flags": [],
+   "min": 0.05,
+   "max": 1.0
+  },
+  "sm_voteban_time": {
+   "flags": [],
+   "min": 0.0
+  },
+  "smoothstairs": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "snd_foliage_db_loss": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "snd_gain": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "snd_gain_max": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "snd_gain_min": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "snd_refdb": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "snd_refdist": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "snd_sos_show_server_xmit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "snd_vox_captiontrace": {
+   "flags": []
+  },
+  "snd_vox_globaltimeout": {
+   "flags": []
+  },
+  "snd_vox_sectimetout": {
+   "flags": []
+  },
+  "snd_vox_seqtimetout": {
+   "flags": []
+  },
+  "solo_timer_pregame": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 30.0
+  },
+  "solo_timer_preround": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 30.0
+  },
+  "soundpatch_captionlength": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "soundscape_debug": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sourcecomms_version": {
+   "flags": [
+    "nf",
+    "rep",
+    "sp"
+   ]
+  },
+  "sourcemod_version": {
+   "flags": [
+    "nf",
+    "sp"
+   ]
+  },
+  "spawnpoint_debug": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "spec_allow_bots": {
+   "flags": [
+    "nf",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "spec_death_skip_time": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "spec_death_skip_time_critical": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "spec_freeze_deathanim_time": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "spec_freeze_distance_max": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "spec_freeze_distance_min": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "spec_freeze_enable": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "spec_freeze_fov": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "spec_freeze_roll": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "spec_freeze_time": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "spec_freeze_traveltime": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ],
+   "min": 0.01
+  },
+  "spec_freeze_zoffset_max": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "spec_freeze_zoffset_min": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "ss_voice_hearpartner": {
+   "flags": []
+  },
+  "stats_debug": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "stats_enabled": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0"
+  },
+  "stats_host_override": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "stats_server_environment": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "stats_use_ssl": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "step_spline": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "stringtable_alwaysrebuilddictionaries": {
+   "flags": []
+  },
+  "stringtable_compress": {
+   "flags": []
+  },
+  "stringtable_showsizes": {
+   "flags": []
+  },
+  "stringtable_usedictionaries": {
+   "flags": []
+  },
+  "studio_queue_mode": {
+   "flags": []
+  },
+  "suitvolume": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "sv_accelerate": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_airaccelerate": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_allchat": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "sv_allow_legacy_cmd_execution_from_client": {
+   "flags": []
+  },
+  "sv_allow_point_servercommand": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_allow_suppression": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_allow_votes": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_allow_wait_command": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_allowdownload": {
+   "flags": []
+  },
+  "sv_allowupload": {
+   "flags": []
+  },
+  "sv_alltalk": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_alltalk_dead": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_alltalk_endgame": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_alltalk_intermission": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_alternateticks": {
+   "flags": []
+  },
+  "sv_autosave": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_battleye": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_benchmark_autovprofrecord": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_benchmark_numticks": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_bipod_debug": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_bipod_min_dot": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_bonus_challenge": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_breathing_particles": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_cacheencodedents": {
+   "flags": []
+  },
+  "sv_changelevel_next_round": {
+   "flags": [
+    "nf",
+    "sv"
+   ]
+  },
+  "sv_cheats": {
+   "flags": [
+    "nf",
+    "rep"
+   ]
+  },
+  "sv_client_cmdrate_difference": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_client_max_interp_ratio": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_client_min_interp_ratio": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_client_predict": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_clockcorrection_msecs": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_consistency": {
+   "flags": [
+    "rep"
+   ],
+   "default": "1"
+  },
+  "sv_contact": {
+   "flags": [
+    "nf"
+   ]
+  },
+  "sv_crawl_grace_timer": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_dc_friends_reqd": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_deadtalk": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "sv_deadtalk_team": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_deadvoice": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "sv_debug_mapdatabase": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_debug_plant": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_debug_player_use": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_debug_stamina": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_debug_suppression": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_debugmanualmode": {
+   "flags": []
+  },
+  "sv_debugtempentities": {
+   "flags": []
+  },
+  "sv_deltaprint": {
+   "flags": []
+  },
+  "sv_deltatime": {
+   "flags": []
+  },
+  "sv_downloadurl": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_dumpstringtables": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "sv_enable_delta_packing": {
+   "flags": []
+  },
+  "sv_enableoldqueries": {
+   "flags": []
+  },
+  "sv_extra_client_connect_time": {
+   "flags": []
+  },
+  "sv_filterban": {
+   "flags": []
+  },
+  "sv_firesupport_cooldown_frac": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1.0"
+  },
+  "sv_firesupport_nag_timer": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_footstep_low_time_sound": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_footstep_run_time_sound": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_footstep_sound_frequency": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_footstep_sprint_time_sound": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_footstep_thirdperson": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_footstepinterval": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_forcepreload": {
+   "flags": [
+    "a"
+   ]
+  },
+  "sv_friction": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_gravity": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_health_bonus_enable": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_health_bonus_per_outnumbered_player": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hibernate_ms": {
+   "flags": []
+  },
+  "sv_hibernate_ms_vgui": {
+   "flags": []
+  },
+  "sv_hibernate_postgame_delay": {
+   "flags": []
+  },
+  "sv_hibernate_when_empty": {
+   "flags": [],
+   "default": "1"
+  },
+  "sv_hq_messages_allowed": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_deathmessages": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "sv_hud_deathmessages_spectator": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "sv_hud_enemy_wave_display": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_scoreboard_show_score": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "sv_hud_scoreboard_show_score_dead": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_friend_color": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_friend_max_distance": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "-1.0"
+  },
+  "sv_hud_targetindicator_friend_obstruct": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_party_color": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_party_obstruct": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_squad_color": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_squad_obstruct": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_teammate_color": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_teammate_obstruct": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_hud_targetindicator_vip_color": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_infected_damage_cutouts": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_infinite_ammo": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_lagcompensateself": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_lagcompensationforcerestore": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_lan": {
+   "flags": []
+  },
+  "sv_log_onefile": {
+   "flags": [
+    "a"
+   ],
+   "default": "0"
+  },
+  "sv_logbans": {
+   "flags": [
+    "a"
+   ],
+   "default": "0"
+  },
+  "sv_logblocks": {
+   "flags": []
+  },
+  "sv_logdownloadlist": {
+   "flags": []
+  },
+  "sv_logecho": {
+   "flags": [
+    "a"
+   ]
+  },
+  "sv_logfile": {
+   "flags": [
+    "a"
+   ]
+  },
+  "sv_logflush": {
+   "flags": [
+    "a"
+   ]
+  },
+  "sv_logsdir": {
+   "flags": [
+    "a"
+   ]
+  },
+  "sv_logsecret": {
+   "flags": []
+  },
+  "sv_map_voting": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_map_voting_shuffle": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_massreport": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_master_legacy_mode": {
+   "flags": []
+  },
+  "sv_master_share_game_socket": {
+   "flags": []
+  },
+  "sv_max_queries_sec": {
+   "flags": []
+  },
+  "sv_max_queries_sec_global": {
+   "flags": []
+  },
+  "sv_max_queries_window": {
+   "flags": []
+  },
+  "sv_max_usercmd_future_ticks": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_max_usercmd_move_magnitude": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_maxclientframes": {
+   "flags": []
+  },
+  "sv_maxcmdrate": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_maxrate": {
+   "flags": [
+    "rep"
+   ],
+   "min": 0.0,
+   "max": 786432.0
+  },
+  "sv_maxreplay": {
+   "flags": [],
+   "min": 0.0,
+   "max": 15.0
+  },
+  "sv_maxroutable": {
+   "flags": [],
+   "min": 576.0,
+   "max": 1200.0
+  },
+  "sv_maxupdaterate": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_maxuptimelimit": {
+   "flags": []
+  },
+  "sv_memlimit": {
+   "flags": []
+  },
+  "sv_mincmdrate": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_minrate": {
+   "flags": [
+    "rep"
+   ],
+   "min": 0.0,
+   "max": 786432.0
+  },
+  "sv_minupdaterate": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_multiplayer_maxtempentities": {
+   "flags": []
+  },
+  "sv_multiplayer_sounds": {
+   "flags": []
+  },
+  "sv_mumble_positionalaudio": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_music_enabled": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_name_change_limit": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_namechange_cooldown_seconds": {
+   "flags": []
+  },
+  "sv_new_delta_bits": {
+   "flags": []
+  },
+  "sv_noclipaccelerate": {
+   "flags": [
+    "a",
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_noclipduringpause": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_noclipspeed": {
+   "flags": [
+    "a",
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_nwi_backend": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_nwi_backend_submit": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_parallel_packentities": {
+   "flags": []
+  },
+  "sv_parallel_sendsnapshot": {
+   "flags": []
+  },
+  "sv_password": {
+   "flags": [
+    "nf",
+    "norecord",
+    "prot"
+   ]
+  },
+  "sv_pausable": {
+   "flags": []
+  },
+  "sv_plantable_cooldown": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_player_stuck_tolerance": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_playerperfhistorycount": {
+   "flags": [
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 128.0
+  },
+  "sv_playlist": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": ""
+  },
+  "sv_pure_consensus": {
+   "flags": []
+  },
+  "sv_pure_kick_clients": {
+   "flags": []
+  },
+  "sv_pure_retiretime": {
+   "flags": []
+  },
+  "sv_pure_trace": {
+   "flags": []
+  },
+  "sv_purge_on_unload": {
+   "flags": []
+  },
+  "sv_pvsskipanimation": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "sv_quota_stringcmdspersecond": {
+   "flags": []
+  },
+  "sv_radial_cooldown": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_debug_artillery": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_enemy_confirm": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_radial_marker_duration": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_marker_duration_attack": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_spam_cooldown": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_spam_delay": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_spam_delay_leaderfrac": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_viewcone_enemy": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_viewcone_objective": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_radial_vo_enemies": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_ragdoll_cleanup": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_ragdoll_dismemberment": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_ragdoll_max_fps": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_ragdoll_max_remove_per_frame": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_ragdoll_maxcount": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_ragdoll_min_fps": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_rcon_banpenalty": {
+   "flags": [],
+   "min": 0.0
+  },
+  "sv_rcon_log": {
+   "flags": []
+  },
+  "sv_rcon_maxfailures": {
+   "flags": [],
+   "min": 1.0,
+   "max": 20.0
+  },
+  "sv_rcon_minfailures": {
+   "flags": [],
+   "min": 1.0,
+   "max": 20.0
+  },
+  "sv_rcon_minfailuretime": {
+   "flags": [],
+   "min": 1.0
+  },
+  "sv_rcon_whitelist_address": {
+   "flags": []
+  },
+  "sv_recoil_debug": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_regeneration_wait_time": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_region": {
+   "flags": [],
+   "default": "-1"
+  },
+  "sv_reservation_grace": {
+   "flags": [],
+   "min": 3.0,
+   "max": 30.0
+  },
+  "sv_reservation_timeout": {
+   "flags": [],
+   "min": 5.0,
+   "max": 180.0
+  },
+  "sv_ruleset": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_runcmds": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_script_think_interval": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_search_key": {
+   "flags": []
+  },
+  "sv_showdamage": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_showdebugtracers": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_showfootsteps": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_showhitboxes": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_showimpacts": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_showimpacts_text": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_showimpacts_time": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_showladders": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_showlagcompensation": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_showlagcompensation_duration": {
+   "flags": [
+    "cheat",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 10.0
+  },
+  "sv_showplayerhitboxes": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_showplayerpositions": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_showvminteraction": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_shutdown_timeout_minutes": {
+   "flags": [
+    "rep"
+   ]
+  },
+  "sv_skip_wounds": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_skyname": {
+   "flags": [
+    "a",
+    "rep",
+    "sv"
+   ],
+   "default": "sky_urb01"
+  },
+  "sv_slowonhit": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_sound_discardextraunreliable": {
+   "flags": []
+  },
+  "sv_soundemitter_trace": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_specaccelerate": {
+   "flags": [
+    "a",
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_specnoclip": {
+   "flags": [
+    "a",
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_specspeed": {
+   "flags": [
+    "a",
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_stats": {
+   "flags": []
+  },
+  "sv_steamgroup": {
+   "flags": [
+    "nf"
+   ]
+  },
+  "sv_steamgroup_exclusive": {
+   "flags": []
+  },
+  "sv_stopspeed": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "default": "100"
+  },
+  "sv_stopspeed_prone": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_strict_notarget": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_suppress_steam_score": {
+   "flags": []
+  },
+  "sv_sway_debug": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_tags": {
+   "flags": [
+    "nf"
+   ],
+   "default": ""
+  },
+  "sv_takedamagedebug": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_teststepsimulation": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_thinktimecheck": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_thirdperson": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ]
+  },
+  "sv_thirdperson_aimangle": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 180.0
+  },
+  "sv_thirdperson_aimdist": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 10.0,
+   "max": 10000.0
+  },
+  "sv_thirdperson_dist": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 30.0,
+   "max": 150.0
+  },
+  "sv_thirdperson_fov": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 65.0,
+   "max": 90.0
+  },
+  "sv_thirdperson_height": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 35.0
+  },
+  "sv_thirdperson_leandist": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 50.0
+  },
+  "sv_thirdperson_mindist": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 50.0
+  },
+  "sv_thirdperson_useangle": {
+   "flags": [
+    "nf",
+    "rep",
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 90.0
+  },
+  "sv_threaded_init": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_timeout": {
+   "flags": []
+  },
+  "sv_traceattackdebug": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "sv_turbophysics": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "0"
+  },
+  "sv_unlockedchapters": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "sv_validate_edict_change_infos": {
+   "flags": []
+  },
+  "sv_vehicle_autoaim_scale": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_visiblemaxplayers": {
+   "flags": []
+  },
+  "sv_voicecodec": {
+   "flags": []
+  },
+  "sv_voiceenable": {
+   "flags": [
+    "a",
+    "nf"
+   ]
+  },
+  "sv_vote_allow_spectators": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_failure_timer": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_botcount_allowed": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1"
+  },
+  "sv_vote_issue_botcount_min_population": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1.0
+  },
+  "sv_vote_issue_botcount_min_ratio": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sv_vote_issue_botdifficulty_allowed": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "1"
+  },
+  "sv_vote_issue_botdifficulty_min_population": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1.0
+  },
+  "sv_vote_issue_botdifficulty_min_ratio": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sv_vote_issue_changegamemode_allowed": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_changelevel_allowed": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_changelevel_wait": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_kick_allowed": {
+   "flags": [
+    "sv"
+   ],
+   "default": "1"
+  },
+  "sv_vote_issue_kick_other_team": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_mute_allowed": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_mute_duration": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_mute_min_players": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_mute_min_voters": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_nextlevel_allowed": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_nextlevel_allowextend": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_nextlevel_choicesmode": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_nextlevel_min_population": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1.0
+  },
+  "sv_vote_issue_nextlevel_min_ratio": {
+   "flags": [
+    "sv"
+   ],
+   "min": 1.0,
+   "max": 5.0
+  },
+  "sv_vote_issue_nextlevel_prevent_change": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_nextlevel_round_count_delay": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_restart_game_allowed": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_restart_round_allowed": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_scramble_teams_allowed": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_issue_switch_teams_allowed": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_kick_ban_duration_cheating": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_kick_ban_duration_idle": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_kick_ban_duration_teamkilling": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_kick_ban_duration_trolling": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_kick_ban_owner": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_kick_hack_min_population": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1.0
+  },
+  "sv_vote_kick_hack_min_ratio": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sv_vote_kick_idle_min_population": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1.0
+  },
+  "sv_vote_kick_idle_min_ratio": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sv_vote_kick_min_players": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_kick_min_voters": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_vote_kick_tk_min_population": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1.0
+  },
+  "sv_vote_kick_tk_min_ratio": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sv_vote_kick_troll_min_population": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1.0
+  },
+  "sv_vote_kick_troll_min_ratio": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sv_vote_min_population": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.1,
+   "max": 1.0
+  },
+  "sv_vote_min_ratio": {
+   "flags": [
+    "sv"
+   ],
+   "min": 0.0,
+   "max": 1.0
+  },
+  "sv_vote_ui_hide_disabled_issues": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_weapon_manager_cleanup": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_weapon_manager_drop_timer": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_weapon_manager_max_count": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_workshop_enabled": {
+   "flags": [
+    "sv"
+   ],
+   "default": "0"
+  },
+  "sv_workshop_list_file": {
+   "flags": [
+    "sv"
+   ],
+   "default": "subscribed_file_ids.txt"
+  },
+  "sv_workshop_mapcycle_random": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sv_workshop_mapcycle_start": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "sys_minidumpexpandedspew": {
+   "flags": []
+  },
+  "sys_minidumpspewlines": {
+   "flags": []
+  },
+  "taglines_enabled": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "taglines_enabled_bots": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "template_debug": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "testscript_debug": {
+   "flags": []
+  },
+  "testscript_running": {
+   "flags": []
+  },
+  "think_limit": {
+   "flags": [
+    "rep",
+    "sv"
+   ],
+   "default": "10"
+  },
+  "threadpool_affinity": {
+   "flags": []
+  },
+  "threadpool_reserve": {
+   "flags": []
+  },
+  "trace_report": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "tv_allow_camera_man": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "tv_allow_static_shots": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "tv_autorecord": {
+   "flags": []
+  },
+  "tv_autoretry": {
+   "flags": []
+  },
+  "tv_chatgroupsize": {
+   "flags": []
+  },
+  "tv_chattimelimit": {
+   "flags": []
+  },
+  "tv_debug": {
+   "flags": []
+  },
+  "tv_delay": {
+   "flags": [
+    "sv"
+   ],
+   "default": "30",
+   "min": 0.0,
+   "max": 120.0
+  },
+  "tv_delaymapchange": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "tv_deltacache": {
+   "flags": []
+  },
+  "tv_dispatchmode": {
+   "flags": []
+  },
+  "tv_enable": {
+   "flags": [
+    "nf"
+   ],
+   "default": "0"
+  },
+  "tv_maxclients": {
+   "flags": [],
+   "default": "128",
+   "min": 0.0,
+   "max": 255.0
+  },
+  "tv_maxrate": {
+   "flags": []
+  },
+  "tv_name": {
+   "flags": [],
+   "default": "SourceTV"
+  },
+  "tv_overridemaster": {
+   "flags": []
+  },
+  "tv_password": {
+   "flags": [
+    "nf",
+    "norecord",
+    "prot"
+   ]
+  },
+  "tv_port": {
+   "flags": []
+  },
+  "tv_relaypassword": {
+   "flags": [
+    "nf",
+    "norecord",
+    "prot"
+   ]
+  },
+  "tv_relayvoice": {
+   "flags": []
+  },
+  "tv_snapshotrate": {
+   "flags": []
+  },
+  "tv_timeout": {
+   "flags": []
+  },
+  "tv_title": {
+   "flags": [],
+   "default": "SourceTV"
+  },
+  "tv_transmitall": {
+   "flags": [
+    "rep"
+   ],
+   "default": "0"
+  },
+  "view_punch_decay": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "view_recoil_tracking": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "viewmodel_fov": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "violence_ablood": {
+   "flags": []
+  },
+  "violence_agibs": {
+   "flags": []
+  },
+  "violence_hblood": {
+   "flags": []
+  },
+  "violence_hgibs": {
+   "flags": []
+  },
+  "vis_force": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "vismon_poll_frequency": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "vismon_trace_limit": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "voice_debug_incoming": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "voice_debugfeedbackfrom": {
+   "flags": []
+  },
+  "voice_inputfromfile": {
+   "flags": []
+  },
+  "voice_player_speaking_delay_threshold": {
+   "flags": [
+    "cheat",
+    "sv"
+   ]
+  },
+  "voice_recordtofile": {
+   "flags": []
+  },
+  "voice_serverdebug": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "voice_verbose": {
+   "flags": [
+    "cheat"
+   ]
+  },
+  "voice_xsend_debug": {
+   "flags": []
+  },
+  "vprof_counters": {
+   "flags": []
+  },
+  "vprof_counters_show_minmax": {
+   "flags": []
+  },
+  "vprof_dump_oninterval": {
+   "flags": []
+  },
+  "vprof_dump_spikes": {
+   "flags": []
+  },
+  "vprof_dump_spikes_budget_group": {
+   "flags": []
+  },
+  "vprof_dump_spikes_hiearchy": {
+   "flags": []
+  },
+  "vprof_dump_spikes_node": {
+   "flags": []
+  },
+  "vprof_dump_spikes_terse": {
+   "flags": []
+  },
+  "vprof_scope_entity_gamephys": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "vprof_scope_entity_thinks": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "vprof_server_spike_threshold": {
+   "flags": []
+  },
+  "vprof_server_thread": {
+   "flags": []
+  },
+  "vprof_think_limit": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "vx_do_not_throttle_events": {
+   "flags": []
+  },
+  "weapon_showproficiency": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "weapon_throw_force": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "wpn_debug_active_weapon": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "wpn_shot_bias_max": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "wpn_shot_bias_min": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "wpn_showanimations": {
+   "flags": [
+    "cheat",
+    "rep",
+    "sv"
+   ]
+  },
+  "xbox_autothrottle": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "xbox_steering_deadzone": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "xbox_throttlebias": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "xbox_throttlespoof": {
+   "flags": [
+    "a",
+    "sv"
+   ]
+  },
+  "xc_crouch_debounce": {
+   "flags": [
+    "sv"
+   ]
+  },
+  "xlsp_force_dc_name": {
+   "flags": []
+  },
+  "z_added_light_max": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  },
+  "z_added_light_min": {
+   "flags": [
+    "rep",
+    "sv"
+   ]
+  }
+ },
+ "commands": [
+  "_resetgamestats",
+  "_restart",
+  "addip",
+  "air_density",
+  "alias",
+  "async_resume",
+  "async_suspend",
+  "banid",
+  "banip",
+  "bind",
+  "bind_osx",
+  "bindtoggle",
+  "blackbox_dump",
+  "blackbox_record",
+  "buddha",
+  "budget_toggle_group",
+  "bug_swap",
+  "cache_print",
+  "cache_print_lru",
+  "cache_print_summary",
+  "callvote",
+  "cast_hull",
+  "cast_ray",
+  "ch_createairboat",
+  "ch_createaircraft",
+  "ch_createammo",
+  "ch_createjeep",
+  "changelevel",
+  "changelevel2",
+  "changelevel_next",
+  "cl_csm_server_status",
+  "clear_anim_cache",
+  "clear_debug_overlays",
+  "clearmutes",
+  "cmd",
+  "cmd1",
+  "cmd2",
+  "cmd3",
+  "cmd4",
+  "collision_test",
+  "crash",
+  "create_flashlight",
+  "creditsdone",
+  "cvarlist",
+  "dbghist_addline",
+  "dbghist_dump",
+  "devshots_nextmap",
+  "differences",
+  "disconnect",
+  "disp_list_all_collideable",
+  "display_elapsedtime",
+  "doi_bot_add",
+  "doi_bot_add_t2",
+  "drawcross",
+  "drawline",
+  "dti_flush",
+  "dump_entity_sizes",
+  "dump_globals",
+  "dumpentityfactories",
+  "dumpeventqueue",
+  "dumpgamestringtable",
+  "dumpstringtables",
+  "dumptexallocs",
+  "dumptheaterentityfactories",
+  "echo",
+  "ent_absbox",
+  "ent_attachments",
+  "ent_autoaim",
+  "ent_bbox",
+  "ent_cancelpendingentfires",
+  "ent_create",
+  "ent_dump",
+  "ent_fire",
+  "ent_info",
+  "ent_keyvalue",
+  "ent_messages",
+  "ent_name",
+  "ent_orient",
+  "ent_pause",
+  "ent_pivot",
+  "ent_rbox",
+  "ent_remove",
+  "ent_remove_all",
+  "ent_rotate",
+  "ent_setang",
+  "ent_setname",
+  "ent_setpos",
+  "ent_show_response_criteria",
+  "ent_step",
+  "ent_teleport",
+  "ent_text",
+  "ent_viewoffset",
+  "exec",
+  "execifexists",
+  "execwithwhitelist",
+  "exit",
+  "explode",
+  "explodevector",
+  "fadein",
+  "fadeout",
+  "ff",
+  "find",
+  "find_ent",
+  "find_ent_index",
+  "findflags",
+  "firetarget",
+  "flush",
+  "flush_locked",
+  "force_respawn_me",
+  "forcebind",
+  "foundry_engine_get_mouse_control",
+  "foundry_engine_release_mouse_control",
+  "foundry_select_entity",
+  "foundry_sync_hammer_view",
+  "foundry_update_entity",
+  "fs_printopenfiles",
+  "fs_warning_level",
+  "give",
+  "give_ammo",
+  "give_gear",
+  "give_supply",
+  "give_upgrade",
+  "give_weapon",
+  "global_set",
+  "god",
+  "gods",
+  "groundlist",
+  "hammer_beginsession",
+  "hammer_endsession",
+  "hammer_update_entity",
+  "hammer_update_safe_entities",
+  "heartbeat",
+  "help",
+  "host_filtered_time_report",
+  "host_runofftime",
+  "host_timer_report",
+  "humans",
+  "hunk_print_allocations",
+  "hurtme",
+  "incrementvar",
+  "ins_bot_add",
+  "ins_bot_add_t2",
+  "ins_bot_approach_position",
+  "ins_bot_kick",
+  "ins_bot_kick_t1",
+  "ins_bot_kick_t2",
+  "ins_clear_attribute",
+  "ins_debug_navareas",
+  "ins_mark",
+  "ins_nav_custom_analyze",
+  "ins_nav_rebuild_hiding_spots",
+  "ins_select_with_attribute",
+  "ins_server_loadtheater",
+  "ins_tank_health",
+  "ins_tank_kill",
+  "ins_test_map_vote",
+  "ins_wipe_attributes",
+  "inventory_buy_gear",
+  "inventory_buy_upgrade",
+  "inventory_buy_weapon",
+  "inventory_confirm",
+  "inventory_print_weapons",
+  "inventory_reset",
+  "inventory_resupply",
+  "inventory_sell_all",
+  "inventory_sell_gear",
+  "inventory_sell_upgrade",
+  "inventory_sell_weapon",
+  "inventory_set_firemode",
+  "kdtree_test",
+  "key_findbinding",
+  "key_listboundkeys",
+  "key_updatelayout",
+  "kick",
+  "kickid",
+  "kickid_ex",
+  "kill",
+  "killserver",
+  "killvector",
+  "listid",
+  "listip",
+  "listissues",
+  "listmodels",
+  "listrecentfiles",
+  "listrecentnpcspeech",
+  "listtheateritems",
+  "listtrackedfiles",
+  "loader_dump_table",
+  "log",
+  "logaddress_add",
+  "logaddress_del",
+  "logaddress_delall",
+  "logaddress_list",
+  "map",
+  "map_background",
+  "map_commentary",
+  "mapgroup",
+  "maps",
+  "mat_configcurrent",
+  "mat_evict_all",
+  "mat_hdr_enabled",
+  "mat_info",
+  "mat_reloadallmaterials",
+  "mat_reloadmaterial",
+  "mat_reloadtextures",
+  "mat_rendered_faces_spew",
+  "mat_reporthwmorphmemory",
+  "mat_savechanges",
+  "mat_showmaterials",
+  "mat_showmaterialsverbose",
+  "mat_showtextures",
+  "maxplayers",
+  "mdlcache_dump_dictionary_state",
+  "mem_compact",
+  "mem_dump",
+  "mem_eat",
+  "mem_incremental_compact",
+  "mem_test",
+  "mem_vcollide",
+  "mem_verify",
+  "memory",
+  "meta",
+  "mm_datacenter_debugprint",
+  "mm_dlc_debugprint",
+  "mm_status",
+  "motd",
+  "mp_disable_autokick",
+  "mp_scrambleteams",
+  "mp_switchteams",
+  "multvar",
+  "muteid",
+  "namelockid",
+  "nav_add_to_selected_set",
+  "nav_add_to_selected_set_by_id",
+  "nav_analyze",
+  "nav_avoid",
+  "nav_begin_area",
+  "nav_begin_deselecting",
+  "nav_begin_drag_deselecting",
+  "nav_begin_drag_selecting",
+  "nav_begin_selecting",
+  "nav_begin_shift_xy",
+  "nav_build_ladder",
+  "nav_check_file_consistency",
+  "nav_check_floor",
+  "nav_check_stairs",
+  "nav_chop_selected",
+  "nav_clear_attribute",
+  "nav_clear_selected_set",
+  "nav_clear_walkable_marks",
+  "nav_compress_id",
+  "nav_connect",
+  "nav_corner_lower",
+  "nav_corner_place_on_ground",
+  "nav_corner_raise",
+  "nav_corner_select",
+  "nav_crouch",
+  "nav_delete",
+  "nav_delete_marked",
+  "nav_disconnect",
+  "nav_disconnect_outgoing_oneways",
+  "nav_dont_hide",
+  "nav_dump_selected_set_positions",
+  "nav_end_area",
+  "nav_end_deselecting",
+  "nav_end_drag_deselecting",
+  "nav_end_drag_selecting",
+  "nav_end_selecting",
+  "nav_end_shift_xy",
+  "nav_flood_select",
+  "nav_gen_cliffs_approx",
+  "nav_generate",
+  "nav_generate_incremental",
+  "nav_jump",
+  "nav_ladder_flip",
+  "nav_load",
+  "nav_lower_drag_volume_max",
+  "nav_lower_drag_volume_min",
+  "nav_make_sniper_spots",
+  "nav_mark",
+  "nav_mark_attribute",
+  "nav_mark_unnamed",
+  "nav_mark_walkable",
+  "nav_merge",
+  "nav_merge_mesh",
+  "nav_no_hostages",
+  "nav_no_jump",
+  "nav_place_floodfill",
+  "nav_place_list",
+  "nav_place_pick",
+  "nav_place_replace",
+  "nav_place_set",
+  "nav_precise",
+  "nav_raise_drag_volume_max",
+  "nav_raise_drag_volume_min",
+  "nav_recall_selected_set",
+  "nav_remove_from_selected_set",
+  "nav_remove_jump_areas",
+  "nav_run",
+  "nav_save",
+  "nav_save_selected",
+  "nav_select_blocked_areas",
+  "nav_select_damaging_areas",
+  "nav_select_half_space",
+  "nav_select_invalid_areas",
+  "nav_select_larger_than",
+  "nav_select_obstructed_areas",
+  "nav_select_orphans",
+  "nav_select_overlapping",
+  "nav_select_radius",
+  "nav_select_stairs",
+  "nav_set_place_mode",
+  "nav_shift",
+  "nav_show_dumped_positions",
+  "nav_simplify_selected",
+  "nav_spawn_debug_force_collect",
+  "nav_splice",
+  "nav_split",
+  "nav_stand",
+  "nav_stop",
+  "nav_store_selected_set",
+  "nav_strip",
+  "nav_subdivide",
+  "nav_test_stairs",
+  "nav_toggle_deselecting",
+  "nav_toggle_in_selected_set",
+  "nav_toggle_place_mode",
+  "nav_toggle_place_painting",
+  "nav_toggle_selected_set",
+  "nav_toggle_selecting",
+  "nav_transient",
+  "nav_unmark",
+  "nav_update_blocked",
+  "nav_update_lighting",
+  "nav_use_place",
+  "nav_walk",
+  "nav_warp_to_mark",
+  "nav_world_center",
+  "nb_command",
+  "nb_debug",
+  "nb_debug_filter",
+  "nb_force_look_at",
+  "nb_move_to_cursor",
+  "nb_select",
+  "nb_warp_selected_here",
+  "net_channels",
+  "net_dumpeventstats",
+  "net_start",
+  "net_status",
+  "net_steamcnx_status",
+  "nextmap",
+  "noclip",
+  "notarget",
+  "obj_dump_damage",
+  "particle_test_start",
+  "particle_test_stop",
+  "path",
+  "pause",
+  "physics_budget",
+  "physics_constraints",
+  "physics_debug_entity",
+  "physics_highlight_active",
+  "physics_report_active",
+  "physics_select",
+  "picker",
+  "ping",
+  "pingserver",
+  "plugin_load",
+  "plugin_pause",
+  "plugin_pause_all",
+  "plugin_print",
+  "plugin_unload",
+  "plugin_unpause",
+  "plugin_unpause_all",
+  "pop_helmets",
+  "prop_crosshair",
+  "prop_debug",
+  "prop_dynamic_create",
+  "prop_physics_create",
+  "qa_broadcast_music",
+  "qa_capture_points",
+  "qa_kill_all_bots",
+  "qa_loseround",
+  "qa_panic_all_bots",
+  "qa_respawn_all_bots",
+  "qa_stronghold_counterattack",
+  "qa_tieround",
+  "qa_winround",
+  "quit",
+  "r_flushlod",
+  "r_printdecalinfo",
+  "rank_xp_test",
+  "recompute_speed",
+  "reload",
+  "remove_upgrade",
+  "removeallids",
+  "removeid",
+  "removeip",
+  "report_entities",
+  "report_simthinklist",
+  "report_soundpatch",
+  "report_touchlinks",
+  "reset_gameconvars",
+  "respawn_entities",
+  "restart",
+  "rr_forceconcept",
+  "rr_reloadresponsesystems",
+  "say",
+  "say_team",
+  "sb_reload",
+  "sc_fw_block",
+  "sc_fw_ungag",
+  "sc_fw_unmute",
+  "scene_flush",
+  "scene_playvcd",
+  "server_game_time",
+  "setang",
+  "setang_exact",
+  "setmaster",
+  "setmodel",
+  "setpause",
+  "setpos",
+  "setpos_exact",
+  "setpos_player",
+  "shake",
+  "showtriggers_toggle",
+  "simple_bot_add",
+  "skip_next_map",
+  "sm",
+  "sm_addban",
+  "sm_admin",
+  "sm_advertisements_reload",
+  "sm_afk_spec",
+  "sm_ban",
+  "sm_banip",
+  "sm_beacon",
+  "sm_blind",
+  "sm_burn",
+  "sm_cancelvote",
+  "sm_chat",
+  "sm_comms",
+  "sm_conhook_start",
+  "sm_conhook_stop",
+  "sm_cookies",
+  "sm_create_adm_tables",
+  "sm_csay",
+  "sm_cvar",
+  "sm_drug",
+  "sm_dsay",
+  "sm_dump_admcache",
+  "sm_dump_classes",
+  "sm_dump_datamaps",
+  "sm_dump_datamaps_xml",
+  "sm_dump_handles",
+  "sm_dump_netprops",
+  "sm_dump_netprops_xml",
+  "sm_dump_teprops",
+  "sm_execcfg",
+  "sm_firebomb",
+  "sm_freeze",
+  "sm_freezebomb",
+  "sm_gag",
+  "sm_gravity",
+  "sm_help",
+  "sm_hsay",
+  "sm_internal",
+  "sm_kick",
+  "sm_listbans",
+  "sm_listcomms",
+  "sm_map",
+  "sm_msay",
+  "sm_mute",
+  "sm_noclip",
+  "sm_play",
+  "sm_print_telist",
+  "sm_psay",
+  "sm_rcon",
+  "sm_rehash",
+  "sm_reload_databases",
+  "sm_reload_translations",
+  "sm_reloadadmins",
+  "sm_rename",
+  "sm_report",
+  "sm_resetcvar",
+  "sm_revote",
+  "sm_say",
+  "sm_searchcmd",
+  "sm_settings",
+  "sm_silence",
+  "sm_slap",
+  "sm_slay",
+  "sm_sleuth_reloadlist",
+  "sm_sql_addadmin",
+  "sm_sql_addgroup",
+  "sm_sql_deladmin",
+  "sm_sql_delgroup",
+  "sm_sql_setadmingroups",
+  "sm_timebomb",
+  "sm_tsay",
+  "sm_unban",
+  "sm_ungag",
+  "sm_unmute",
+  "sm_unsilence",
+  "sm_update_adm_tables",
+  "sm_vote",
+  "sm_votealltalk",
+  "sm_voteban",
+  "sm_voteburn",
+  "sm_voteff",
+  "sm_votegravity",
+  "sm_votekick",
+  "sm_votemap",
+  "sm_voteslay",
+  "sm_who",
+  "snd_restart",
+  "soundscape_flush",
+  "spike",
+  "ss_map",
+  "star_memory",
+  "stats",
+  "status",
+  "stringtabledictionary",
+  "stuffcmds",
+  "surfaceprop",
+  "sv_benchmark_force_start",
+  "sv_clearhinthistory",
+  "sv_dump_serialized_entities_mem",
+  "sv_precacheinfo",
+  "sv_pure",
+  "sv_querycache_stats",
+  "sv_setsteamaccount",
+  "sv_showtags",
+  "sv_shutdown",
+  "sv_shutdown_cancel",
+  "sv_soundemitter_reload",
+  "sv_soundscape_printdebuginfo",
+  "test_createentity",
+  "test_dispatcheffect",
+  "test_ehandle",
+  "test_entity_blocker",
+  "test_initrandomentityspawner",
+  "test_loop",
+  "test_loopcount",
+  "test_loopfornumseconds",
+  "test_outtro_stats",
+  "test_proxytoggle_enableproxy",
+  "test_proxytoggle_setvalue",
+  "test_randomchance",
+  "test_randomizeinpvs",
+  "test_randomplayerposition",
+  "test_removeallrandomentities",
+  "test_runframe",
+  "test_sendkey",
+  "test_spawnrandomentities",
+  "test_startloop",
+  "test_startscript",
+  "test_wait",
+  "test_waitforcheckpoint",
+  "test_xplevel",
+  "thread_test_tslist",
+  "thread_test_tsqueue",
+  "threadpool_cycle_reserve",
+  "threadpool_run_tests",
+  "timeleft",
+  "toggle",
+  "tv_clients",
+  "tv_msg",
+  "tv_record",
+  "tv_relay",
+  "tv_retry",
+  "tv_status",
+  "tv_stop",
+  "tv_stoprecord",
+  "unbind",
+  "unbindall",
+  "unbindalljoystick",
+  "unbindallmousekeyboard",
+  "unpause",
+  "use",
+  "user",
+  "users",
+  "vehicle_flushscript",
+  "version",
+  "voice_mute",
+  "voice_reset_mutelist",
+  "voice_show_mute",
+  "voice_unmute",
+  "vox_reload",
+  "voxeltree_box",
+  "voxeltree_playerview",
+  "voxeltree_sphere",
+  "voxeltree_view",
+  "vphys_sleep_timeout",
+  "vprof",
+  "vprof_cachemiss",
+  "vprof_cachemiss_off",
+  "vprof_cachemiss_on",
+  "vprof_dump_counters",
+  "vprof_dump_groupnames",
+  "vprof_generate_report",
+  "vprof_generate_report_ai",
+  "vprof_generate_report_ai_only",
+  "vprof_generate_report_budget",
+  "vprof_generate_report_hierarchy",
+  "vprof_generate_report_hierarchy_per_frame_and_count_only",
+  "vprof_generate_report_map_load",
+  "vprof_off",
+  "vprof_on",
+  "vprof_playback_average",
+  "vprof_playback_start",
+  "vprof_playback_step",
+  "vprof_playback_stepback",
+  "vprof_playback_stop",
+  "vprof_record_start",
+  "vprof_record_stop",
+  "vprof_reset",
+  "vprof_reset_peaks",
+  "vprof_to_csv",
+  "vprof_vtune_group",
+  "whitelistcmd",
+  "wipe_nav_attributes",
+  "write_dump",
+  "writeid",
+  "writeip"
+ ]
+}

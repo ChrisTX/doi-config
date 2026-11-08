@@ -24,6 +24,8 @@ theater = "theater"
 
 [files]
 extend-exclude = [
+  # The game's cvars and commands, by their names (tools/dump_cvars.py)
+  "tools/cvars.json",
   # Licence texts, as they are
   "LICENSES/",
   # AFK Manager, vendored: its code, include, translations and the configuration generated from it
