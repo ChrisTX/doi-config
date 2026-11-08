@@ -15,9 +15,10 @@ The repository is laid out like the server's `doi` folder, so its folders can be
 placed on top of a server as they are:
 
 - `game` holds what all servers share: the configs in `cfg/doi-config`, the
-  configs of the game modes (`cfg/server_<gamemode>.cfg`), the mods in `custom`
-  and the SourceMod plugins, their translations and configs in
-  `addons/sourcemod`.
+  configs of the game modes (`cfg/server_<gamemode>.cfg`) and the SourceMod
+  plugins, their translations and configs in `addons/sourcemod`.
+- `mods` has the rules of the mods, which are made from the game's map scripts
+  (see [Mods](#mods)).
 - `servers/<config>` holds what one server adds: its `cfg/server.cfg` and its
   `motd.txt`.
 - `tools` has the scripts that set up and monitor a server, `deploy` the systemd
@@ -62,6 +63,7 @@ from read-only layers, top first:
   `addons/sourcemod/configs/databases.cfg`
 - the server's folder in `servers`, if there's one
 - this repository's plugins, compiled by `doi-update.service`
+- the mods of `mods`, made by `doi-update.service`
 - `game` of this repository
 - `/usr/lib/sourcemod` and `/usr/lib/metamod`: SourceMod, Metamod:Source and
   the plugins from their packages (`sourcemod`, `metamod-source`,
@@ -83,7 +85,8 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   `/var/lib/doi-server/doi-config` and runs `tools/update_game.sh`, which
   installs or updates the game in `/var/lib/doi-server/game` with SteamCMD,
   builds the patcher of its server library (see [Server patch](#server-patch))
-  and compiles this repository's plugins. It runs before the servers start. It also downloads the workshop
+  compiles this repository's plugins and makes the mods (see [Mods](#mods)) in
+  `/var/lib/doi-server/mods`. It runs before the servers start. It also downloads the workshop
   items of all `workshop-ids-*.txt` files into `/var/lib/doi-server/workshop`,
   once for all servers. SteamCMD gets their current versions, which the game
   itself never does once it has an item, and items no list names any more are
@@ -297,6 +300,47 @@ number of players, independently of the map's scripting. For this to work, the
 active game mode needs its `server_<gamemode>.cfg` from the `game/cfg`
 folder, which `prepare_server.sh` links into the server.
 
+### Mods
+
+The mods add game modes to maps that don't have them, e.g. invasion, the
+cooperative offensive, to maps that only have offensive. A map's script
+(`maps/<map>.txt`) has a block for each of its game modes, with its control
+points, spawn zones and entities. The scripts come from the game's VPKs or from
+a map's workshop item, so they aren't part of this repository: each
+`mods/<mod>.toml` says which blocks of which maps to copy and how to adjust the
+copies, and `tools/make_mods.py` makes the mod folder `custom/<mod>` from the
+installed game and workshop items. The mods follow the game's updates, and a
+change that a rule no longer fits, e.g. a control point it removes, stops the
+update with an error.
+
+```toml
+# A workshop map's script comes from its item
+[workshop]
+tobruk = 823637416
+
+[[copy]]
+maps = ["reichswald", "tobruk"]
+from = "offensive"
+to = "invasion"
+# Without these control points, or with these instead of the copied ones
+remove_controlpoints = ["regroup_cap"]
+# controlpoints = ["occupy_cap", "church_cap", "radiopoint_final"]
+# Spawn zones set or added, by their number
+# spawnzones = { 3 = "sz_offensive_c" }
+```
+
+Braces in the wrong place are repaired where the keys show where a block ends,
+e.g. a game mode that starts inside another one, which isn't closed. The tool
+says what it repaired.
+
+```bash
+tools/make_mods.py --game GAME --workshop WORKSHOP OUTPUT mods
+```
+
+`GAME` is the game's install, with `doi` in it, `WORKSHOP` SteamCMD's folder of
+the workshop items, and `OUTPUT`, which is replaced, gets the `custom` folder
+for the server's `doi` folder.
+
 ### Server patch
 
 The game's server library, `doi/bin/server_srv.so`, is patched so it enables
@@ -351,8 +395,9 @@ used in other SourceMod projects either way.
 
 AFK Manager, vendored in `game/addons/sourcemod` together with its include,
 translations and configuration, is licensed under the GPL-3.0-only with
-SourceMod's linking exception, like its earlier versions. The map files in
-`game/custom` come from the game and remain New World Interactive's.
+SourceMod's linking exception, like its earlier versions. The mods' map scripts
+aren't part of this repository: `tools/make_mods.py` makes them from the game's
+own when a server is set up, so they remain New World Interactive's.
 
 `REUSE.toml`, the file headers and the `LICENSES` folder say this in the
 [REUSE](https://reuse.software/) format.

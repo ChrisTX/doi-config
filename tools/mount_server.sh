@@ -4,7 +4,8 @@
 #
 #   <runtime>          the workshop items of all servers and the shared game install, with a writable
 #                      layer
-#   <runtime>/doi      /etc/doi-server/secrets, servers/<config>, the compiled plugins, game/ of this
+#   <runtime>/doi      /etc/doi-server/secrets, servers/<config>, the compiled plugins, the mods made from
+#                      mods/ (tools/make_mods.py), game/ of this
 #                      repository, /usr/lib/sourcemod, /usr/lib/metamod, the game's doi folder,
 #                      with a writable layer
 #
@@ -70,7 +71,7 @@ chown "$user:" "$server" "$server"/{upper,work}/{root,doi} "$server/state"
 lower=()
 [[ -d /etc/doi-server/secrets ]] && lower+=(/etc/doi-server/secrets)
 [[ -n $config ]] && lower+=("$repo/servers/$config")
-lower+=("$state/plugins" "$repo/game" /usr/lib/sourcemod /usr/lib/metamod "$state/game/doi")
+lower+=("$state/plugins" "$state/mods" "$repo/game" /usr/lib/sourcemod /usr/lib/metamod "$state/game/doi")
 
 root_lower=("$state/game")
 [[ -d $state/workshop ]] && root_lower=("$state/workshop" "${root_lower[@]}")

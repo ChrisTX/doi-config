@@ -5,13 +5,6 @@ path = "**"
 SPDX-FileCopyrightText = "Christian Pfeiffer"
 SPDX-License-Identifier = "MIT"
 
-# The map files of the mods come from the game
-[[annotations]]
-path = "game/custom/**"
-precedence = "override"
-SPDX-FileCopyrightText = "New World Interactive"
-SPDX-License-Identifier = "LicenseRef-NWI-Day-of-Infamy"
-
 # AFK Manager's translations, and its configuration, which SourceMod generated from the plugin's descriptions
 [[annotations]]
 path = [

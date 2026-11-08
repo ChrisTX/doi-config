@@ -22,12 +22,6 @@ indent_style = tab
 [servers/*/motd.txt]
 trim_trailing_whitespace = false
 
-# The map files of the mods are copies of the game's own, kept as they are so they can be compared
-[game/custom/**]
-end_of_line = unset
-insert_final_newline = unset
-trim_trailing_whitespace = unset
-indent_style = unset
 indent_size = unset
 
 # Patches have to stay as they are, whitespace included

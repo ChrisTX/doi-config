@@ -1,0 +1,8 @@
+# Invasion on Tobruk, a workshop map that only has offensive: offensive's block as invasion
+[workshop]
+tobruk = 823637416
+
+[[copy]]
+maps = ["tobruk"]
+from = "offensive"
+to = "invasion"

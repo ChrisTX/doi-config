@@ -14,6 +14,8 @@ extend-ignore-re = [
   "Multi-Colors",
   # The names of clang-tidy's checks (clang-analyzer-*, modernize-*)
   "\\b(?:clang-analyzer|modernize)-[-a-z0-9.*]*",
+  # The names of the maps' control points, spawn zones and entities in the mods' rules
+  "\"[a-z][a-z0-9_]*_[a-z0-9_]*\"",
 ]
 
 [default.extend-words]
@@ -24,8 +26,6 @@ theater = "theater"
 extend-exclude = [
   # Licence texts, as they are
   "LICENSES/",
-  # The game's own map files
-  "game/custom/",
   # AFK Manager, vendored: its code, include, translations and the configuration generated from it
   "game/addons/sourcemod/scripting/afk_manager4.sp",
   "game/addons/sourcemod/scripting/include/afk_manager.inc",

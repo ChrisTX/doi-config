@@ -1,0 +1,22 @@
+# Invasion, the cooperative offensive, on maps of the game that only have offensive: offensive's
+# block as invasion, without its regroup point
+[[copy]]
+maps = ["reichswald", "rhineland", "saint_lo", "salerno"]
+from = "offensive"
+to = "invasion"
+remove_controlpoints = ["regroup_cap"]
+
+# Comacchio's route, through the allied rear defence and the church instead of the church front, and a
+# spawn zone for the extra point
+[[copy]]
+maps = ["comacchio"]
+from = "offensive"
+to = "invasion"
+controlpoints = [
+  "occupy_cap",
+  "allied_rear_defense_cap",
+  "church_cap",
+  "entrenchment_cap1",
+  "radiopoint_final",
+]
+spawnzones = { 3 = "sz_offensive_c" }
