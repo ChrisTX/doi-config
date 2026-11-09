@@ -88,31 +88,30 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
 
 - `doi-update.service` updates the layers (`tools/update_layers.sh`): it pulls
   this repository in `/var/lib/doi-server/doi-config` and runs
-  `tools/update_game.sh`, which
-  installs or updates the game in `/var/lib/doi-server/game` with SteamCMD,
-  builds the patcher of its server library (see [Server patch](#server-patch))
-  compiles this repository's plugins and makes the mods (see [Mods](#mods)) in
-  `/var/lib/doi-server/mods`. It runs before the servers start. It also downloads the workshop
-  items of all `workshop-ids-*.txt` files into `/var/lib/doi-server/workshop`,
-  once for all servers. SteamCMD gets their current versions, which the game
-  itself never does once it has an item, and items no list names any more are
-  removed.
+  `tools/update_game.sh`, which installs or updates the game in
+  `/var/lib/doi-server/game` with SteamCMD, builds the patcher of its server
+  library (see [Server patch](#server-patch)), compiles this repository's
+  plugins and makes the mods (see [Mods](#mods)) in `/var/lib/doi-server/mods`.
+  It runs before the servers start. It also downloads the workshop items of all
+  `workshop-ids-*.txt` files into `/var/lib/doi-server/workshop`, once for all
+  servers. SteamCMD gets their current versions, which the game itself never
+  does once it has an item, and items no list names any more are removed.
 - `doi-mount@<server>.service` mounts the layers (`tools/mount_server.sh`)
   after `doi-update.service`, and unmounts them after the server stops. It's
   stopped and restarted with the server, systemd's restarts of the server
   included, and the server only runs with it.
-- `doi-server@<server>.service` configures the server (`tools/prepare_server.sh`: the plugins SourceBans++
-  needs, its website from `SOURCEBANS_WEBSITE`, `RCON_PASSWORD` in `rcon.cfg`)
-  and runs it. SourceBans++ finds the server in the panel by its address and
-  port: the address the server reports, or `SOURCEBANS_SERVER_IP` if that's a
-  private one, as in a container. `SOURCEBANS_SERVER_ID` sets the panel's ID of
-  the server instead. Its
-  ports, startup map, workshop ID file, theater and password come from
+- `doi-server@<server>.service` configures the server
+  (`tools/prepare_server.sh`: the plugins SourceBans++ needs, its website from
+  `SOURCEBANS_WEBSITE`, `RCON_PASSWORD` in `rcon.cfg`) and runs it. SourceBans++
+  finds the server in the panel by its address and port: the address the server
+  reports, or `SOURCEBANS_SERVER_IP` if that's a private one, as in a container.
+  `SOURCEBANS_SERVER_ID` sets the panel's ID of the server instead. Its ports,
+  startup map, workshop ID file, theater and password come from
   `/etc/doi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`,
-  `STARTUP_MAP`, `WORKSHOP_IDS_FILE`, `THEATER`, `SERVER_PASSWORD`). The
-  server uses the folder of the same name in `servers`, or the one
-  `SERVER_CONFIG_NAME` names; without one, the secrets layer needs a
-  `cfg/server.cfg` as described above.
+  `STARTUP_MAP`, `WORKSHOP_IDS_FILE`, `THEATER`, `SERVER_PASSWORD`). The server
+  uses the folder of the same name in `servers`, or the one `SERVER_CONFIG_NAME`
+  names; without one, the secrets layer needs a `cfg/server.cfg` as described
+  above.
 - `tools/srcds_watchdog.py` runs the server and queries it with A2S. The
   service is ready once the server first answers, and systemd's watchdog
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
