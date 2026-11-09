@@ -342,21 +342,25 @@ without the unlocker, e.g. with
 
 ### Tickrate
 
-Day of Infamy runs at 64 tick and can run at 128 (`-tickrate 128`). At 128
-tick, grenades bounce excessively: at every map start, the game sets the step
-of its physics simulation to the tick's interval, so at 128 tick the physics
-runs at 1/128 s, while the contacts of physics objects like grenades were made
-for 1/64 s. A grenade that hits the ground hard then rebounds several times and
+The servers run at 128 tick (`-tickrate 128` on their command lines, see
+`doi-server@.service` and `deploy/container/entrypoint.sh`), where Day of
+Infamy's default is 64. `basic_settings.cfg` makes clients send and get 128
+updates per second, whatever their own settings, which default to 64.
+
+At 128 tick without a fix, grenades bounce excessively, which once made the
+servers go back to 64 tick: at every map start, the game sets the step of its
+physics simulation to the tick's interval, so at 128 tick the physics runs at
+1/128 s, while the contacts of physics objects like grenades were made for
+1/64 s. A grenade that hits the ground hard then rebounds several times and
 higher, instead of once.
 
 The `doi_physics_timestep` plugin keeps the physics step at 1/64 s
 (`doi_physics_timestep 0.015625`, 0 for the game's step): the physics then
 simulates on every other tick, and grenades bounce, roll and come to rest as at
-64 tick, measured with the same throws on a local server. Everything else, like
-movement and hit registration, keeps the shorter tick. Whether players notice
-the physics objects' coarser movement isn't tested yet. The plugin's gamedata
-covers Windows as well, found in the game's server.dll but not tested on a
-Windows server.
+64 tick, measured with the same throws on a local server and checked in game.
+Everything else, like movement and hit registration, keeps the shorter tick. The
+plugin's gamedata covers Windows as well, found in the game's server.dll but not
+tested on a Windows server.
 
 ### Difficulty scaler
 

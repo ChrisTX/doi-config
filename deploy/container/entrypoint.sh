@@ -77,7 +77,7 @@ fi
 
 # The patcher of the server library, preloaded into srcds only (srcds_watchdog.py is a 64-bit Python)
 exec python3 "$repo/tools/srcds_watchdog.py" -- env LD_PRELOAD=/opt/doi-patch/doi_patch.so \
-	DOI_PATCH_LIST="$repo/patches/server_srv.patches" "$root/srcds_linux" -game doi -usercon +maxplayers 64 \
-	+sv_lan 0 -workshop -port "${SERVER_PORT:-27015}" +tv_port "${TV_PORT:-27020}" \
+	DOI_PATCH_LIST="$repo/patches/server_srv.patches" "$root/srcds_linux" -game doi -usercon -tickrate 128 \
+	+maxplayers 64 +sv_lan 0 -workshop -port "${SERVER_PORT:-27015}" +tv_port "${TV_PORT:-27020}" \
 	+clientport "${CLIENT_PORT:-27005}" +map "${STARTUP_MAP:?}" +sv_workshop_list_file "${WORKSHOP_IDS_FILE:?}" \
 	+r_hunkalloclightmaps 0 +mp_theater_override "${THEATER:-}" +sv_password "${SERVER_PASSWORD:-}"
