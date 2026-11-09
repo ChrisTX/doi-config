@@ -7,7 +7,8 @@ SourceMod settings of each game mode, the MOTDs, the scripts that install and
 update a server, and the systemd units that run and monitor it.
 
 For players, [docs/Clients.md](docs/Clients.md) covers the client settings the
-servers need.
+servers need. [docs/Cvars.md](docs/Cvars.md) has notes on cvars that don't do
+what they seem to, e.g. `sv_visiblemaxplayers`.
 
 ## Layout
 
