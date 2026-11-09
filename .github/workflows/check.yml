@@ -36,7 +36,7 @@ jobs:
       - name: Install the tools of the checks
         run: |
           printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf
-          pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint \
+          pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint tombi \
             rumdl typos trivy editorconfig-checker reuse clang gcc lib32-gcc-libs lib32-glibc
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

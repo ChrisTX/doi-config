@@ -12,7 +12,7 @@ The tools of the checks are in the Arch Linux repositories, apart from two from 
 
 ```bash
 sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
-  yamllint rumdl typos trivy editorconfig-checker reuse clang gcc lib32-glibc
+  yamllint tombi rumdl typos trivy editorconfig-checker reuse clang gcc lib32-glibc
 ```
 
 clang's `clang-format` and `clang-tidy` and `gcc -m32` check the patcher of the server library, `tools/doi_patch.c`; the 32-bit glibc is in the multilib repository.
@@ -38,7 +38,7 @@ GitHub Actions runs the same checks on every push and pull request. The AUR isn'
 - The SourceMod plugins (`game/addons/sourcemod/scripting/*.sp`) compile without warnings: `spcomp -E`.
 - The patcher, `tools/doi_patch.c`, is formatted with `clang-format`, passes `clang-tidy` (`.clang-tidy`) and compiles for 32-bit without warnings: `gcc -m32 -std=c23 -Wall -Wextra -Wpedantic -Werror`.
 - The Containerfile passes hadolint and `trivy config`.
-- systemd units pass systemd-lsp, the GitHub files yamllint, Markdown files rumdl.
+- systemd units pass systemd-lsp, the GitHub files yamllint, Markdown files rumdl, TOML files tombi (formatted with `tombi format`, checked with `tombi lint`).
 - Everything follows `.editorconfig`, checked by editorconfig-checker. Formatters fix files themselves; run the check again afterwards.
 - The MOTDs (`servers/*/motd.txt`) keep their trailing whitespace, which the game needs to render them as intended.
 - Patches have to apply as they are, so they're left as they are, line endings included.

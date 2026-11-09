@@ -142,6 +142,18 @@ repos:
         entry: yamllint --strict
         types: [yaml]
 
+      # TOML: REUSE.toml, .typos.toml and the mods' definitions (mods/*.toml)
+      - id: tombi-format
+        name: tombi format (tombi)
+        language: system
+        entry: tombi format --offline
+        types: [toml]
+      - id: tombi-lint
+        name: tombi lint (tombi)
+        language: system
+        entry: tombi lint --offline
+        types: [toml]
+
       # Paragraphs and list items may be long lines, one per item, instead of wrapped at 80 characters
       - id: rumdl-fmt
         name: rumdl fmt (rumdl)
