@@ -355,7 +355,8 @@ simulates on every other tick, and grenades bounce, roll and come to rest as at
 64 tick, measured with the same throws on a local server. Everything else, like
 movement and hit registration, keeps the shorter tick. Whether players notice
 the physics objects' coarser movement isn't tested yet. The plugin's gamedata
-covers Linux only, so far.
+covers Windows as well, found in the game's server.dll but not tested on a
+Windows server.
 
 ### Difficulty scaler
 

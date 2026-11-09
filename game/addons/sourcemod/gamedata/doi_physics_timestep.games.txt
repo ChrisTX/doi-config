@@ -3,7 +3,9 @@
 
 // The physics environment of doi_physics_timestep.sp: the server's global physenv
 // (IPhysicsEnvironment *), read anew at each use, and the slots of its timestep methods in the
-// SDK's IPhysicsEnvironment (public/vphysics_interface.h)
+// SDK's IPhysicsEnvironment (public/vphysics_interface.h). On Windows, physenv comes from PhysFrame,
+// which starts by comparing it with 0 (cmp dword ptr [physenv], 0 at +6, its address at +8); there,
+// the virtual destructor takes one slot instead of GCC's two, so the slots are one lower.
 "Games"
 {
     "doi"
@@ -15,6 +17,11 @@
                 "library"   "server"
                 "linux"     "@physenv"
             }
+            "PhysFrame"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x1C\x83\x3D\x2A\x2A\x2A\x2A\x00\x53\x56\x57\x0F\x84\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85"
+            }
         }
         "Addresses"
         {
@@ -23,8 +30,14 @@
                 "linux"
                 {
                     "signature" "physenv"
+                    "read"      "0"
                 }
-                "read"  "0"
+                "windows"
+                {
+                    "signature" "PhysFrame"
+                    "read"      "8"
+                    "read"      "0"
+                }
             }
         }
         "Offsets"
@@ -32,12 +45,12 @@
             "GetSimulationTimestep"
             {
                 "linux"     "37"
-                "windows"   "37"
+                "windows"   "36"
             }
             "SetSimulationTimestep"
             {
                 "linux"     "38"
-                "windows"   "38"
+                "windows"   "37"
             }
         }
     }
