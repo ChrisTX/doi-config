@@ -1,0 +1,44 @@
+// SPDX-FileCopyrightText: Christian Pfeiffer
+// SPDX-License-Identifier: MIT OR GPL-3.0-only WITH LicenseRef-SourceMod-exception
+
+// The physics environment of doi_physics_timestep.sp: the server's global physenv
+// (IPhysicsEnvironment *), read anew at each use, and the slots of its timestep methods in the
+// SDK's IPhysicsEnvironment (public/vphysics_interface.h)
+"Games"
+{
+    "doi"
+    {
+        "Signatures"
+        {
+            "physenv"
+            {
+                "library"   "server"
+                "linux"     "@physenv"
+            }
+        }
+        "Addresses"
+        {
+            "physenv"
+            {
+                "linux"
+                {
+                    "signature" "physenv"
+                }
+                "read"  "0"
+            }
+        }
+        "Offsets"
+        {
+            "GetSimulationTimestep"
+            {
+                "linux"     "37"
+                "windows"   "37"
+            }
+            "SetSimulationTimestep"
+            {
+                "linux"     "38"
+                "windows"   "38"
+            }
+        }
+    }
+}

@@ -342,10 +342,20 @@ without the unlocker, e.g. with
 
 ### Tickrate
 
-Don't change the tickrate of Day of Infamy. The game can run at 128 tick, but
-never supported it properly: throwables like grenades start to bounce
-excessively, and the game's physics break down in general, even if everything
-else seems fine.
+Day of Infamy runs at 64 tick and can run at 128 (`-tickrate 128`). At 128
+tick, grenades bounce excessively: at every map start, the game sets the step
+of its physics simulation to the tick's interval, so at 128 tick the physics
+runs at 1/128 s, while the contacts of physics objects like grenades were made
+for 1/64 s. A grenade that hits the ground hard then rebounds several times and
+higher, instead of once.
+
+The `doi_physics_timestep` plugin keeps the physics step at 1/64 s
+(`doi_physics_timestep 0.015625`, 0 for the game's step): the physics then
+simulates on every other tick, and grenades bounce, roll and come to rest as at
+64 tick, measured with the same throws on a local server. Everything else, like
+movement and hit registration, keeps the shorter tick. Whether players notice
+the physics objects' coarser movement isn't tested yet. The plugin's gamedata
+covers Linux only, so far.
 
 ### Difficulty scaler
 
@@ -451,10 +461,11 @@ their databases from there.
 ## Licence
 
 The configuration, scripts and units are licensed under the [MIT](LICENSE)
-licence. The SourceMod plugins written for these servers, `doi_cvar_unlocker`
-and `doi_difficulty_scaler`, are available under the MIT licence or the
-GPL-3.0-only with SourceMod's linking exception, at your choice, so they can be
-used in other SourceMod projects either way.
+licence. The SourceMod plugins written for these servers, `doi_cvar_unlocker`,
+`doi_difficulty_scaler`, `doi_mode_config` and `doi_physics_timestep`, are
+available under the MIT licence or the GPL-3.0-only with SourceMod's linking
+exception, at your choice, so they can be used in other SourceMod projects
+either way.
 
 AFK Manager, vendored in `game/addons/sourcemod` together with its include,
 translations and configuration, is licensed under the GPL-3.0-only with
