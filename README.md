@@ -441,9 +441,10 @@ counts as 8. The number of players stays true, as do `status` and the server's
 own answers. `nwi_visibility_max_humans` sets the maximum: -1 (the default)
 takes the playlist's, 0 turns it off.
 
-It doesn't work yet: it needs a pre-callback of DHooks (through
-`nwi_gamedata`), which the `sourcemod` package's build doesn't call, unlike
-AlliedModders' build of the same version. Until that's fixed, it changes nothing.
+It needs a pre-callback of DHooks (through `nwi_gamedata`), which the
+`sourcemod` package's builds before 1.12.0.7260-4 didn't call: a signed
+overflow in AMTL's hashes, which LTO miscompiled
+([alliedmodders/amtl#142](https://github.com/alliedmodders/amtl/pull/142)).
 
 ### Difficulty scaler
 

@@ -16,8 +16,9 @@
 // own answers. nwi_visibility_max_humans sets the maximum: -1 takes the playlist's (none without a
 // playlist, or one without a players filter, like the PvP playlists), 0 turns the plugin off.
 //
-// It needs DHooks' pre-callbacks (nwi_gamedata), which the sourcemod package's build doesn't call so far;
-// until that's fixed, it changes nothing.
+// It needs DHooks' pre-callbacks (nwi_gamedata), which the sourcemod package's builds before
+// 1.12.0.7260-4 didn't call: a signed overflow in AMTL's hashes, which LTO miscompiled
+// (alliedmodders/amtl#142).
 
 #include <sourcemod>
 #include <nwi>
