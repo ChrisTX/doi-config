@@ -75,7 +75,5 @@ fi
 
 "$repo/tools/prepare_server.sh" "$root" "${SERVER_NAME:-}"
 
-# The command line of the server's server.toml and environment file, with the patcher of the server
-# library preloaded into srcds, unless DOI_PATCH is set (empty: none), e.g. to test the playlists'
-# plugin (nwi_playlist_unlock) without it
-DOI_PATCH=${DOI_PATCH-/opt/doi-patch/doi_patch.so} exec "$repo/tools/start_server.sh" "$root"
+# The command line of the server's server.toml and environment file
+exec "$repo/tools/start_server.sh" "$root"

@@ -27,7 +27,7 @@ placed on top of a server as they are:
   with another links to it, like `private-mp` to `mp-battles`; the links are
   resolved when the server is set up, as the server only gets its own folder.
 - `tools` has the scripts that set up and monitor a server, `deploy` the systemd
-  units and the servers' user, `patches` the patch of the server library.
+  units and the servers' user.
 
 ## Usage
 
@@ -100,8 +100,8 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
 - `doi-update.service` updates the layers (`tools/update_layers.sh`): it pulls
   this repository in `/var/lib/doi-server/doi-config` and runs
   `tools/update_game.sh`, which installs or updates the game in
-  `/var/lib/doi-server/game` with SteamCMD, builds the patcher of its server
-  library (see [Server patch](#server-patch)), compiles this repository's
+  `/var/lib/doi-server/game` with SteamCMD, checks it against the plugins'
+  gamedata (see [Playlists](#playlists)), compiles this repository's
   plugins and makes the mods (see [Mods](#mods)) in `/var/lib/doi-server/mods`.
   It runs before the servers start. It also downloads the workshop items of all
   `workshop-ids-*.txt` files into `/var/lib/doi-server/workshop`, once for all
@@ -146,8 +146,7 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   differ break the game.
 
 Setting up a server, as root, with the packages above and `steamcmd`, `git`,
-`python-a2s`, `gcc` and the 32-bit `lib32-glibc` (for the patcher, see [Server
-patch](#server-patch)) installed:
+and `python-a2s` installed:
 
 ```bash
 cp deploy/sysusers.d/doi-server.conf /etc/sysusers.d/
@@ -164,7 +163,7 @@ systemctl enable --now doi-restart.timer doi-update-check.timer
 
 `deploy/container/Containerfile` builds an image of a server: SourceMod,
 Metamod:Source and the plugins from their packages, this repository and its
-compiled plugins, and the patcher. The game and the workshop items aren't part
+compiled plugins. The game and the workshop items aren't part
 of it, as they may not be passed on: they're in a state folder on the host,
 which the image's updater fills with SteamCMD, like `doi-update.service` for
 the systemd units, and which the servers mount. The packages come from a local
@@ -505,8 +504,8 @@ for the server's `doi` folder.
 
 ### Playlists
 
-The `nwi_playlist_unlock` plugin lifts the playlists' restrictions without the
-server patch below, in Day of Infamy and Insurgency: any map and game mode may
+The `nwi_playlist_unlock` plugin lifts the playlists' restrictions, in Day of
+Infamy and Insurgency: any map and game mode may
 run, the playlists force no settings (their configs from `tools/make_mods.py`
 take over those we keep), and any number of slots is fine. In Day of Infamy,
 the server also registers for the game's stats with workshop content. It edits
@@ -516,44 +515,18 @@ the files and their checksums stay as they are. The game reads its playlists
 before SourceMod is there, so `nwi_gamedata` has it read them again once the
 plugins are loaded, still before the first map's settings.
 
-Tested against the patch on a local `coop-commando` server: the playlist's
-limits, forced settings and maps are the same with either, and without both,
-the game enforces them. Not tested yet: the registration for the stats. Linux
-only so far, as the gamedata has no signatures for Windows yet.
+It replaces the patch of the server library that earlier versions of this
+repository applied in memory, with a library preloaded into srcds. Tested
+against that patch on a local
+`coop-commando` server: the playlist's limits, forced settings and maps were
+the same with either, and without both, the game enforced them. Not tested yet:
+the registration for the stats. Linux only so far, as the gamedata has no
+signatures for Windows yet.
 
-### Server patch
-
-The game's server library, `doi/bin/server_srv.so`, is patched so it enables
-stats with custom content and lifts the playlist restrictions. The patch is
-applied in memory, by `tools/doi_patch.c`, so the game's files stay as SteamCMD
-installs them, and SteamCMD's updates, which every server needs for the current
-Steam client library, don't undo it. srcds loads it with `LD_PRELOAD`: when the
-engine has loaded the library, before it initialises it, the patcher writes the
-patches of `patches/server_srv.patches` (the list `DOI_PATCH_LIST` names).
-
-Each patch names the function's symbol, the offset in the function and the old
-and new bytes. If a function is missing or its bytes aren't the expected ones,
-e.g. after a game update, srcds stops with an error instead of running without
-all patches. The patcher builds with a 32-bit C compiler, on any Linux
-distribution, e.g. for a server of your own:
-
-```bash
-gcc -m32 -std=c23 -O2 -shared -fPIC -o doi_patch.so tools/doi_patch.c
-LD_PRELOAD=$PWD/doi_patch.so DOI_PATCH_LIST=$PWD/patches/server_srv.patches \
-  ./srcds_run -game doi …
-```
-
-Built with `DOI_PATCH_FILE` defined, the patcher is a program that applies the
-same list to the library's file instead, for a server that can't preload it.
-SteamCMD's updates and validation undo that patch, so apply it again after
-each. With `--check` it only checks the list against the library and changes
-nothing; `doi-update.service` runs this after each update, so a game update
-that breaks the patches fails there rather than when the servers start:
-
-```bash
-gcc -std=c23 -O2 -DDOI_PATCH_FILE -o doi_patch tools/doi_patch.c
-./doi_patch [--check] patches/server_srv.patches …/doi/bin/server_srv.so
-```
+After each game update, `tools/update_game.sh --check-gamedata` checks that the
+game still has the functions of the plugins' gamedata, by their symbols
+(`tools/check_gamedata.py`), so an update that moved them fails there rather
+than leaving the servers with the playlists' restrictions.
 
 ### GeoIP2 databases
 

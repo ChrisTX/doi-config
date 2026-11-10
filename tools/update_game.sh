@@ -1,16 +1,16 @@
 #!/bin/bash
 # Updates the layers the servers share: the game install, the workshop items of all servers and this
-# repository's compiled plugins, and builds the patcher of the server library. doi-update.service runs it as the servers' user while no server runs, as
-# the lower layers of an overlay mustn't change while it's mounted; the container image runs each step in
-# a layer of its own.
+# repository's compiled plugins, and checks the plugins' gamedata against the game. doi-update.service
+# runs it as the servers' user while no server runs, as the lower layers of an overlay mustn't change
+# while it's mounted; the container image runs each step in a layer of its own.
 #
 #   --game DIR       install or update the game in DIR, without its outdated libraries
 #   --workshop DIR   download the workshop items of all workshop-ids-*.txt files into DIR
 #   --plugins DIR    compile this repository's plugins into DIR/addons/sourcemod/plugins, replacing DIR
-#   --patcher FILE   build tools/doi_patch.c, which patches the server library in memory, as FILE
-#   --check-patches DIR
-#                    check that the patch list fits the server library of the game in DIR, without
-#                    changing it
+#   --check-gamedata DIR
+#                    check that the game in DIR has the functions of the plugins' gamedata
+#                    (tools/check_gamedata.py), so that a game update that moved them fails the update
+#                    rather than the plugins when the servers start
 set -euo pipefail
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
@@ -80,40 +80,23 @@ update_plugins() {
 	done
 }
 
-# The patcher, for srcds (32-bit); replaced only once it's built
-update_patcher() {
-	local file=$1
-	gcc -m32 -std=c23 -O2 -shared -fPIC -Wall -Wextra -o "$file.new" "$repo/tools/doi_patch.c"
-	mv "$file.new" "$file"
-}
-
-# The patch list, patches/server_srv.patches, checked against the library it names with
-# tools/doi_patch.c built as a program: after a game update that moved a patched function, the update
-# fails rather than the servers when they start. DOI_PATCH_CHECKER: the program, built already, as in the
-# container image, which has no compiler
-check_patches() {
-	local game=$1 list=$repo/patches/server_srv.patches library checker=${DOI_PATCH_CHECKER:-}
-	library=$(awk '$1 == "library" { print $2 }' "$list")
-	if [[ -z $checker ]]; then
-		checker=$(mktemp)
-		trap 'rm -f "$checker"' RETURN
-		gcc -std=c23 -O2 -Wall -Wextra -DDOI_PATCH_FILE -o "$checker" "$repo/tools/doi_patch.c"
-	fi
-	"$checker" --check "$list" "$game/doi/bin/$library"
+# The plugins' gamedata against the game in DIR
+check_gamedata() {
+	python3 "$repo/tools/check_gamedata.py" "$1"
 }
 
 while (($#)); do
 	case $1 in
-		--game | --workshop | --plugins | --patcher)
+		--game | --workshop | --plugins)
 			"update_${1#--}" "$2"
 			shift 2
 			;;
-		--check-patches)
-			check_patches "$2"
+		--check-gamedata)
+			check_gamedata "$2"
 			shift 2
 			;;
 		*)
-			echo "Usage: $0 [--game DIR] [--workshop DIR] [--plugins DIR] [--patcher FILE] [--check-patches DIR]" >&2
+			echo "Usage: $0 [--game DIR] [--workshop DIR] [--plugins DIR] [--check-gamedata DIR]" >&2
 			exit 2
 			;;
 	esac

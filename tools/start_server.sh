@@ -9,8 +9,6 @@
 #
 # SERVER_PORT, TV_PORT, CLIENT_PORT, SERVER_PASSWORD: the server's ports and password, from its
 # environment file (/etc/doi-server/<server>.env)
-# DOI_PATCH: the patcher of the server library to preload into srcds (tools/doi_patch.c, built as
-# doi_patch.so), which applies patches/server_srv.patches; without it, srcds runs unpatched
 # SANITISER: undefined, address or address,undefined, for a server with test builds of SourceMod and
 # Metamod:Source with these sanitisers (./aur-packages build --sanitize of the AUR packages, see
 # README.md): their 32-bit runtime of compiler-rt is preloaded into srcds too, and they report to the
@@ -24,8 +22,7 @@ root=$1
 options=$(python3 "$repo/tools/server_config.py" args "$root")
 mapfile -t settings <<<"$options"
 
-# Preloaded into srcds only, as srcds_watchdog.py is a 64-bit Python: the sanitisers' runtime first, as
-# ASan requires, then the patcher
+# Preloaded into srcds only, as srcds_watchdog.py is a 64-bit Python: the sanitisers' runtime
 libraries=() preload=()
 if [[ -n ${SANITISER:-} ]]; then
 	case $SANITISER in
@@ -44,14 +41,6 @@ if [[ -n ${SANITISER:-} ]]; then
 	libraries+=("${runtimes[-1]}")
 	export UBSAN_OPTIONS=${UBSAN_OPTIONS:-print_stacktrace=1:report_error_type=1}
 	export ASAN_OPTIONS=${ASAN_OPTIONS:-print_stacktrace=1:detect_leaks=1}
-fi
-if [[ -n ${DOI_PATCH:-} ]]; then
-	if [[ ! -r $DOI_PATCH ]]; then
-		echo "Error: no patcher at $DOI_PATCH, which the update builds" >&2
-		exit 1
-	fi
-	libraries+=("$DOI_PATCH")
-	preload+=(DOI_PATCH_LIST="$repo/patches/server_srv.patches")
 fi
 if ((${#libraries[@]})); then
 	preload+=(LD_PRELOAD="$(

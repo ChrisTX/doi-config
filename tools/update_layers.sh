@@ -1,6 +1,6 @@
 #!/bin/bash
 # Updates the layers the servers share in the state folder STATE (/var/lib/doi-server): this
-# repository's clone, the game, the workshop items, the compiled plugins, the patcher and the mods. The
+# repository's clone, the game, the workshop items, the compiled plugins and the mods. The
 # layers mustn't change while servers run on them, so an update while they run goes into a copy:
 #
 #   update_layers.sh --stage STATE  update a copy of the layers in STATE/next, while the servers run:
@@ -12,7 +12,7 @@
 #                                   update the layers in place
 #
 # With --image first, for the container image (deploy/container), the layers are only the game, the
-# workshop items and the mods: the repository, its plugins and the patcher are the image's, and the
+# workshop items and the mods: the repository and its plugins are the image's, and the
 # repository is the one this script is in.
 #
 # doi-restart.service stages, stops the servers, runs doi-update.service, which runs this without
@@ -21,7 +21,7 @@
 set -euo pipefail
 
 # The layers, as the units and tools/mount_server.sh name them in STATE
-layers=(doi-config game workshop plugins mods doi_patch.so)
+layers=(doi-config game workshop plugins mods)
 image=
 if [[ ${1:-} == --image ]]; then
 	layers=(game workshop mods)
@@ -34,11 +34,11 @@ fi
 update() {
 	local dir=$1 repo=${image:-$1/doi-config}
 	if [[ -n $image ]]; then
-		"$repo/tools/update_game.sh" --game "$dir/game" --workshop "$dir/workshop" --check-patches "$dir/game"
+		"$repo/tools/update_game.sh" --game "$dir/game" --workshop "$dir/workshop" --check-gamedata "$dir/game"
 	else
 		git -C "$repo" pull --ff-only
 		"$repo/tools/update_game.sh" --game "$dir/game" --workshop "$dir/workshop" \
-			--plugins "$dir/plugins" --patcher "$dir/doi_patch.so" --check-patches "$dir/game"
+			--plugins "$dir/plugins" --check-gamedata "$dir/game"
 	fi
 	# The map scripts of the game and the workshop items: the log lists those whose braces are repaired,
 	# or can't be, which a mod's fix table repairs. Broken ones don't fail the update, as the servers run

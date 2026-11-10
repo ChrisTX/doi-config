@@ -13,18 +13,6 @@
 
 ARG TESTING=
 
-# The patcher of the server library (tools/doi_patch.c), built in a stage of its own, so that the image
-# has no compiler, against the same repositories as the image: the library srcds preloads, and the
-# program the updater checks the patch list with
-FROM docker.io/library/archlinux:base AS patcher
-ARG TESTING
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-COPY deploy/container/enable-repos.sh tools/update_game.sh tools/doi_patch.c /src/tools/
-RUN /src/tools/enable-repos.sh "$TESTING" \
-  && pacman -Syu --noconfirm --needed gcc lib32-gcc-libs lib32-glibc \
-  && /src/tools/update_game.sh --patcher /src/doi_patch.so \
-  && gcc -std=c23 -O2 -Wall -Wextra -DDOI_PATCH_FILE -o /src/doi_patch /src/tools/doi_patch.c
-
 FROM docker.io/library/archlinux:base
 ARG TESTING
 
@@ -72,18 +60,15 @@ RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key
   && cp -a --no-preserve=ownership /usr/lib/metamod/. /usr/lib/sourcemod/. /opt/doi-layer/ \
   && chown -R doi:doi /opt/doi-layer
 
-# This repository and its plugins, on top of SourceMod in /opt/doi-layer, and the patcher
+# This repository and its plugins, on top of SourceMod in /opt/doi-layer
 USER 1000:1000
 COPY --chown=doi:doi . /opt/doi-config
 RUN /opt/doi-config/tools/update_game.sh --plugins /tmp/plugins \
   && cp -a /tmp/plugins/. /opt/doi-config/game/. /opt/doi-layer/ \
   && rm -rf /tmp/plugins
-COPY --from=patcher /src/doi_patch.so /src/doi_patch /opt/doi-patch/
 
 WORKDIR /srv/doi
 ENV LD_LIBRARY_PATH=/srv/doi:/srv/doi/bin
-# The updater's check of the patch list, without a compiler
-ENV DOI_PATCH_CHECKER=/opt/doi-patch/doi_patch
 # SRCDS shuts down on SIGINT, which srcds_watchdog.py passes on
 STOPSIGNAL SIGINT
 # The server answers A2S queries, as the systemd units' watchdog checks; the port is SERVER_PORT

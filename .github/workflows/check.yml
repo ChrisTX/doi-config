@@ -36,15 +36,12 @@ jobs:
       PMD_VERSION: 7.29.0
       PMD_SHA256: d27177c185b837fa57f097e482d1253468aa035379c5eb2671fa0a279109b179
     steps:
-      # Before the checkout, which only makes a git repository with git installed. Multilib for the
-      # 32-bit glibc and gcc's libraries the patcher (tools/doi_patch.c) is compiled against, Ghidra and
-      # its Java for the Ghidra scripts (tools/ghidra/*.java).
+      # Before the checkout, which only makes a git repository with git installed. Ghidra and its Java
+      # for the Ghidra scripts (tools/ghidra/*.java).
       - name: Install the tools of the checks
         run: |
-          printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf
           pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint tombi \
-            rumdl typos trivy editorconfig-checker reuse clang gcc lib32-gcc-libs lib32-glibc ghidra \
-            jdk21-openjdk unzip
+            rumdl typos trivy editorconfig-checker reuse clang ghidra jdk21-openjdk unzip
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false

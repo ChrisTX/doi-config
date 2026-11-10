@@ -31,8 +31,8 @@ Each mods/<mod>.toml makes the mod folder custom/<mod> of the output, with the s
 
 A mod's [[playlist]] tables make configs of a playlist's settings instead, of scripts/playlists/<name>.playlist:
 the settings of its forced_cvars and forced_cvars_dedicated whose names match the include globs and none
-of the exclude ones. The patch of the server library stops the game forcing them (see
-patches/server_srv.patches), so a server takes over the ones it wants, as a baseline it can change:
+of the exclude ones. The nwi_playlist_unlock plugin stops the game forcing them, so a server takes over
+the ones it wants, as a baseline it can change:
 
     [[playlist]]
     name = "nwi/coop_commando"
