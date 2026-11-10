@@ -23,7 +23,8 @@ this:
 Things to know:
 
 - Without it, the reported maximum isn't `maxplayers` but the game's maximum
-  of human players. In coop that's 16, the human slots of the players' team
+  of human players. In coop that's `mp_coop_lobbysize`, 16 on our servers (see
+  [below](#mp_coop_lobbysize)), at most the slots of the players' team
   (`maxplayers 33` is 2 × 16 and SourceTV's slot).
 - The server leaves bots out of its answers: `status` showed 20 bots at the
   same time, but the query reports 0 players and 0 bots. The player count of
@@ -62,3 +63,63 @@ players are on it, exactly when it's busy, and players can't widen the filter.
 The maximum the server reports doesn't take part in this, only the number of
 players. Favourites, the Internet tab of the server browser and community
 server lists still show it.
+
+## mp_coop_lobbysize
+
+> Size of coop lobby
+
+The number of human players in coop: the "maximum of human players" of
+[sv_visiblemaxplayers](#sv_visiblemaxplayers), which the server reports to the
+server browser and in `status`. Its default of 6 is the one of the Insurgency code it
+comes from; NWI's coop playlists set it to 8 in their `cvars`, the settings a
+server may change (not in `forced_cvars`). `basic_coop.cfg` sets
+it to 16, all the slots of the players' team.
+
+In the game's code (`server_srv.so`), `CINSRules::GetMaxHumanPlayers`, which
+Day of Infamy's coop (`CDOIRulesCoop`) doesn't override, returns in coop:
+
+1. `mp_coop_lobbysize`, or `maxplayers` if it's 0 or less,
+2. at most the capacity of the players' team.
+
+The engine asks the game for this number through `IServerGameClients`
+(`CServerGameClients::GetMaxHumanPlayers`, which calls the game rules'
+`GetMaxHumanPlayers`, a virtual function: Ghidra shows no calls to it, only the
+game modes' vtables). Insurgency's coop modes, which are still in the code
+(Conquer, Survival, Outpost, Hunt, `CINSRulesCoopBase`), also take their bot
+counts from it; Day of Infamy's coop doesn't, it has `doi_coop_lobby_size`.
+
+Whether a server refuses players beyond it isn't tested yet. It doesn't keep a
+busy server in the playlist's server browser either: like
+[sv_visiblemaxplayers](#it-doesnt-make-busy-servers-visible) it changes the
+maximum, which the browser doesn't filter on.
+
+## doi_coop_lobby_size
+
+> Size of DOI coop lobby
+
+Not the players of a lobby, but the number of players at which Day of Infamy's
+coop reaches its most bots. Its default is 8, the players of NWI's coop lobbies;
+`basic_coop.cfg` sets it to 16, like `mp_coop_lobbysize`, so the bots grow with
+the players up to the 16 of a team.
+
+`CDOIRulesCoop::UpdateDesiredBotCount` computes the bots of each team from the
+number of human players on the players' team (or `doi_fake_human_players` if
+it's above 0):
+
+```text
+scale = (players - 1) / (doi_coop_lobby_size - 1), between 0 and 1
+bots  = min + (max - min) × scale
+```
+
+To this it adds a number per team from another of the game rules' functions,
+which isn't examined yet. `min` and `max` are the game rules' own counts, e.g.
+of the objective, and where there are none (or `doi_bot_count_override` is set)
+`doi_bot_count_default_enemy_min_players` and
+`doi_bot_count_default_enemy_max_players` for the bots' team (`…_friendly_…`
+for bots on the players' team, `doi_bot_count_solo_*` in solo games). With the
+default 8, a server reaches its most bots with 8 players, and more players get
+no more bots.
+
+Both lobby sizes come from the game's code (`server_srv.so` of 3.2.1.5, read
+with Ghidra); the numbers of `mp_coop_lobbysize` are the ones measured for
+[sv_visiblemaxplayers](#sv_visiblemaxplayers).
