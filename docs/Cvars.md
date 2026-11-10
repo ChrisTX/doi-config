@@ -132,7 +132,9 @@ Does nothing any more: the game no longer ships BattlEye, which it removed in
 December 2025 ([the update's notes](https://steamdb.info/patchnotes/21294077/),
 the [change of the Linux server's depot](https://steamdb.info/depot/462311/history/?changeid=M:9106077001589815964)).
 The cvar still exists, and NWI's playlists still set it to 1 in their
-`forced_cvars_dedicated`.
+`forced_cvars_dedicated`. Until a second update the next day, that update also
+made servers load the client's libraries, see
+[Libraries (Linux)](../README.md#libraries-linux).
 
 The Linux server has the engine's side of it (`CBattleyeServer` in
 `engine_srv.so`), which loads the BattlEye server module only when the cvar is
