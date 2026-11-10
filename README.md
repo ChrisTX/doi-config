@@ -54,6 +54,10 @@ launch_options = ["-tickrate", "128"]
 configs_after = ["doi-config/basic_coop.cfg"]
 ```
 
+With `ruleset`, a server runs one of its playlist's rulesets, e.g. a campaign
+of Coop Commando, `ruleset = "american_campaign"`, which keeps its maps and
+teams (see [Playlists](#playlists)).
+
 At each start, `tools/prepare_server.sh` makes the server's `cfg/server.cfg` of
 it with `tools/server_config.py`, which describes the keys: the names of the
 server and SourceTV, and the configs it runs (see [Configs](#configs)). It also
