@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # The scopes that aren't a single file or folder. Where a path fits, it's the scope instead, e.g.
-# doi_difficulty_scaler rather than DS, mods for the mods.
+# nwi_difficulty_scaler rather than DS, mods for the mods.
 areas=(
 	# The configs of a game mode, across the cfg files and the servers
 	Coop

@@ -3,9 +3,9 @@
 
 Lists every cvar with its default, its bounds and its flags, and the commands, from the server's
 cvarlist and the help of each cvar, over RCON. The descriptions are left out. Bounds and flags are
-the server's as they are: those doi_cvar_unlocker.smx changes are its own, which check_configs.py
+the server's as they are: those nwi_cvar_unlocker.smx changes are its own, which check_configs.py
 takes from the plugin's source instead, so a dump from a server without the plugin is the exact
-one (a server's prepare_server.sh disables it with DISABLE_PLUGINS=doi_cvar_unlocker).
+one (a server's prepare_server.sh disables it with DISABLE_PLUGINS=nwi_cvar_unlocker).
 
 The password comes from RCON_PASSWORD.
 
@@ -41,7 +41,7 @@ def main() -> int:
     with rcon.connect(arguments.host, arguments.port, password) as sock:
         if "DOI CVAR unlocker" in rcon.run(sock, "sm plugins list"):
             print(
-                "dump_cvars.py: doi_cvar_unlocker.smx is loaded: the bounds and flags it changes "
+                "dump_cvars.py: nwi_cvar_unlocker.smx is loaded: the bounds and flags it changes "
                 "are its own",
                 file=sys.stderr,
             )

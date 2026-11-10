@@ -15,8 +15,7 @@ what they seem to, e.g. `sv_visiblemaxplayers`.
 The repository is laid out like the server's `doi` folder, so its folders can be
 placed on top of a server as they are:
 
-- `game` holds what all servers share: the configs in `cfg/doi-config`, the
-  configs the game runs for the game modes (`cfg/server_<mode>.cfg`, see
+- `game` holds what all servers share: the configs in `cfg/doi-config` (see
   [Configs](#configs)) and the SourceMod plugins, their translations and
   configs in `addons/sourcemod`.
 - `mods` has the rules of the mods, which are made from the game's map scripts
@@ -315,9 +314,10 @@ library's patch stops it, so `mods/playlists.toml` says which of them the
 servers take over; `tools/make_mods.py` makes the playlist's config of them
 from the installed game, `cfg/doi-config/playlists/<playlist>.cfg`.
 
-At every map start the game runs `cfg/server_<mode>.cfg`, which only names the
-game mode, for the `doi_mode_config` plugin to run the game mode's configs that
-exist, each later one replacing an earlier one's settings:
+At every map start the game runs its own config of the game mode,
+`cfg/default_server_<mode>.cfg`. The `nwi_mode_config` plugin takes the game
+mode from it and runs the game mode's configs that exist, each later one
+replacing an earlier one's settings:
 
 1. `basic_mode_<coop|pvp>.cfg`: all coop or PvP game modes
 2. `basic_mode_<coop|pvp>-<mode>.cfg`: the game mode, in every playlist
@@ -327,9 +327,21 @@ exist, each later one replacing an earlier one's settings:
    `mode_coop_commando.cfg`
 5. `mode_<playlist>-<mode>.cfg`: the game mode in the playlist
 
-These configs set their cvars with `doi_mode_cvar`, which keeps each cvar's
+Whether a game mode is coop or PvP is the game's own distinction (the rules of
+the coop modes derive from `CINSRulesCoopBase`), built into the plugin for Day
+of Infamy's and Insurgency's game modes; `nwi_mode_category` sets it for a game
+mode it doesn't know. Without a playlist (`sv_playlist`), only the first two run.
+
+These configs set their cvars with `nwi_mode_cvar`, which keeps each cvar's
 value from before. When the game mode changes, the cvars get those values back,
-so a setting of one game mode doesn't stay for the next one.
+so a setting of one game mode doesn't stay for the next one. Other plugins get
+the game mode from the plugin's include, `nwi_mode_config.inc`: the natives
+`NWI_GetGameMode` and `NWI_GetGameModeCategory`, and the forward
+`NWI_OnGameModeChanged`.
+
+The `nwi_cvar_unlocker` plugin lifts the game's limits the configs need to
+exceed: bounds and flags like cheat of the cvars in
+`addons/sourcemod/configs/nwi_cvar_unlocker.cfg`, with a section per game.
 
 `tools/check_configs.py`, a check before each commit, formats the configs (the
 cvar bare, its value quoted) and checks them against the game's cvars and
@@ -337,7 +349,7 @@ commands in `tools/cvars.json`: unknown names, values out of their bounds, cheat
 cvars and the rules above. `tools/dump_cvars.py` makes `tools/cvars.json` from
 a running server, after a game update; for the game's own bounds, start it
 without the unlocker, e.g. with
-`DISABLE_PLUGINS=doi_cvar_unlocker deploy/container/test-instance.sh up`.
+`DISABLE_PLUGINS=nwi_cvar_unlocker deploy/container/test-instance.sh up`.
 
 ### Tickrate
 
@@ -353,8 +365,8 @@ physics simulation to the tick's interval, so at 128 tick the physics runs at
 1/64 s. A grenade that hits the ground hard then rebounds several times and
 higher, instead of once.
 
-The `doi_physics_timestep` plugin keeps the physics step at 1/64 s
-(`doi_physics_timestep 0.015625`, 0 for the game's step): the physics then
+The `nwi_physics_timestep` plugin keeps the physics step at 1/64 s
+(`nwi_physics_timestep 0.015625`, 0 for the game's step): the physics then
 simulates on every other tick, and grenades bounce, roll and come to rest as at
 64 tick, measured with the same throws on a local server and checked in game.
 Everything else, like movement and hit registration, keeps the shorter tick. The
@@ -363,9 +375,9 @@ tested on a Windows server.
 
 ### Difficulty scaler
 
-The `doi_difficulty_scaler` SourceMod plugin adjusts the number of bots to the
+The `nwi_difficulty_scaler` SourceMod plugin adjusts the number of bots to the
 number of players, independently of the map's scripting, within the 16 players
-of a coop team. It takes the game mode from `doi_mode_config`, see
+of a coop team. It takes the game mode from `nwi_mode_config`, see
 [Configs](#configs).
 
 ### Mods
@@ -465,8 +477,8 @@ their databases from there.
 ## Licence
 
 The configuration, scripts and units are licensed under the [MIT](LICENSE)
-licence. The SourceMod plugins written for these servers, `doi_cvar_unlocker`,
-`doi_difficulty_scaler`, `doi_mode_config` and `doi_physics_timestep`, are
+licence. The SourceMod plugins written for these servers, `nwi_cvar_unlocker`,
+`nwi_difficulty_scaler`, `nwi_mode_config` and `nwi_physics_timestep`, are
 available under the MIT licence or the GPL-3.0-only with SourceMod's linking
 exception, at your choice, so they can be used in other SourceMod projects
 either way.

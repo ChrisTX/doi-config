@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT OR GPL-3.0-only WITH LicenseRef-SourceMod-exception
 
 // Keeps the step of the physics simulation (VPhysics) at 1/64 s when the server runs at a higher
-// tickrate, so that physics objects behave as they do at the game's 64 tick.
+// tickrate, so that physics objects behave as they do at the game's 64 tick, in Day of Infamy and
+// Insurgency, which set it the same way.
 //
 // At every map start, the game sets the physics step to the tick's interval (CPhysicsHook::
 // LevelInitPreEntity: interval / (floor(interval * 63) + 1)), so at 128 tick the physics runs at
@@ -10,19 +11,19 @@
 // the step of 64 tick. With a step of 1/64 s at 128 tick, the physics engine simulates on every
 // other tick, and a grenade's bounces, distance and time to come to rest are those of 64 tick.
 //
-// doi_physics_timestep sets the step, 0 leaves the game's. The plugin sets it again after each map
+// nwi_physics_timestep sets the step, 0 leaves the game's. The plugin sets it again after each map
 // start, as the game resets it then.
 
 #include <sourcemod>
 #include <sdktools>
-#include <doi>
+#include <nwi>
 
 #pragma semicolon 1
 #pragma newdecls required
 
 public Plugin myinfo =
 {
-    name        = "DOI physics timestep",
+    name        = "NWI physics timestep",
     author      = "DOI revival project",
     description = "Keep the physics step of 64 tick at higher tickrates",
     version     = "1.0",
@@ -36,10 +37,10 @@ Handle g_setStep;
 
 public void OnPluginStart()
 {
-    DOI_RequireGame();
-    g_gamedata = new GameData("doi_physics_timestep.games");
+    NWI_RequireGame();
+    g_gamedata = new GameData("nwi_physics_timestep.games");
     if (g_gamedata == null)
-        SetFailState("Can't load gamedata/doi_physics_timestep.games.txt");
+        SetFailState("Can't load gamedata/nwi_physics_timestep.games.txt");
     // IPhysicsEnvironment::GetSimulationTimestep and SetSimulationTimestep
     StartPrepSDKCall(SDKCall_Raw);
     if (!PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Virtual, "GetSimulationTimestep"))
@@ -52,7 +53,7 @@ public void OnPluginStart()
     PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
     g_setStep = EndPrepSDKCall();
 
-    g_timestep = CreateConVar("doi_physics_timestep", "0.015625",
+    g_timestep = CreateConVar("nwi_physics_timestep", "0.015625",
         "The step of the physics simulation in seconds, at least the tick's interval; 0 for the game's, the tick's interval",
         _, true, 0.0, true, 0.1);
     g_timestep.AddChangeHook(OnTimestepChanged);

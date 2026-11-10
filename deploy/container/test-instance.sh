@@ -23,7 +23,7 @@
 # DOI_TEST_DIR: the test instance's files (${XDG_STATE_HOME:-~/.local/state}/doi-config-test)
 # DOI_STATE: the state folder with the game, the workshop items and the mods
 # (${XDG_STATE_HOME:-~/.local/state}/doi-server, as for the Quadlet units of deploy/quadlet)
-# DISABLE_PLUGINS: plugins the server starts without, by name, e.g. doi_cvar_unlocker for the game's own
+# DISABLE_PLUGINS: plugins the server starts without, by name, e.g. nwi_cvar_unlocker for the game's own
 # bounds in tools/dump_cvars.py
 # TEST_ADMIN: a SteamID (STEAM_0:…) that gets root admin
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)

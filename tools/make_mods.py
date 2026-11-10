@@ -41,8 +41,8 @@ patches/server_srv.patches), so a server takes over the ones it wants, as a base
 
 They make cfg/doi-config/playlists/<name>.cfg of the output, which sets sv_playlist and the settings,
 for the init-*.cfg of a configuration, and cfg/doi-config/playlists/<name>-<mode>.cfg for each game mode
-whose block of settings has some, with doi_mode_cvar, for the game mode's configs (see
-doi_mode_config.sp). An include glob that matches nothing is an error, e.g. after a game update that
+whose block of settings has some, with nwi_mode_cvar, for the game mode's configs (see
+nwi_mode_config.sp). An include glob that matches nothing is an error, e.g. after a game update that
 changed the playlist.
 
 The output is the rest of the script as it is, with the copies after the blocks they're made from, in
@@ -556,7 +556,7 @@ class Playlist:
         for mode, block in modes.items():
             lines = [f"{header}, for {mode}", ""]
             lines += [
-                f'doi_mode_cvar "{name}" "{value}"' for name, value in block.items()
+                f'nwi_mode_cvar "{name}" "{value}"' for name, value in block.items()
             ]
             (folder / f"{self.name}-{mode}.cfg").write_text(
                 "\n".join(lines) + "\n", encoding="utf-8"

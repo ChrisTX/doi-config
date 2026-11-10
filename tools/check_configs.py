@@ -7,12 +7,12 @@ commands (tools/cvars.json, see tools/dump_cvars.py) and those of the plugins of
 
 - every name is a cvar or a command,
 - a cvar gets one value, a number within its bounds where it has bounds,
-- a cheat cvar is only set if doi_cvar_unlocker.sp removes its cheat flag; the plugin's upper bounds
-  replace the game's, a bound it calculates (not a number) isn't checked,
-- the configs of the game modes keep to doi_mode_config.sp: cfg/server_<mode>.cfg only names the game
-  mode (doi_mode), the configs it runs (basic_mode_*.cfg, mode_*.cfg) only set cvars with
-  doi_mode_cvar, which no other config uses, so that the settings of a game mode are undone when it
-  changes,
+- a cheat cvar is only set if nwi_cvar_unlocker removes its cheat flag (its config,
+  game/addons/sourcemod/configs/nwi_cvar_unlocker.cfg, Day of Infamy's section); its bounds replace the
+  game's, a bound it calculates (team_slots) isn't checked,
+- the configs of the game modes keep to nwi_mode_config.sp: the configs it runs (basic_mode_*.cfg,
+  mode_*.cfg) only set cvars with nwi_mode_cvar, which no other config uses, so that the settings of a
+  game mode are undone when it changes,
 - an exec'd config of doi-config exists, but for the playlists' configs, which tools/make_mods.py makes.
 
 Usage: check_configs.py   (in the repository; exit status 1 on findings, or if a file was reformatted)
@@ -25,6 +25,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SCRIPTING = REPO / "game/addons/sourcemod/scripting"
+UNLOCKER = REPO / "game/addons/sourcemod/configs/nwi_cvar_unlocker.cfg"
 # A line's tokens: quoted, a comment, or bare
 TOKEN = re.compile(r'"(?P<quoted>[^"]*)"|(?P<comment>//.*)|(?P<bare>[^\s"]+)')
 
@@ -70,19 +71,45 @@ def plugin_names() -> tuple[set[str], set[str]]:
     return cvars, commands
 
 
+def keyvalues(text: str) -> dict:
+    """A KeyValues text as nested dicts (sections) and strings (values); keys in lower case."""
+    tokens = re.findall(r'"([^"]*)"|(//[^\n]*)|([{}])|([^\s"{}]+)', text)
+    stack: list[dict] = [{}]
+    key = None
+    for quoted, comment, brace, bare in tokens:
+        if comment:
+            continue
+        if brace == "{":
+            section: dict = {}
+            stack[-1][key.lower()] = section
+            stack.append(section)
+            key = None
+        elif brace == "}":
+            stack.pop()
+        elif key is None:
+            key = quoted or bare
+        else:
+            stack[-1][key.lower()] = quoted or bare
+            key = None
+    return stack[0]
+
+
 def unlocker() -> tuple[set[str], dict[str, float | None]]:
-    """The cvars doi_cvar_unlocker.sp removes the cheat flag of, and its upper bounds: a number, or
-    None where the plugin calculates it."""
-    text = (SCRIPTING / "doi_cvar_unlocker.sp").read_text()
+    """The cvars nwi_cvar_unlocker removes the cheat flag of in Day of Infamy, and its upper bounds: a
+    number, None where the plugin calculates it, or missing where it keeps the game's."""
+    config = keyvalues(UNLOCKER.read_text())["nwi_cvar_unlocker"].get("doi", {})
     cheats = {
-        name.lower() for name in re.findall(r'RemoveCheatFlag\("([^"]+)"\)', text)
+        name
+        for name, flags in config.get("remove_flags", {}).items()
+        if "cheat" in flags.split()
     }
     bounds: dict[str, float | None] = {}
-    for name, bound in re.findall(r'SetVarUpperBound\("([^"]+)",\s*(.+?)\);', text):
-        try:
-            bounds[name.lower()] = float(bound)
-        except ValueError:
-            bounds[name.lower()] = None
+    for name, value in config.get("bounds", {}).items():
+        parts = value.split()
+        if len(parts) == 3 and parts[1] == "team_slots":
+            bounds[name] = None
+        elif len(parts) == 2 and parts[1] != "-":
+            bounds[name] = float(parts[1])
     return cheats, bounds
 
 
@@ -93,7 +120,6 @@ def check(path: Path, data: dict, names: tuple[set[str], set[str]]) -> list[str]
     plugin_cvars, plugin_commands = names
     cheats, bounds = unlocker()
     relative = path.relative_to(REPO)
-    mode_runner = path.parent == REPO / "game/cfg" and path.name.startswith("server_")
     mode_config = re.fullmatch(r"(basic_)?mode_.*\.cfg", path.name) is not None
     findings = []
 
@@ -109,7 +135,7 @@ def check(path: Path, data: dict, names: tuple[set[str], set[str]]) -> list[str]
         cvar = cvars.get(name, {})
         if "cheat" in cvar.get("flags", []) and name not in cheats:
             findings.append(
-                f"{where}: {name} is a cheat cvar, which doi_cvar_unlocker.sp doesn't unlock"
+                f"{where}: {name} is a cheat cvar, which nwi_cvar_unlocker.cfg doesn't unlock"
             )
         low, high = cvar.get("min"), cvar.get("max")
         if name in bounds:
@@ -132,19 +158,17 @@ def check(path: Path, data: dict, names: tuple[set[str], set[str]]) -> list[str]
             continue
         where = f"{relative}:{number}"
         command, arguments = tokens[0].lower(), tokens[1:]
-        if mode_runner and command != "doi_mode":
-            findings.append(f"{where}: a game mode's server_*.cfg only has doi_mode")
-        elif mode_config and command != "doi_mode_cvar":
+        if mode_config and command != "nwi_mode_cvar":
             findings.append(
-                f"{where}: a game mode's config only sets cvars with doi_mode_cvar"
+                f"{where}: a game mode's config only sets cvars with nwi_mode_cvar"
             )
-        elif command == "doi_mode_cvar" and not mode_config:
-            findings.append(f"{where}: doi_mode_cvar is for the game modes' configs")
-        if command == "doi_mode_cvar":
+        elif command == "nwi_mode_cvar" and not mode_config:
+            findings.append(f"{where}: nwi_mode_cvar is for the game modes' configs")
+        if command == "nwi_mode_cvar":
             if arguments:
                 setting(number, arguments[0], arguments[1:])
             else:
-                findings.append(f"{where}: doi_mode_cvar without a cvar")
+                findings.append(f"{where}: nwi_mode_cvar without a cvar")
         elif command == "exec":
             target = arguments[0] if arguments else ""
             ours = target.startswith("doi-config/")

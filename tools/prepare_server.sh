@@ -24,7 +24,7 @@ move_plugin disabled/sql-admin-manager.smx .
 move_plugin nextmap.smx disabled
 # SourceBans requires basebans to be off
 move_plugin basebans.smx disabled
-# Plugins the environment disables, e.g. DISABLE_PLUGINS=doi_cvar_unlocker for the game's own bounds of
+# Plugins the environment disables, e.g. DISABLE_PLUGINS=nwi_cvar_unlocker for the game's own bounds of
 # its cvars (tools/dump_cvars.py)
 read -ra disabled <<<"${DISABLE_PLUGINS:-}"
 for plugin in "${disabled[@]}"; do
