@@ -1,2 +1,4 @@
 # The build context of deploy/container/Containerfile
 .git
+# Claude Code's local folder, with the worktrees of its sessions
+.claude
