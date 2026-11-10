@@ -113,23 +113,12 @@ cmd_build() {
 		--build-arg REPO_NAME="$repo_name" "${testing[@]}" -f "$repo/deploy/container/Containerfile" -t "$image" "$repo" "$@"
 }
 
-# The settings of the live servers' environment files, with the test's ports
-config_settings() {
-	case $1 in
-		coop-commando)
-			printf 'STARTUP_MAP=bastogne stronghold\nWORKSHOP_IDS_FILE=cfg/doi-config/workshop-ids-coop.txt\nTHEATER=\n'
-			;;
-		mp-battles)
-			printf 'STARTUP_MAP=crete invasion\nWORKSHOP_IDS_FILE=cfg/doi-config/workshop-ids-pvp.txt\nTHEATER=revival_vietnam\n'
-			;;
-		private-mp)
-			printf 'STARTUP_MAP=crete invasion\nWORKSHOP_IDS_FILE=cfg/doi-config/workshop-ids-private.txt\nTHEATER=revival_vietnam\n'
-			;;
-		*)
-			echo "Error: no test settings for the config $1" >&2
-			exit 1
-			;;
-	esac
+# A config of servers/: its server.toml has the server's settings
+check_config() {
+	if [[ ! -f $repo/servers/$1/server.toml ]]; then
+		echo "Error: no config $1 in servers/" >&2
+		exit 1
+	fi
 }
 
 password() {
@@ -214,6 +203,7 @@ cmd_up() {
 		shift
 	fi
 	local config=${1:-coop-commando} db_password volume
+	check_config "$config"
 	if [[ -z $db_only ]] && ! podman image exists "$image"; then
 		echo "Error: no image $image, build it first: $0 build" >&2
 		exit 1
@@ -236,7 +226,6 @@ cmd_up() {
 	{
 		# A client port other than the game's 27005, which a client on this machine sends from
 		printf 'SERVER_PORT=27015\nTV_PORT=27020\nCLIENT_PORT=27025\nSERVER_PASSWORD=\n'
-		config_settings "$config"
 		printf 'SOURCEBANS_SERVER_IP=127.0.0.1\nRCON_PASSWORD=%s\n' "$(password)"
 	} >"$dir/server.env"
 	write_database

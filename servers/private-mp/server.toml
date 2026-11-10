@@ -1,0 +1,10 @@
+# The private PvP Battles server: what tools/server_config.py makes its server.cfg and workshop_id.txt of,
+# and the launcher's command line (tools/start_server.sh), see tools/server_config.py
+hostname = "KIM JONG UN's Kyo-hwa-so No. 4 | PRIVATE PVP BATTLES"
+playlist = "nwi/mp_battles"
+startup_map = "crete invasion"
+theater = "revival_vietnam"
+mapcycle = "doi-config/mapcycle_pvp.txt"
+workshop = "doi-config/workshop-ids-private.txt"
+launch_options = ["-tickrate", "128"]
+configs_after = ["doi-config/basic_pvp.cfg"]

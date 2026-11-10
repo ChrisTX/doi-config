@@ -30,11 +30,11 @@ WorkingDirectory=/run/doi-server/%i
 Environment=LD_LIBRARY_PATH=/run/doi-server/%i:/run/doi-server/%i/bin
 # Configured as root ("!"), as the layers of the packages belong to root
 ExecStartPre=!%S/doi-server/doi-config/tools/prepare_server.sh /run/doi-server/%i %i
-# The patcher of the server library (tools/doi_patch.c), which doi-update.service builds, preloaded into
-# srcds only: srcds_watchdog.py is a 64-bit Python. Without the file, srcds would run unpatched, as the
-# loader only warns about it.
-ExecStartPre=/usr/bin/test -r %S/doi-server/doi_patch.so
-ExecStart=/usr/bin/python3 %S/doi-server/doi-config/tools/srcds_watchdog.py -- /usr/bin/env LD_PRELOAD=%S/doi-server/doi_patch.so DOI_PATCH_LIST=%S/doi-server/doi-config/patches/server_srv.patches /run/doi-server/%i/srcds_linux -game doi -usercon -tickrate 128 +maxplayers 64 +sv_lan 0 -workshop -port ${SERVER_PORT} +tv_port ${TV_PORT} +clientport ${CLIENT_PORT} +map \"${STARTUP_MAP}\" +sv_workshop_list_file \"${WORKSHOP_IDS_FILE}\" +r_hunkalloclightmaps 0 +mp_theater_override \"${THEATER}\" +sv_password \"${SERVER_PASSWORD}\"
+# The patcher of the server library (tools/doi_patch.c), which doi-update.service builds; the launcher
+# preloads it into srcds only and fails without it, as the loader would only warn
+Environment=DOI_PATCH=%S/doi-server/doi_patch.so
+# The command line of the server's server.toml and environment file, run by srcds_watchdog.py
+ExecStart=%S/doi-server/doi-config/tools/start_server.sh /run/doi-server/%i
 KillSignal=SIGINT
 # The stop signal to srcds_watchdog.py only, which passes it on to the server
 KillMode=mixed

@@ -26,7 +26,7 @@
 // The configs set their cvars with nwi_mode_cvar "<cvar>" "<value>", which keeps the value the cvar
 // had before. When the game mode changes, the cvars set since the last change get those values back
 // before the new game mode's configs run, so that a setting of one game mode doesn't stay for the next
-// one, which doesn't set it. The values are those of the server's configuration (init-*.cfg) or of
+// one, which doesn't set it. The values are those of the server's configuration (server.cfg) or of
 // the game, whatever the cvars had before a game mode's config first set them.
 //
 // Other plugins get the game mode from the natives and the forward of nwi_mode_config.inc.

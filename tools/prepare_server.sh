@@ -7,7 +7,15 @@
 # $1: the server's root, $2: the server's name
 set -euo pipefail
 
+repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
 cd "$1" || exit
+
+# The server's server.cfg and subscribed_file_ids.txt, made from its server.toml
+# (tools/server_config.py), before rcon.cfg is added to it below. Without a server.toml, e.g. a
+# server of no config of servers/, its own cfg/server.cfg comes from the secrets.
+if [[ -f doi/server.toml ]]; then
+	python3 "$repo/tools/server_config.py" prepare .
+fi
 
 # Moves a plugin unless it's moved already: a container that restarts keeps its writable layer
 move_plugin() {
@@ -50,7 +58,7 @@ if [[ -n ${SOURCEBANS_SERVER_IP:-} ]]; then
 	sourcebans_replacer "ServerIP" "$SOURCEBANS_SERVER_IP"
 fi
 
-# Without a config of this repository, users need to provide their own server.cfg loading init-...
+# Without a server.toml, users need to provide their own server.cfg
 if [[ -n ${RCON_PASSWORD:-} ]]; then
 	echo "rcon_password \"$RCON_PASSWORD\"" >doi/cfg/rcon.cfg
 	if ! grep -q "exec rcon.cfg" doi/cfg/server.cfg; then

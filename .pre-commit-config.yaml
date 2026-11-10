@@ -79,6 +79,13 @@ repos:
         pass_filenames: false
         files: \.cfg$|^tools/(cvars\.json|check_configs\.py)$|^game/addons/sourcemod/scripting/
 
+      # The servers' settings: their keys, and the configs and lists they name (tools/server_config.py)
+      - id: server-config
+        name: the servers' settings (tools/server_config.py)
+        language: system
+        entry: tools/server_config.py check
+        files: ^servers/[^/]+/server\.toml$
+
       # The patcher of the server library (tools/doi_patch.c): formatted with clang-format, checked with
       # clang-tidy (.clang-tidy) and compiled with gcc and clang, warnings as errors, both of its builds:
       # the library for srcds, 32-bit, and the program (DOI_PATCH_FILE)

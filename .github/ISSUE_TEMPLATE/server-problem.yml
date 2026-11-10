@@ -11,7 +11,7 @@ body:
         - coop-commando
         - mp-battles
         - private-mp
-        - my own, loading an init-*.cfg
+        - my own server.toml
         - not about a server (scripts, monitor, …)
     validations:
       required: true

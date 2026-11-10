@@ -20,8 +20,9 @@ placed on top of a server as they are:
   configs in `addons/sourcemod`.
 - `mods` has the rules of the mods, which are made from the game's map scripts
   (see [Mods](#mods)).
-- `servers/<config>` holds what one server adds: its `cfg/server.cfg`, its
-  `motd.txt` and its advertisements
+- `servers/<config>` holds what one server adds: its settings in `server.toml`
+  (see [Server settings](#server-settings)), its `motd.txt` and its
+  advertisements
   (`addons/sourcemod/configs/advertisements.txt`). A server that shares a file
   with another links to it, like `private-mp` to `mp-battles`; the links are
   resolved when the server is set up, as the server only gets its own folder.
@@ -35,26 +36,35 @@ placed on top of a server as they are:
 configuration only works at that location. The systemd units below set this
 up.
 
-Without one of the servers in `servers`, create a `server.cfg` that sets the
-server's name and runs one of the `init-<config>.cfg` files. For the Coop
-Commando configuration, for example:
+### Server settings
 
-```text
-hostname "MY-SERVER-NAME"
-rcon_password "MY-PASSWORD"
+A server's settings are its `servers/<config>/server.toml`: what the server is,
+the same wherever it runs. What depends on the machine, its ports and
+passwords, is in its environment file instead (see below). For example, Coop
+Commando's
+[`servers/coop-commando/server.toml`](servers/coop-commando/server.toml):
 
-exec "doi-config/init-coop-commando.cfg"
+```toml
+hostname = "KIM JONG UN's BOOTCAMP | COOP COMMANDO"
+playlist = "nwi/coop_commando"
+startup_map = "bastogne stronghold"
+mapcycle = "doi-config/mapcycle_coop.txt"
+workshop = "doi-config/workshop-ids-coop.txt"
+launch_options = ["-tickrate", "128"]
+configs_after = ["doi-config/basic_coop.cfg"]
 ```
 
-The live Coop Commando server's
-[`servers/coop-commando/cfg/server.cfg`](servers/coop-commando/cfg/server.cfg)
-is the same, with the names of SourceTV as well; its RCON password is
-`RCON_PASSWORD` of its environment file, which `prepare_server.sh` writes to
-`cfg/rcon.cfg`.
+At each start, `tools/prepare_server.sh` makes the server's `cfg/server.cfg` of
+it with `tools/server_config.py`, which describes the keys: the names of the
+server and SourceTV, and the configs it runs (see [Configs](#configs)). It also
+copies the server's list of workshop items to `subscribed_file_ids.txt` in the
+`doi` folder, the list the game downloads and mounts by default. The launcher,
+`tools/start_server.sh`, takes the first map, the theater and the server's own
+options of the command line from it. Its RCON password is `RCON_PASSWORD` of its
+environment file, which `prepare_server.sh` writes to `cfg/rcon.cfg`.
 
-The workshop ID file of the configuration in `game/cfg/doi-config` has to be
-passed to SRCDS on the command line with `sv_workshop_list_file`, as it can't be
-changed once the server is running.
+A server without a `server.toml`, of no config of `servers`, needs its own
+`cfg/server.cfg`, e.g. in the secrets.
 
 ### Running with systemd
 
@@ -104,10 +114,10 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   `SOURCEBANS_WEBSITE`, `RCON_PASSWORD` in `rcon.cfg`) and runs it. SourceBans++
   finds the server in the panel by its address and port: the address the server
   reports, or `SOURCEBANS_SERVER_IP` if that's a private one, as in a container.
-  `SOURCEBANS_SERVER_ID` sets the panel's ID of the server instead. Its ports,
-  startup map, workshop ID file, theater and password come from
+  `SOURCEBANS_SERVER_ID` sets the panel's ID of the server instead. Its ports
+  and password come from
   `/etc/doi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`,
-  `STARTUP_MAP`, `WORKSHOP_IDS_FILE`, `THEATER`, `SERVER_PASSWORD`). The server
+  `SERVER_PASSWORD`), the rest of its settings from its `server.toml`. The server
   uses the folder of the same name in `servers`, or the one `SERVER_CONFIG_NAME`
   names; without one, the secrets layer needs a `cfg/server.cfg` as described
   above.
@@ -305,11 +315,11 @@ fixed it the next day.
 
 ### Configs
 
-A configuration, like Coop Commando's `init-coop-commando.cfg`, runs once,
-when the server starts: SourceTV's settings, the settings the playlist forces,
-as far as we take them over, then ours, those all servers share
-(`basic_settings.cfg`) and those of the coop or PvP servers (`basic_coop.cfg`,
-`basic_pvp.cfg`). The game forces a playlist's settings, but the server
+A server's configs run once, when it starts, from the `server.cfg` its
+`server.toml` makes: its `configs_before`, SourceTV's settings, the settings the
+playlist forces, as far as we take them over, then ours, those all servers
+share (`basic_settings.cfg`), and its `configs_after`, like those of the coop or
+PvP servers (`basic_coop.cfg`, `basic_pvp.cfg`). The game forces a playlist's settings, but the server
 library's patch stops it, so `mods/playlists.toml` says which of them the
 servers take over; `tools/make_mods.py` makes the playlist's config of them
 from the installed game, `cfg/doi-config/playlists/<playlist>.cfg`.

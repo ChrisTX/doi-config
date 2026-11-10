@@ -40,7 +40,7 @@ patches/server_srv.patches), so a server takes over the ones it wants, as a base
     exclude = ["doi_bot_quota"]
 
 They make cfg/doi-config/playlists/<name>.cfg of the output, which sets sv_playlist and the settings,
-for the init-*.cfg of a configuration, and cfg/doi-config/playlists/<name>-<mode>.cfg for each game mode
+for a server's server.cfg (playlist of its server.toml), and cfg/doi-config/playlists/<name>-<mode>.cfg for each game mode
 whose block of settings has some, with nwi_mode_cvar, for the game mode's configs (see
 nwi_mode_config.sp). An include glob that matches nothing is an error, e.g. after a game update that
 changed the playlist.
