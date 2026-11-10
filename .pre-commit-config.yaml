@@ -155,10 +155,14 @@ repos:
         language: system
         entry: hadolint
         files: (^|/)(Containerfile|Dockerfile)$
+      # trivy takes one file a run
       - id: trivy-config
         name: trivy config (trivy)
         language: system
-        entry: trivy config --skip-check-update --quiet --exit-code 1
+        entry: >-
+          bash -c 'status=0; for f; do
+          trivy config --skip-check-update --quiet --exit-code 1 "$f" || status=1;
+          done; exit "$status"' --
         files: (^|/)(Containerfile|Dockerfile)$
 
       # systemd-lsp exits with 0 on findings
