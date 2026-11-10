@@ -19,10 +19,9 @@
 // for each playlist and ruleset (CPlaylists::GeneratePlaylist: its key and ruleset first, then SetData).
 // Playlist::SetData(KeyValues *) copies the file's data to the Playlist's own (m_data) and goes on to
 // GenerateCoalescedData, which merges the ruleset's blocks into a copy that every Get*() reads. The
-// key is the playlist's name in sv_playlist, e.g. nwi/coop_commando. KeyValues::SaveToFile and
-// LoadFromFile take the IBaseFileSystem part of g_pFullFileSystem (IFileSystem), 4 bytes in, after
-// IAppSystem's vtable pointer; DoI's SaveToFile has a fourth parameter (bool) the SDK lacks. Linux
-// only so far.
+// key is the playlist's name in sv_playlist, e.g. nwi/coop_commando. KeyValues::LoadFromFile takes the
+// IBaseFileSystem part of g_pFullFileSystem (IFileSystem), 4 bytes in, after IAppSystem's vtable
+// pointer. Linux only so far.
 //
 // CServerUGCManager::IsEnabled: whether the server uses the workshop. In Day of Infamy, only
 // CDOIPersistence::RegisterServer asks, which then doesn't register the server for the game's stats.
@@ -84,11 +83,6 @@
                 "library"   "server"
                 "linux"     "@_ZN8Playlist21GenerateCoalescedDataEv"
             }
-            "KeyValues::SaveToFile"
-            {
-                "library"   "server"
-                "linux"     "@_ZN9KeyValues10SaveToFileEP15IBaseFileSystemPKcS3_b"
-            }
             "KeyValues::LoadFromFile"
             {
                 "library"   "server"
@@ -145,14 +139,10 @@
                 "linux"     "38"
                 "windows"   "37"
             }
-            // Playlist's fields: its key (char[260]), its ruleset (char[64]) and its own data (KeyValues *)
+            // Playlist's fields: its key (char[260]) and its own data (KeyValues *)
             "Playlist::m_key"
             {
                 "linux"     "4"
-            }
-            "Playlist::m_ruleset"
-            {
-                "linux"     "264"
             }
             "Playlist::m_data"
             {

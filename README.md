@@ -505,23 +505,29 @@ for the server's `doi` folder.
 ### Playlists
 
 The `nwi_playlist_unlock` plugin lifts the playlists' restrictions, in Day of
-Infamy and Insurgency: any map and game mode may
-run, the playlists force no settings (their configs from `tools/make_mods.py`
-take over those we keep), and any number of slots is fine. In Day of Infamy,
-the server also registers for the game's stats with workshop content. It edits
-each playlist's data in memory, through `nwi_gamedata` (`NWI_AddPlaylistEditor`
-of `nwi_gamedata.inc`, which other plugins can use for edits of their own):
-the files and their checksums stay as they are. The game reads its playlists
-before SourceMod is there, so `nwi_gamedata` has it read them again once the
-plugins are loaded, still before the first map's settings.
+Infamy and Insurgency: the server takes each playlist from a replacement in
+`cfg/doi-config/playlists/<playlist>.playlist` where there is one, which
+`tools/make_mods.py` makes by the `[[replace]]` tables of `mods/*.toml`. Ours
+(`mods/playlists.toml`) drop `allowed_maps`, the forced settings and the
+required slots from every playlist, in its own keys and its rulesets: any map
+and game mode may run, the playlists force no settings (their configs, also
+from `tools/make_mods.py`, take over those we keep), and any number of slots is
+fine. In Day of Infamy, the server also registers for the game's stats with
+workshop content.
+
+The replacements are loaded in memory, through `nwi_gamedata`
+(`NWI_ReplacePlaylists` of `nwi_gamedata.inc`): the game's files and their
+checksums stay as they are. The game reads its playlists before SourceMod is
+there, so `nwi_gamedata` has it read them again once the plugins are loaded,
+still before the first map's settings. A playlist without a replacement stays
+as the game has it.
 
 It replaces the patch of the server library that earlier versions of this
 repository applied in memory, with a library preloaded into srcds. Tested
-against that patch on a local
-`coop-commando` server: the playlist's limits, forced settings and maps were
-the same with either, and without both, the game enforced them. Not tested yet:
-the registration for the stats. Linux only so far, as the gamedata has no
-signatures for Windows yet.
+against that patch on a local `coop-commando` server: the playlist's limits,
+forced settings and maps were the same with either, and without both, the game
+enforced them. Not tested yet: the registration for the stats. Linux only so
+far, as the gamedata has no signatures for Windows yet.
 
 After each game update, `tools/update_game.sh --check-gamedata` checks that the
 game still has the functions of the plugins' gamedata, by their symbols

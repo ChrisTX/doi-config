@@ -25,11 +25,9 @@ public Plugin myinfo =
     url         = "https://rev-crew.info"
 };
 
-// The file the playlists' data goes through on its way to the editors and back, under SourceMod's
-// folder and relative to the game's, which the game's filesystem writes and reads through its
-// MOD_WRITE search path: the game folder alone, as MOD has the custom folders first
-#define PLAYLIST_FILE "data/nwi_playlist.txt"
-#define PLAYLIST_PATH_ID "MOD_WRITE"
+// The search path the game's filesystem reads the playlists' replacements through, relative to the
+// game folder
+#define PLAYLIST_PATH_ID "MOD"
 
 GameData g_gamedata;
 Handle g_getStep;
@@ -39,33 +37,28 @@ GlobalForward g_onStatsWorkshopCheck;
 // Whether the server is sending its details to Steam, while GetMasterServerPlayerCounts runs for it
 bool g_inServerDetails = false;
 
-// The playlists: CPlaylists::UpdateCache, Playlist::GenerateCoalescedData and the KeyValues calls the
-// round trip needs (all or none), the Playlist's fields and the editors, each a private forward of its
-// own, so that each gets the data at its root
+// The playlists: CPlaylists::UpdateCache, Playlist::GenerateCoalescedData and the KeyValues calls that
+// load a replacement (all or none), the Playlist's fields, and the folder of the replacements (none
+// while empty)
 Handle g_updateCache;
 Handle g_generateCoalescedData;
-Handle g_saveToFile;
 Handle g_loadFromFile;
 Handle g_clear;
 int g_playlistKey;
-int g_playlistRuleset;
 int g_playlistData;
 int g_baseFileSystem;
 bool g_playlistsReady = false;
-ArrayList g_editors;
-char g_playlistFile[PLATFORM_MAX_PATH];
-// Whether OnAllPluginsLoaded has run: editors added later rebuild the playlists at once
+char g_replacements[PLATFORM_MAX_PATH];
+// Whether OnAllPluginsLoaded has run: a folder set later rebuilds the playlists at once
 bool g_allPluginsLoaded = false;
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
     CreateNative("NWI_GetPhysicsTimestep", Native_GetPhysicsTimestep);
     CreateNative("NWI_SetPhysicsTimestep", Native_SetPhysicsTimestep);
-    CreateNative("NWI_AddPlaylistEditor", Native_AddPlaylistEditor);
+    CreateNative("NWI_ReplacePlaylists", Native_ReplacePlaylists);
     CreateNative("NWI_RebuildPlaylists", Native_RebuildPlaylists);
     RegPluginLibrary(NWI_GAMEDATA_LIBRARY);
-    // Here, as other plugins may add editors before this one's OnPluginStart
-    g_editors = new ArrayList();
     g_allPluginsLoaded = late;
     return APLRes_Success;
 }
@@ -101,10 +94,9 @@ public void OnPluginStart()
         || !Detour("GetMasterServerPlayerCounts", INVALID_FUNCTION, Detour_PlayerCountsPost))
         LogError("No NWI_OnSteamServerDetails: the gamedata lacks the functions for this platform");
 
-    BuildPath(Path_SM, g_playlistFile, sizeof(g_playlistFile), PLAYLIST_FILE);
     g_playlistsReady = PreparePlaylists();
     if (!g_playlistsReady)
-        LogError("No NWI_AddPlaylistEditor: the gamedata lacks the playlists' functions for this platform");
+        LogError("No NWI_ReplacePlaylists: the gamedata lacks the playlists' functions for this platform");
 
     // Day of Infamy's check of the workshop before it registers the server for its stats
     g_onStatsWorkshopCheck = new GlobalForward("NWI_OnStatsWorkshopCheck", ET_Ignore, Param_CellByRef);
@@ -116,8 +108,8 @@ public void OnPluginStart()
 public void OnAllPluginsLoaded()
 {
     g_allPluginsLoaded = true;
-    // The game read the playlists before SourceMod was there: once more, now with the editors
-    if (g_editors.Length > 0)
+    // The game read the playlists before SourceMod was there: once more, now with the replacements
+    if (g_replacements[0] != '\0')
         RebuildPlaylists();
 }
 
@@ -125,10 +117,9 @@ public void OnAllPluginsLoaded()
 bool PreparePlaylists()
 {
     g_playlistKey = g_gamedata.GetOffset("Playlist::m_key");
-    g_playlistRuleset = g_gamedata.GetOffset("Playlist::m_ruleset");
     g_playlistData = g_gamedata.GetOffset("Playlist::m_data");
     g_baseFileSystem = g_gamedata.GetOffset("IFileSystem::IBaseFileSystem");
-    if (g_playlistKey == -1 || g_playlistRuleset == -1 || g_playlistData == -1 || g_baseFileSystem == -1)
+    if (g_playlistKey == -1 || g_playlistData == -1 || g_baseFileSystem == -1)
         return false;
 
     // void CPlaylists::UpdateCache()
@@ -141,16 +132,6 @@ bool PreparePlaylists()
     if (!PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "Playlist::GenerateCoalescedData"))
         return false;
     g_generateCoalescedData = EndPrepSDKCall();
-    // bool KeyValues::SaveToFile(IBaseFileSystem *, const char *file, const char *pathID, bool)
-    StartPrepSDKCall(SDKCall_Raw);
-    if (!PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "KeyValues::SaveToFile"))
-        return false;
-    PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_Plain);
-    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
-    PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
-    PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
-    PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
-    g_saveToFile = EndPrepSDKCall();
     // bool KeyValues::LoadFromFile(IBaseFileSystem *, const char *file, const char *pathID,
     //     GetSymbolProc_t evaluateSymbol), without a function for the conditions ([$WIN32])
     StartPrepSDKCall(SDKCall_Raw);
@@ -172,8 +153,7 @@ bool PreparePlaylists()
         && Detour("Playlist::SetData", INVALID_FUNCTION, Detour_PlaylistSetDataPost);
 }
 
-// Has the game read its playlists anew, which goes through the editors: the playlists stay as the
-// game made them until the next rebuild, e.g. after an editor is gone
+// Has the game make its playlists anew from their files, with the replacements
 void RebuildPlaylists()
 {
     if (!g_playlistsReady)
@@ -181,78 +161,31 @@ void RebuildPlaylists()
     SDKCall(g_updateCache, g_gamedata.GetAddress("g_Playlists"));
 }
 
-// After Playlist::SetData, which copied the file's data to the Playlist and merged the ruleset's blocks:
-// the editors change the Playlist's own copy, then the merge runs again. The game's copies of a
-// Playlist for its matchmaking come from that copy, already edited. The data goes to the editors
-// through a file, as the game's KeyValues aren't SourceMod's.
+// After Playlist::SetData, which copied the playlist file's data to the Playlist and merged the
+// ruleset's blocks: if the folder of the replacements has one for the playlist (<folder>/<key>.playlist),
+// it replaces the Playlist's own copy, and the merge runs again. The game's copies of a Playlist for its
+// matchmaking come from that copy. The checksum of the playlist stays that of the game's file, which
+// the game took before.
 MRESReturn Detour_PlaylistSetDataPost(Address playlist)
 {
-    // Editors whose plugin is gone have no function left
-    for (int i = g_editors.Length - 1; i >= 0; i--)
-    {
-        PrivateForward editor = g_editors.Get(i);
-        if (editor.FunctionCount == 0)
-        {
-            delete editor;
-            g_editors.Erase(i);
-        }
-    }
-    if (g_editors.Length == 0)
+    if (g_replacements[0] == '\0')
         return MRES_Ignored;
-
-    char key[260], ruleset[64];
+    char key[260], path[PLATFORM_MAX_PATH];
     LoadString(playlist + view_as<Address>(g_playlistKey), key, sizeof(key));
-    LoadString(playlist + view_as<Address>(g_playlistRuleset), ruleset, sizeof(ruleset));
+    FormatEx(path, sizeof(path), "%s/%s.playlist", g_replacements, key);
+    if (!FileExists(path, true, PLAYLIST_PATH_ID))
+        return MRES_Ignored;
     Address data = LoadFromAddress(playlist + view_as<Address>(g_playlistData), NumberType_Int32);
     Address fileSystem = g_gamedata.GetAddress("g_pFullFileSystem");
     if (data == Address_Null || fileSystem == Address_Null)
         return MRES_Ignored;
     fileSystem += view_as<Address>(g_baseFileSystem);
-
-    if (!SDKCall(g_saveToFile, data, fileSystem, g_playlistFile, PLAYLIST_PATH_ID, false))
-    {
-        LogError("Can't save the data of playlist %s (%s) to %s", key, ruleset, g_playlistFile);
-        return MRES_Ignored;
-    }
-    KeyValues kv = new KeyValues("playlist");
-    if (!kv.ImportFromFile(g_playlistFile))
-    {
-        LogError("Can't read the data of playlist %s (%s) from %s", key, ruleset, g_playlistFile);
-        delete kv;
-        DeleteFile(g_playlistFile);
-        return MRES_Ignored;
-    }
-
-    bool changed = false;
-    for (int i = 0; i < g_editors.Length; i++)
-    {
-        Action result = Plugin_Continue;
-        kv.Rewind();
-        Call_StartForward(g_editors.Get(i));
-        Call_PushString(key);
-        Call_PushString(ruleset);
-        Call_PushCell(kv);
-        if (Call_Finish(result) == SP_ERROR_NONE && result == Plugin_Changed)
-            changed = true;
-    }
-
-    if (changed)
-    {
-        kv.Rewind();
-        if (kv.ExportToFile(g_playlistFile))
-        {
-            // Into the same KeyValues, which the Playlist owns
-            SDKCall(g_clear, data);
-            if (SDKCall(g_loadFromFile, data, fileSystem, g_playlistFile, PLAYLIST_PATH_ID, 0))
-                SDKCall(g_generateCoalescedData, playlist);
-            else
-                LogError("Can't load the edited data of playlist %s (%s): it's empty now", key, ruleset);
-        }
-        else
-            LogError("Can't save the edited data of playlist %s (%s) to %s", key, ruleset, g_playlistFile);
-    }
-    delete kv;
-    DeleteFile(g_playlistFile);
+    // Into the same KeyValues, which the Playlist owns
+    SDKCall(g_clear, data);
+    if (SDKCall(g_loadFromFile, data, fileSystem, path, PLAYLIST_PATH_ID, 0))
+        SDKCall(g_generateCoalescedData, playlist);
+    else
+        LogError("Can't load %s: playlist %s is empty now", path, key);
     return MRES_Ignored;
 }
 
@@ -284,14 +217,12 @@ MRESReturn Detour_WorkshopEnabledPost(DHookReturn result)
     return MRES_Override;
 }
 
-public any Native_AddPlaylistEditor(Handle plugin, int numParams)
+public any Native_ReplacePlaylists(Handle plugin, int numParams)
 {
     if (!g_playlistsReady)
         return false;
-    PrivateForward editor = new PrivateForward(ET_Hook, Param_String, Param_String, Param_Cell);
-    editor.AddFunction(plugin, GetNativeFunction(1));
-    g_editors.Push(editor);
-    // At the server's start, OnAllPluginsLoaded rebuilds them once for all editors
+    GetNativeString(1, g_replacements, sizeof(g_replacements));
+    // At the server's start, OnAllPluginsLoaded rebuilds them
     if (g_allPluginsLoaded)
         RebuildPlaylists();
     return true;
