@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- PMD's rules for the Ghidra scripts (the pmd hook of .pre-commit-config.yaml) -->
+<ruleset name="Ghidra scripts"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+  <description>The rules for Java PMD recommends, without those Ghidra scripts can't follow.</description>
+  <rule ref="rulesets/java/quickstart.xml">
+    <!-- Ghidra loads scripts from its script folders by their file name, in the default package -->
+    <exclude name="NoPackage"/>
+  </rule>
+</ruleset>

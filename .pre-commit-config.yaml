@@ -121,6 +121,33 @@ repos:
           done; exit "$status"' --
         types: [c]
 
+      # The Ghidra scripts (tools/ghidra/*.java): formatted with google-java-format, compiled against
+      # Ghidra's jars (tools/ghidra/classpath.sh) for the Java of Ghidra, 21, with every warning as an
+      # error, and linted with PMD's rules for Java it recommends (tools/ghidra/pmd-ruleset.xml), with
+      # Java 21's classes. Not the path warnings: some of Ghidra's jars name jars in their manifests that
+      # Ghidra doesn't ship. Nothing is written, the scripts are compiled by Ghidra when they run.
+      - id: google-java-format
+        name: google-java-format (google-java-format, AUR)
+        language: system
+        entry: google-java-format --replace
+        types: [java]
+      - id: javac
+        name: javac (jdk21-openjdk or later, ghidra)
+        language: system
+        entry: >-
+          bash -c 'classpath=$(tools/ghidra/classpath.sh) && out=$(mktemp -d) &&
+          trap "rm -rf \"\$out\"" EXIT &&
+          javac --release 21 -Xlint:all,-path -Werror -proc:none -cp "$classpath" -d "$out" "$@"' --
+        files: ^tools/ghidra/[^/]+\.java$
+      - id: pmd
+        name: pmd (pmd, AUR, ghidra, jdk21-openjdk)
+        language: system
+        entry: >-
+          bash -c 'classpath=$(tools/ghidra/classpath.sh) &&
+          pmd check --no-progress --no-cache --rulesets tools/ghidra/pmd-ruleset.xml
+          --aux-classpath "$classpath:/usr/lib/jvm/java-21-openjdk/lib/jrt-fs.jar" --dir "$@"' --
+        files: ^tools/ghidra/[^/]+\.java$
+
       # The Containerfile: hadolint (from the AUR), with shellcheck for its RUN instructions, and trivy's
       # checks of its configuration, the ones trivy comes with (--skip-check-update, nothing is downloaded)
       - id: hadolint

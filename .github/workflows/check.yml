@@ -24,20 +24,27 @@ jobs:
       # The tools from the AUR, which isn't available here. SourceMod's compiler is built from the
       # release the servers run (the sourcemod package), with AMBuild at the commit of the ambuild package,
       # and gets the include files of Multi-Colors (sourcemod-multicolors), which AFK Manager includes if
-      # they're there. hadolint is its release's binary, checked against the checksum of the release.
+      # they're there. hadolint, google-java-format (its native binary) and PMD are their releases'
+      # files, checked against the checksums of the releases.
       SOURCEMOD_TAG: 1.12.0.7260
       AMBUILD_COMMIT: 4b8b3d34179a2f667799446f549e2ab0b492aa0c
       MULTICOLORS_COMMIT: d2f2dc9126255571c0fc4499d5729cacb57265ca
       HADOLINT_VERSION: 2.15.1
       HADOLINT_SHA256: c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
+      GOOGLE_JAVA_FORMAT_VERSION: 2.0.0
+      GOOGLE_JAVA_FORMAT_SHA256: c351f587e6dd1f11836be7296894ea2ab3bd91847dbd14101f4f04d390380fe9
+      PMD_VERSION: 7.29.0
+      PMD_SHA256: d27177c185b837fa57f097e482d1253468aa035379c5eb2671fa0a279109b179
     steps:
       # Before the checkout, which only makes a git repository with git installed. Multilib for the
-      # 32-bit glibc and gcc's libraries the patcher (tools/doi_patch.c) is compiled against.
+      # 32-bit glibc and gcc's libraries the patcher (tools/doi_patch.c) is compiled against, Ghidra and
+      # its Java for the Ghidra scripts (tools/ghidra/*.java).
       - name: Install the tools of the checks
         run: |
           printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >>/etc/pacman.conf
           pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint tombi \
-            rumdl typos trivy editorconfig-checker reuse clang gcc lib32-gcc-libs lib32-glibc
+            rumdl typos trivy editorconfig-checker reuse clang gcc lib32-gcc-libs lib32-glibc ghidra \
+            jdk21-openjdk unzip
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -51,6 +58,22 @@ jobs:
             "https://github.com/hadolint/hadolint/releases/download/v$HADOLINT_VERSION/hadolint-linux-x86_64"
           echo "$HADOLINT_SHA256  /tmp/hadolint" | sha256sum -c
           install -m755 /tmp/hadolint /usr/local/bin/hadolint
+
+      - name: Install google-java-format
+        run: |
+          curl -fsSLo /tmp/google-java-format \
+            "https://github.com/google/google-java-format/releases/download/v$GOOGLE_JAVA_FORMAT_VERSION/google-java-format_linux-x86-64"
+          echo "$GOOGLE_JAVA_FORMAT_SHA256  /tmp/google-java-format" | sha256sum -c
+          install -m755 /tmp/google-java-format /usr/local/bin/google-java-format
+
+      # PMD finds its folder through the link of its script
+      - name: Install PMD
+        run: |
+          curl -fsSLo /tmp/pmd.zip \
+            "https://github.com/pmd/pmd/releases/download/pmd_releases%2F$PMD_VERSION/pmd-dist-$PMD_VERSION-bin.zip"
+          echo "$PMD_SHA256  /tmp/pmd.zip" | sha256sum -c
+          unzip -q /tmp/pmd.zip -d /opt
+          ln -s "/opt/pmd-bin-$PMD_VERSION/bin/pmd" /usr/local/bin/pmd
 
       # spcomp and the include files, built once for each of the versions above
       - name: Restore spcomp

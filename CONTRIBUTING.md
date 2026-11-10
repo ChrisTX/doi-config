@@ -8,14 +8,15 @@ For problems with a server or a script, open an issue. Problems of the game, Sou
 
 ## Getting started
 
-The tools of the checks are in the Arch Linux repositories, apart from two from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, and `hadolint`:
+The tools of the checks are in the Arch Linux repositories, apart from four from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, `hadolint`, `google-java-format` and `pmd`:
 
 ```bash
 sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
-  yamllint tombi rumdl typos trivy editorconfig-checker reuse clang gcc lib32-glibc
+  yamllint tombi rumdl typos trivy editorconfig-checker reuse clang gcc \
+  lib32-glibc ghidra jdk21-openjdk
 ```
 
-clang's `clang-format` and `clang-tidy` and `gcc -m32` check the patcher of the server library, `tools/doi_patch.c`; the 32-bit glibc is in the multilib repository.
+clang's `clang-format` and `clang-tidy` and `gcc -m32` check the patcher of the server library, `tools/doi_patch.c`; the 32-bit glibc is in the multilib repository. The Ghidra scripts in `tools/ghidra` are formatted with google-java-format, compiled against Ghidra's jars and linted with PMD.
 
 Then install the git hooks, which run the checks on the staged files before each commit and check the spelling of the commit message:
 
