@@ -27,6 +27,8 @@
 # bounds in tools/dump_cvars.py
 # TEST_ADMIN: a SteamID (STEAM_0:…) that gets root admin
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
+# SANITISER: undefined, address or address,undefined: up starts the server from the sanitiser image
+# (localhost/doi-server-sanitiser, deploy/container/sanitiser, see README.md), with its runtime preloaded
 set -euo pipefail
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
@@ -38,6 +40,11 @@ state=${DOI_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/doi-server}
 # The image's user is this one, who owns the state folder
 userns=keep-id:uid=1000,gid=1000
 image=localhost/doi-server
+# The server's image, the sanitiser one with SANITISER
+server_image=$image
+if [[ -n ${SANITISER:-} ]]; then
+	server_image=localhost/doi-server-sanitiser
+fi
 pod=doi-test
 db_port=${TEST_DB_PORT:-3306}
 # Set by up --db-only
@@ -204,8 +211,8 @@ cmd_up() {
 	fi
 	local config=${1:-coop-commando} db_password volume
 	check_config "$config"
-	if [[ -z $db_only ]] && ! podman image exists "$image"; then
-		echo "Error: no image $image, build it first: $0 build" >&2
+	if [[ -z $db_only ]] && ! podman image exists "$server_image"; then
+		echo "Error: no image $server_image, build it first (see README.md)" >&2
 		exit 1
 	fi
 	if [[ -z $db_only && ! -x $state/game/srcds_linux ]]; then
@@ -270,16 +277,20 @@ cmd_up() {
 	fi
 	# The state's game and workshop items with an overlay of the container's own, its mods read-only
 	# Plugins prepare_server.sh disables, e.g. for tools/dump_cvars.py
-	local -a disable=()
+	local -a extra_env=()
 	if [[ -n ${DISABLE_PLUGINS:-} ]]; then
-		disable=(-e DISABLE_PLUGINS="$DISABLE_PLUGINS")
+		extra_env=(-e DISABLE_PLUGINS="$DISABLE_PLUGINS")
+	fi
+	# The sanitisers start_server.sh preloads the runtime of
+	if [[ -n ${SANITISER:-} ]]; then
+		extra_env+=(-e SANITISER="$SANITISER")
 	fi
 	podman run -d --pod "$pod" --name "$pod-server" --env-file "$dir/server.env" -e SERVER_NAME="$config" \
-		"${disable[@]}" \
+		"${extra_env[@]}" \
 		-v "$state/game:/srv/doi:O" -v "$state/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O" \
 		-v "$state/mods:/srv/mods:ro" \
 		-v "$dir/secrets:/run/secrets/doi-server:ro" "${geoip[@]}" "${volumes[@]}" \
-		--health-on-failure restart "$image" >/dev/null
+		--health-on-failure restart "$server_image" >/dev/null
 	echo "Waiting for the server"
 	until podman exec "$pod-server" python3 /opt/doi-config/tools/srcds_watchdog.py --check --port 27015 \
 		--timeout 2 >/dev/null 2>&1; do

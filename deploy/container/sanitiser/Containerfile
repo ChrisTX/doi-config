@@ -1,0 +1,37 @@
+# The server image with test builds of SourceMod, Metamod:Source and the extensions with sanitisers,
+# on top of the usual one: their binaries replace the usual ones in /opt/doi-layer, and compiler-rt
+# brings the sanitisers' runtime, which start_server.sh preloads when the container has SANITISER set
+# (undefined, address or address,undefined, as they were built). For tests only, see README.md.
+#
+# Build arguments:
+#   BASE      the usual image (localhost/doi-server)
+# Build context "packages": the repository of ./aur-packages build --sanitize of the AUR packages,
+# whose metamod-source, sourcemod, sourcemod-smjansson and sourcemod-steamworks are installed (those
+# that are there). pacman takes local packages without a signature.
+ARG BASE=localhost/doi-server
+# The usual image as it is built at the time, which has no version of its own to pin
+# hadolint ignore=DL3006
+# trivy:ignore:DS-0001
+FROM ${BASE}
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+USER 0:0
+# hadolint ignore=DL3059
+RUN --mount=type=bind,from=packages,target=/mnt/packages \
+  packages=() \
+  && for name in metamod-source sourcemod sourcemod-smjansson sourcemod-steamworks; do \
+    for file in /mnt/packages/"$name"-[0-9]*.pkg.tar.zst; do \
+      if [ -f "$file" ]; then packages+=("$file"); fi; \
+    done; \
+  done \
+  && pacman -Sy --noconfirm --needed compiler-rt \
+  && pacman -U --noconfirm "${packages[@]}" \
+  && pacman -Scc --noconfirm \
+  && for dir in metamod/addons/metamod/bin sourcemod/addons/sourcemod/bin sourcemod/addons/sourcemod/extensions; do \
+    cp -a --no-preserve=ownership "/usr/lib/$dir/." "/opt/doi-layer/${dir#*/}/"; \
+  done \
+  && chown -R doi:doi /opt/doi-layer
+USER 1000:1000
+# The usual image's, which its containers' units and the update rely on
+HEALTHCHECK --start-period=10m --interval=30s --retries=3 \
+  CMD ["python3", "/opt/doi-config/tools/srcds_watchdog.py", "--check"]
