@@ -1,9 +1,32 @@
-# The settings of the game's playlists that the servers take over, from the settings each playlist
-# forces (see tools/make_mods.py): the patch of the server library stops the game forcing them, so the
-# servers get the playlist's gameplay as a baseline, which our configs change where they want to.
+# The game's playlists as the servers have them (see tools/make_mods.py). Replacements, which
+# nwi_playlist_unlock loads instead of the game's playlists, lift their restrictions: any map and game
+# mode, no forced settings and any number of slots (the game's defaults without
+# require_maxplayers_min and _max). The settings each playlist forced are taken over as configs instead,
+# so the servers get the playlist's gameplay as a baseline, which our configs change where they want to.
 # Settings that would get in the way aren't taken over: the theater override and the workshop, which
 # the servers use, BattlEye, stats (basic_settings.cfg), and the rules we set differently, like dead
 # talk, voice and team kill punishment.
+
+[[replace]]
+playlists = ["*"]
+drop = [
+  "allowed_maps",
+  "forced_cvars",
+  "forced_cvars_dedicated",
+  "require_maxplayers_min",
+  "require_maxplayers_max",
+]
+
+# The rulesets force no settings either, and run any map, except the campaigns (american_campaign and
+# the like), which keep their maps and the teams they set: a campaign is a choice of maps
+[[replace.ruleset]]
+rulesets = ["*"]
+drop = ["forced_cvars", "forced_cvars_dedicated", "require_maxplayers_min", "require_maxplayers_max"]
+
+[[replace.ruleset]]
+rulesets = ["*"]
+exclude = ["*_campaign"]
+drop = ["allowed_maps"]
 
 [[playlist]]
 name = "nwi/coop_commando"

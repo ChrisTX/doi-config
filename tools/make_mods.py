@@ -39,7 +39,37 @@ the ones it wants, as a baseline it can change:
     include = ["doi_*", "sv_firesupport_cooldown_frac"]
     exclude = ["doi_bot_quota"]
 
-They make cfg/doi-config/playlists/<name>.cfg of the output, which sets sv_playlist and the settings,
+A mod's [[replace]] tables make replacements of playlists, which nwi_playlist_unlock loads instead of
+the game's when a playlist has one. A table changes the playlists whose names match its playlists
+globs and none of its exclude ones: drop removes keys, with their merge methods (<key>_merge_method),
+and set sets keys, replacing those of the same name, a table becoming a section. They change the
+playlist's own keys; its rulesets change only by the table's [[replace.ruleset]] tables, each for the
+rulesets that match its rulesets globs and none of its exclude ones. The tables apply in order, those
+of all mods; a glob of playlists or rulesets that matches none is an error. A playlist that no table
+matches gets no replacement and stays as the game has it:
+
+    [[replace]]
+    playlists = ["nwi/*"]
+    drop = ["allowed_maps", "forced_cvars", "forced_cvars_dedicated"]
+    # A section of its own, e.g. for a server for newcomers
+    set = { rank_limits = { min = "0", max = "10" } }
+
+    # The rulesets without their maps, except the campaigns, which keep theirs and their teams
+    [[replace.ruleset]]
+    rulesets = ["*"]
+    exclude = ["*_campaign"]
+    drop = ["allowed_maps"]
+
+    [[replace.ruleset]]
+    rulesets = ["*"]
+    drop = ["forced_cvars", "forced_cvars_dedicated"]
+
+A [[replace.ruleset]] table belongs to the [[replace]] table before it, as does a [replace.set] table,
+the same as set = { ... } in it.
+
+They make cfg/doi-config/playlists/<name>.playlist of the output.
+
+The [[playlist]] tables make cfg/doi-config/playlists/<name>.cfg of the output, which sets sv_playlist and the settings,
 for a server's server.cfg (playlist of its server.toml), and cfg/doi-config/playlists/<name>-<mode>.cfg for each game mode
 whose block of settings has some, with nwi_mode_cvar, for the game mode's configs (see
 nwi_mode_config.sp). An include glob that matches nothing is an error, e.g. after a game update that
@@ -98,6 +128,8 @@ GAME_MODES = {
 }
 
 PLAYLIST_KEYS = {"name", "include", "exclude"}
+REPLACE_KEYS = {"playlists", "exclude", "drop", "set", "ruleset"}
+RULESET_KEYS = {"rulesets", "exclude", "drop", "set"}
 # The blocks of a playlist with the settings it forces, the latter only on dedicated servers
 PLAYLIST_FORCED = ("forced_cvars", "forced_cvars_dedicated")
 
@@ -481,6 +513,210 @@ class Copy:
 
 
 @dataclass
+class Actions:
+    """What a [[replace]] or [[replace.ruleset]] table changes in a block: the keys it drops, with their
+    merge methods, then the keys it sets, a TOML table becoming a section."""
+
+    drop: list[str]
+    set: Pairs
+
+    @classmethod
+    def from_table(cls, table: dict, where: str) -> "Actions":
+        drop = table.get("drop", [])
+        if not isinstance(drop, list) or not all(isinstance(key, str) for key in drop):
+            raise ModError(f"{where}: drop is a list of keys")
+        settings = table.get("set", {})
+        if not isinstance(settings, dict):
+            raise ModError(f"{where}: set is a table")
+        return cls(drop=list(drop), set=toml_pairs(settings, f"{where}: set"))
+
+    def __bool__(self) -> bool:
+        return bool(self.drop or self.set)
+
+    def apply(self, block: Pairs) -> None:
+        dropped = {key.lower() for key in self.drop}
+        dropped |= {f"{key}_merge_method" for key in dropped}
+        dropped |= {key.lower() for key, _ in self.set}
+        block[:] = [(key, value) for key, value in block if key.lower() not in dropped]
+        block += self.set
+
+
+def toml_pairs(table: dict, where: str) -> Pairs:
+    """A TOML table as KeyValues pairs: strings and numbers as values, tables as sections."""
+    pairs: Pairs = []
+    for key, value in table.items():
+        if isinstance(value, dict):
+            pairs.append((key, toml_pairs(value, f"{where}.{key}")))
+        elif isinstance(value, (str, int, float)) and not isinstance(value, bool):
+            pairs.append((key, str(value)))
+        else:
+            raise ModError(f"{where}.{key} is a string, a number or a table")
+    return pairs
+
+
+def matches_globs(name: str, globs: list[str], exclude: list[str]) -> bool:
+    return any(
+        fnmatch.fnmatchcase(name.lower(), glob.lower()) for glob in globs
+    ) and not any(fnmatch.fnmatchcase(name.lower(), glob.lower()) for glob in exclude)
+
+
+@dataclass
+class RulesetRule:
+    """A [[replace.ruleset]] table: what changes in the rulesets of a playlist its globs match."""
+
+    rulesets: list[str]
+    exclude: list[str]
+    actions: Actions
+
+    @classmethod
+    def from_table(cls, table: dict, where: str) -> "RulesetRule":
+        unknown = set(table) - RULESET_KEYS
+        if unknown:
+            raise ModError(f"{where}: unknown keys {', '.join(sorted(unknown))}")
+        actions = Actions.from_table(table, where)
+        if not table.get("rulesets") or not actions:
+            raise ModError(
+                f"{where}: a ruleset's table needs rulesets, and drop or set"
+            )
+        return cls(
+            rulesets=list(table["rulesets"]),
+            exclude=list(table.get("exclude", [])),
+            actions=actions,
+        )
+
+    def matches(self, name: str) -> bool:
+        return matches_globs(name, self.rulesets, self.exclude)
+
+
+@dataclass
+class Replace:
+    """A [[replace]] table: what changes in the playlists its globs match, in their own keys and, by
+    its [[replace.ruleset]] tables, in their rulesets."""
+
+    playlists: list[str]
+    exclude: list[str]
+    actions: Actions
+    rulesets: list[RulesetRule]
+    mod: str
+
+    @classmethod
+    def from_table(cls, table: dict, mod: str) -> "Replace":
+        unknown = set(table) - REPLACE_KEYS
+        if unknown:
+            raise ModError(
+                f"{mod}: unknown keys in a replacement: {', '.join(sorted(unknown))}"
+            )
+        actions = Actions.from_table(table, f"{mod}: replace")
+        rules = table.get("ruleset", [])
+        if not isinstance(rules, list):
+            raise ModError(f"{mod}: ruleset is a list of tables, [[replace.ruleset]]")
+        rulesets = [
+            RulesetRule.from_table(rule, f"{mod}: replace.ruleset") for rule in rules
+        ]
+        if not table.get("playlists") or not (actions or rulesets):
+            raise ModError(
+                f"{mod}: a replacement needs playlists, and drop, set or ruleset tables"
+            )
+        return cls(
+            playlists=list(table["playlists"]),
+            exclude=list(table.get("exclude", [])),
+            actions=actions,
+            rulesets=rulesets,
+            mod=mod,
+        )
+
+    def matches(self, name: str) -> bool:
+        return matches_globs(name, self.playlists, self.exclude)
+
+    def apply(self, root: Pairs) -> set[str]:
+        """Change a playlist: its own keys, then its rulesets'. Returns the names of its rulesets."""
+        self.actions.apply(root)
+        names = set()
+        for key, rulesets in root:
+            if key.lower() != "rulesets" or isinstance(rulesets, str):
+                continue
+            for name, block in rulesets:
+                if isinstance(block, str):
+                    continue
+                names.add(name.lower())
+                for rule in self.rulesets:
+                    if rule.matches(name):
+                        rule.actions.apply(block)
+        return names
+
+
+def game_playlists(game: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
+    """The game's playlists by their names (scripts/playlists/<name>.playlist), with where each is from
+    and a function that reads it: its loose files first, then its VPKs."""
+    playlists: dict[str, tuple[str, Callable[[], bytes]]] = {}
+    folder = game / "doi/scripts/playlists"
+    if folder.is_dir():
+        for path in sorted(folder.rglob("*.playlist")):
+            name = path.relative_to(folder).with_suffix("").as_posix().lower()
+            playlists[name] = (str(path), path.read_bytes)
+    for vpk in sorted((game / "doi").glob("*_dir.vpk")):
+        for path, read in vpk_files(vpk).items():
+            match = re.fullmatch(r"scripts/playlists/(.+)\.playlist", path)
+            if match and match[1] not in playlists:
+                playlists[match[1]] = (f"{vpk}/{path}", read)
+    return playlists
+
+
+def make_replacements(game: Path, replaces: list[Replace], output: Path) -> None:
+    """Write the replacements of the playlists the [[replace]] tables match, see the module's
+    documentation."""
+    if not replaces:
+        return
+    playlists = game_playlists(game)
+    for replace in replaces:
+        unused = [
+            glob
+            for glob in replace.playlists
+            if not any(fnmatch.fnmatchcase(name, glob.lower()) for name in playlists)
+        ]
+        if unused:
+            raise ModError(f"{replace.mod}: no playlist matches {', '.join(unused)}")
+    made = 0
+    # The rulesets of the playlists each [[replace]] table changed, for its ruleset globs
+    rulesets: dict[int, set[str]] = {index: set() for index in range(len(replaces))}
+    for name, (source, read) in sorted(playlists.items()):
+        matching = [replace for replace in replaces if replace.matches(name)]
+        if not matching:
+            continue
+        (root_key, root), *_ = parse_script(
+            read().decode("utf-8", errors="replace"), source, level=None
+        )[0]
+        if isinstance(root, str):
+            raise ModError(f"{source} isn't a block")
+        for index, replace in enumerate(replaces):
+            if replace.matches(name):
+                rulesets[index] |= replace.apply(root)
+        mods = ", ".join(
+            dict.fromkeys(f"mods/{replace.mod}.toml" for replace in matching)
+        )
+        path = output / "cfg/doi-config/playlists" / f"{name}.playlist"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            f"// Made by tools/make_mods.py from the game's scripts/playlists/{name}.playlist,\n"
+            f"// as {mods} replaces it\n" + format_keyvalues([(root_key, root)]),
+            encoding="utf-8",
+        )
+        made += 1
+    for index, replace in enumerate(replaces):
+        unused = [
+            glob
+            for rule in replace.rulesets
+            for glob in rule.rulesets
+            if not any(
+                fnmatch.fnmatchcase(name, glob.lower()) for name in rulesets[index]
+            )
+        ]
+        if unused:
+            raise ModError(f"{replace.mod}: no ruleset matches {', '.join(unused)}")
+    print(f"playlists: {made} replacements", file=sys.stderr)
+
+
+@dataclass
 class Playlist:
     """The settings of a playlist that a server takes over, from a mod's [[playlist]] table."""
 
@@ -567,13 +803,14 @@ class Playlist:
         )
 
 
-def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> None:
+def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> list[Replace]:
     """Make the mod of a mods/<mod>.toml in output/custom/<mod>, and its playlists' configs in
-    output/cfg/doi-config/playlists."""
+    output/cfg/doi-config/playlists; returns its replacements of playlists, which make_replacements()
+    makes with those of all mods."""
     mod = config.stem
     with config.open("rb") as file:
         settings = tomllib.load(file)
-    unknown = set(settings) - {"workshop", "fix", "copy", "playlist"}
+    unknown = set(settings) - {"workshop", "fix", "copy", "playlist", "replace"}
     if unknown:
         raise ModError(f"{mod}: unknown tables {', '.join(sorted(unknown))}")
     # Tables, so that a key after one doesn't end up in it by mistake: TOML's keys after a table's
@@ -588,6 +825,7 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> None:
     copies = [Copy.from_table(table, mod) for table in settings.get("copy", [])]
     for table in settings.get("playlist", []):
         Playlist.from_table(table, mod).make(game, output, mod)
+    replaces = [Replace.from_table(table, mod) for table in settings.get("replace", [])]
     maps = dict.fromkeys(
         [*fix.get("maps", []), *(name for copy in copies for name in copy.maps)]
     )
@@ -604,6 +842,7 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> None:
         path.write_text(format_keyvalues([(root, blocks)]), encoding="utf-8")
     if maps:
         print(f"{mod}: {len(maps)} maps", file=sys.stderr)
+    return replaces
 
 
 def main() -> int:
@@ -652,8 +891,10 @@ def main() -> int:
             for path in arguments.mods
             for config in (sorted(path.glob("*.toml")) if path.is_dir() else [path])
         ]
+        replaces = []
         for config in configs:
-            make_mod(config, arguments.game, arguments.workshop, new)
+            replaces += make_mod(config, arguments.game, arguments.workshop, new)
+        make_replacements(arguments.game, replaces, new)
     except (ModError, OSError, tomllib.TOMLDecodeError) as error:
         shutil.rmtree(new, ignore_errors=True)
         print(f"make_mods.py: {error}", file=sys.stderr)
