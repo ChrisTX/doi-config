@@ -129,8 +129,10 @@ with Ghidra); the numbers of `mp_coop_lobbysize` are the ones measured for
 > Enable BattlEye?
 
 Does nothing any more: the game no longer ships BattlEye, which it removed in
-December 2025. The cvar still exists, and NWI's playlists still set it to 1 in
-their `forced_cvars_dedicated`.
+December 2025 ([the update's notes](https://steamdb.info/patchnotes/21294077/),
+the [change of the Linux server's depot](https://steamdb.info/depot/462311/history/?changeid=M:9106077001589815964)).
+The cvar still exists, and NWI's playlists still set it to 1 in their
+`forced_cvars_dedicated`.
 
 The Linux server has the engine's side of it (`CBattleyeServer` in
 `engine_srv.so`), which loads the BattlEye server module only when the cvar is
