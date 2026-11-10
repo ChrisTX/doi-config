@@ -145,6 +145,7 @@ there any more, logs
 [CBattleyeServer] Failed to load BattlEye server module.
 ```
 
-and goes on without it, the cvar staying at 1. The default is 0. On our test
-server, a playlist's `forced_cvars_dedicated` with `sv_battleye 1` didn't set
-it on map changes; the message only appeared when it was set by hand.
+and goes on without it, the cvar staying at 1. The default is 0. On our servers
+the playlists don't set it: the patch of the server library stops the game
+forcing their `forced_cvars` and `forced_cvars_dedicated`
+(`patches/server_srv.patches`), and `mods/playlists.toml` doesn't take it over.
