@@ -26,3 +26,8 @@ include = [
   "sv_hud_*",
   "sv_allow_jumpshot",
 ]
+
+# The bot soak test's (servers/soak-bots): its bots, which soak_bots.cfg sets to 20 a team
+[[playlist]]
+name = "nwi/mp_casual_with_bots"
+include = ["doi_bot_quota"]
