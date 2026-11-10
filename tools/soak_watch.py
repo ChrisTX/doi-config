@@ -4,9 +4,6 @@
 At each interval it logs the time, the map, the bots, the server's memory (resident set, of srcds in
 the container) and the number of sanitiser reports in the container's output, and adds the bots again
 when a map change dropped them (doi_bot_add, doi_bot_add_t2). The password comes from RCON_PASSWORD.
-
-Usage: soak_watch.py [--port PORT] [--container NAME] [--hours HOURS] [--interval SECONDS]
-                     [--bots PER_TEAM] LOG
 """
 
 import argparse
@@ -54,21 +51,35 @@ def resident_mb(container: str) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=27015)
-    parser.add_argument(
-        "--container", help="the server's container, for its memory and reports"
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--hours", type=float, default=3)
-    parser.add_argument("--interval", type=int, default=300)
+    parser.add_argument(
+        "--host", default="127.0.0.1", help="the server's address (%(default)s)"
+    )
+    parser.add_argument(
+        "--port", type=int, default=27015, help="the server's port (%(default)s)"
+    )
+    parser.add_argument(
+        "--container",
+        help="the server's container, for its memory and reports; without it, only the map and the bots",
+    )
+    parser.add_argument(
+        "--hours", type=float, default=3, help="how long to watch (%(default)s)"
+    )
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=300,
+        help="seconds between two rows (%(default)s)",
+    )
     parser.add_argument(
         "--bots",
         type=int,
         default=20,
-        help="bots a team, added again below 3/4 of both",
+        help="bots a team; added again when fewer than 3/4 of them are left (%(default)s)",
     )
-    parser.add_argument("log", type=Path)
+    parser.add_argument("log", type=Path, metavar="LOG", help="the TSV file, replaced")
     args = parser.parse_args()
     password = os.environ.get("RCON_PASSWORD")
     if not password:

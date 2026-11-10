@@ -1,25 +1,35 @@
 #!/usr/bin/env python3
 """List the virtual methods of classes with their vtable slot, from DWARF.
 
-    vtable_slots.py OBJECT CLASS...
-
 OBJECT is an object of sdk_types.sh (--no-gdt is enough), whose DWARF has the SDK's classes with their
 vtable slots as the headers lay them out, e.g. the interfaces Metamod:Source and SourceMod hook, to
 compare with the vtables of a game's binaries. Each line: the class, the slot, the method and its
 mangled name.
 """
 
-import sys
+import argparse
+from pathlib import Path
 
 from elftools.elf.elffile import ELFFile
 
 
 def main() -> None:
-    if len(sys.argv) < 3:
-        sys.exit(__doc__)
-    wanted = set(sys.argv[2:])
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "object",
+        type=Path,
+        metavar="OBJECT",
+        help="an object of sdk_types.sh, with the SDK's DWARF",
+    )
+    parser.add_argument(
+        "classes", nargs="+", metavar="CLASS", help="a class, e.g. IVEngineServer"
+    )
+    args = parser.parse_args()
+    wanted = set(args.classes)
     seen = set()
-    with open(sys.argv[1], "rb") as f:
+    with args.object.open("rb") as f:
         dwarf = ELFFile(f).get_dwarf_info()
         for unit in dwarf.iter_CUs():
             for die in unit.iter_DIEs():

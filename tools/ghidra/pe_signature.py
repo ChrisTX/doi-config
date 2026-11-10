@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """Make unique SourceMod-style byte signatures for functions of a Windows library (PE).
 
-    pe_signature.py DLL ADDRESS...
-
 ADDRESS is a function's virtual address (as Ghidra shows it, with the image base). The bytes of
 absolute addresses (base relocations), the targets of relative calls and jumps, and on x86_64 the
 displacements relative to RIP are wildcards; the pattern grows by whole instructions until it matches
 only once in the library's executable sections.
 """
 
+import argparse
 import re
-import sys
 
 import capstone
 import capstone.x86
@@ -20,9 +18,18 @@ AMD64 = 0x8664
 
 
 def main() -> None:
-    if len(sys.argv) < 3:
-        sys.exit(__doc__)
-    pe = pefile.PE(sys.argv[1])
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("dll", metavar="DLL", help="the library, e.g. server.dll")
+    parser.add_argument(
+        "addresses",
+        nargs="+",
+        metavar="ADDRESS",
+        help="a function's virtual address in hex, with the image base, e.g. 0x10123450",
+    )
+    args = parser.parse_args()
+    pe = pefile.PE(args.dll)
     wide = pe.FILE_HEADER.Machine == AMD64
     base = pe.OPTIONAL_HEADER.ImageBase
     # The bytes of absolute addresses: IMAGE_REL_BASED_HIGHLOW (3) or DIR64 (10)
@@ -46,7 +53,7 @@ def main() -> None:
         )
         return sum(len(regex.findall(data)) for data in code)
 
-    for argument in sys.argv[2:]:
+    for argument in args.addresses:
         rva = int(argument, 16) - base
         pattern: list[int | None] = []
         result = None

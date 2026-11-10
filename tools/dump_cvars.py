@@ -7,9 +7,7 @@ the server's as they are: those nwi_cvar_unlocker.smx changes are its own, which
 takes from the plugin's source instead, so a dump from a server without the plugin is the exact
 one (a server's prepare_server.sh disables it with DISABLE_PLUGINS=nwi_cvar_unlocker).
 
-The password comes from RCON_PASSWORD.
-
-Usage: dump_cvars.py [--host HOST] [--port PORT] > tools/cvars.json
+The password comes from RCON_PASSWORD. The dump goes to the output, e.g. > tools/cvars.json.
 """
 
 import argparse
@@ -30,9 +28,15 @@ DEFAULT = re.compile(r'\( def\. "(?P<value>[^"]*)" \)')
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=27015)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--host", default="127.0.0.1", help="the server's address (%(default)s)"
+    )
+    parser.add_argument(
+        "--port", type=int, default=27015, help="the server's port (%(default)s)"
+    )
     arguments = parser.parse_args()
     password = os.environ.get("RCON_PASSWORD")
     if not password:

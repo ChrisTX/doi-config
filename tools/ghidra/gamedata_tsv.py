@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Print SourceMod's gamedata for a game as TSV, for CheckGamedata.java.
 
-    gamedata_tsv.py [--arch x86|x86_64] GAMEDATA GAME ENGINE
-
 GAMEDATA is SourceMod's gamedata folder, GAME the game's folder (e.g. doi) and ENGINE its engine as
 SourceMod names it (e.g. insurgency, which DoI uses too). Like SourceMod, it reads the files each
 folder's master.games.txt lists for the engine or game, and in them the blocks of the game and the
@@ -68,11 +66,27 @@ def blocks(tree: Keyvalues, game: str, engine: str):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--arch", choices=["x86", "x86_64"], default="x86")
-    parser.add_argument("gamedata", type=Path)
-    parser.add_argument("game")
-    parser.add_argument("engine")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--arch",
+        choices=["x86", "x86_64"],
+        default="x86",
+        help="the server's architecture, whose values to take (%(default)s)",
+    )
+    parser.add_argument(
+        "gamedata",
+        type=Path,
+        metavar="GAMEDATA",
+        help="SourceMod's gamedata folder, e.g. /usr/lib/sourcemod/addons/sourcemod/gamedata",
+    )
+    parser.add_argument("game", metavar="GAME", help="the game's folder, e.g. doi")
+    parser.add_argument(
+        "engine",
+        metavar="ENGINE",
+        help="the engine as SourceMod names it, e.g. insurgency",
+    )
     args = parser.parse_args()
     platform = "linux" if args.arch == "x86" else "linux64"
 

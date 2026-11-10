@@ -2,8 +2,6 @@
 """Run a command on a server over Source RCON and print its answer.
 
 The password comes from RCON_PASSWORD, so it doesn't show up in the process list.
-
-Usage: rcon.py [--host HOST] [--port PORT] COMMAND...
 """
 
 import argparse
@@ -82,10 +80,21 @@ def run(sock: socket.socket, command: str) -> str:
 
 def main() -> int:
     """Authenticate, run the command and print the answer."""
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=27015)
-    parser.add_argument("command", nargs="+")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--host", default="127.0.0.1", help="the server's address (%(default)s)"
+    )
+    parser.add_argument(
+        "--port", type=int, default=27015, help="the server's port (%(default)s)"
+    )
+    parser.add_argument(
+        "command",
+        nargs="+",
+        metavar="COMMAND",
+        help="the command and its arguments, joined by spaces",
+    )
     args = parser.parse_args()
     password = os.environ.get("RCON_PASSWORD")
     if not password:

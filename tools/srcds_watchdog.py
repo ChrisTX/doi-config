@@ -9,8 +9,8 @@ systemd (Restart=), within the limits of StartLimitBurst=.
 Without systemd, as in the container, it only runs the server. With --check, it queries the server once
 and exits with 0 if it answered, for a container's health check.
 
-Usage: srcds_watchdog.py [--host HOST] [--port PORT] [--interval SECONDS] [--timeout SECONDS] -- COMMAND...
-       srcds_watchdog.py [--host HOST] [--port PORT] [--timeout SECONDS] --check
+    srcds_watchdog.py [--host HOST] [--port PORT] [--interval SECONDS] [--timeout SECONDS] -- COMMAND...
+    srcds_watchdog.py [--host HOST] [--port PORT] [--timeout SECONDS] --check
 """
 
 import argparse
@@ -54,14 +54,19 @@ def own_address() -> str:
 
 def parse_args() -> argparse.Namespace:
     """Parse the command line, the command of the server after --."""
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument(
         "--host",
         default=os.getenv("SERVER_HOST") or own_address(),
         help="the server's address, by default the address this machine's traffic leaves from",
     )
     parser.add_argument(
-        "--port", type=int, default=int(os.getenv("SERVER_PORT", "27015"))
+        "--port",
+        type=int,
+        default=int(os.getenv("SERVER_PORT", "27015")),
+        help="the server's port, by default SERVER_PORT or 27015",
     )
     parser.add_argument(
         "--interval", type=float, default=10, help="seconds between queries"
