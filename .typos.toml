@@ -12,6 +12,8 @@ extend-ignore-re = [
   "\\bstruc\\.sql\\b",
   # The SourceMod library AFK Manager needs
   "Multi-Colors",
+  # The names of the compilers' sanitisers, as their reports print them (AddressSanitizer)
+  "\\b[A-Z][A-Za-z]*Sanitizer\\b",
   # The names of clang-tidy's checks (clang-analyzer-*, modernize-*)
   "\\b(?:clang-analyzer|modernize)-[-a-z0-9.*]*",
   # The names of the maps' control points, spawn zones and entities in the mods' rules
