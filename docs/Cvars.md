@@ -123,3 +123,24 @@ no more bots.
 Both lobby sizes come from the game's code (`server_srv.so` of 3.2.1.5, read
 with Ghidra); the numbers of `mp_coop_lobbysize` are the ones measured for
 [sv_visiblemaxplayers](#sv_visiblemaxplayers).
+
+## sv_battleye
+
+> Enable BattlEye?
+
+Does nothing any more: the game no longer ships BattlEye, which it removed in
+December 2025. The cvar still exists, and NWI's playlists still set it to 1 in
+their `forced_cvars_dedicated`.
+
+The Linux server has the engine's side of it (`CBattleyeServer` in
+`engine_srv.so`), which loads the BattlEye server module only when the cvar is
+set. With `sv_battleye 1`, it tries `bin/BattlEye/BEServer.so`, which isn't
+there any more, logs
+
+```text
+[CBattleyeServer] Failed to load BattlEye server module.
+```
+
+and goes on without it, the cvar staying at 1. The default is 0. On our test
+server, a playlist's `forced_cvars_dedicated` with `sv_battleye 1` didn't set
+it on map changes; the message only appeared when it was set by hand.
