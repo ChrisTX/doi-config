@@ -387,6 +387,22 @@ hooks for the others (`addons/sourcemod/gamedata/nwi.games.txt`, its include
 `nwi_gamedata.inc`), whose gamedata covers Windows as well, found in the game's
 server.dll but not tested on a Windows server.
 
+### Server visibility
+
+The game's browser of a playlist's servers hides servers whose players, less
+their bots, are outside the playlist's players filter, 0 to 8 in the coop
+playlists, so a coop server disappears once it's busy (see
+[docs/Cvars.md](docs/Cvars.md)). The `nwi_server_visibility` plugin counts the
+players above the playlist's maximum as bots in what the server sends to Steam:
+12 players on a coop server are 12 players and 4 bots there, which the browser
+counts as 8. The number of players stays true, as do `status` and the server's
+own answers. `nwi_visibility_max_humans` sets the maximum: -1 (the default)
+takes the playlist's, 0 turns it off.
+
+It doesn't work yet: it needs a pre-callback of DHooks (through
+`nwi_gamedata`), which the `sourcemod` package's build doesn't call, unlike
+AlliedModders' build of the same version. Until that's fixed, it changes nothing.
+
 ### Difficulty scaler
 
 The `nwi_difficulty_scaler` SourceMod plugin adjusts the number of bots to the
@@ -492,8 +508,8 @@ their databases from there.
 
 The configuration, scripts and units are licensed under the [MIT](LICENSE)
 licence. The SourceMod plugins written for these servers, `nwi_cvar_unlocker`,
-`nwi_difficulty_scaler`, `nwi_gamedata`, `nwi_mode_config` and
-`nwi_physics_timestep`, are available under the MIT licence or the GPL-3.0-only with SourceMod's linking
+`nwi_difficulty_scaler`, `nwi_gamedata`, `nwi_mode_config`,
+`nwi_physics_timestep` and `nwi_server_visibility`, are available under the MIT licence or the GPL-3.0-only with SourceMod's linking
 exception, at your choice, so they can be used in other SourceMod projects
 either way.
 
