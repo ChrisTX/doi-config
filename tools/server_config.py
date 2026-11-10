@@ -12,7 +12,12 @@ folder:
     theater         optional: the theater to use instead of the game's (mp_theater_override)
     mapcycle        optional: the maps the server cycles through (mapcyclefile)
     workshop        optional: the list of workshop items, which becomes the server's
-                    subscribed_file_ids.txt, the list the game downloads and mounts by default
+                    subscribed_file_ids.txt, the list the game downloads and mounts by default;
+                    without one, the server starts without the workshop (-workshop)
+    maxplayers      optional: the server's slots (+maxplayers), 64 by default; the configs may lower
+                    them for the game modes, e.g. maxplayers 33 of basic_coop.cfg
+    lan             optional: true for a server only for its local network (+sv_lan 1), false by
+                    default
     launch_options  optional: more options of the server's command line, e.g. ["-tickrate", "128"]
     configs_before  optional: configs to run before ours
     configs_after   optional: configs to run after ours, e.g. ["doi-config/basic_coop.cfg"]
@@ -44,11 +49,19 @@ KEYS = {
     "theater": str,
     "mapcycle": str,
     "workshop": str,
+    "maxplayers": int,
+    "lan": bool,
     "launch_options": list,
     "configs_before": list,
     "configs_after": list,
 }
 REQUIRED = ("hostname", "startup_map")
+KINDS = {
+    str: "a string",
+    int: "a number",
+    bool: "true or false",
+    list: "a list of strings",
+}
 
 
 def load(path: Path) -> dict:
@@ -61,12 +74,12 @@ def load(path: Path) -> dict:
         value = settings.get(key)
         if value is None:
             continue
-        if not isinstance(value, kind) or (
-            kind is list and not all(isinstance(item, str) for item in value)
-        ):
-            errors.append(
-                f"{path}: {key} is a {'list of strings' if kind is list else 'string'}"
-            )
+        # bool is an int to Python, but not to TOML
+        wrong = not isinstance(value, kind) or (kind is int and isinstance(value, bool))
+        if kind is list and not wrong:
+            wrong = not all(isinstance(item, str) for item in value)
+        if wrong:
+            errors.append(f"{path}: {key} is {KINDS[kind]}")
     if errors:
         raise ValueError("\n".join(errors))
     return settings
@@ -113,7 +126,11 @@ def prepare(root: Path) -> None:
 
 def args(root: Path) -> None:
     settings = load(root / "doi" / "server.toml")
-    options = ["+map", settings["startup_map"]]
+    options = ["+maxplayers", str(settings.get("maxplayers", 64))]
+    options += ["+sv_lan", "1" if settings.get("lan", False) else "0"]
+    if "workshop" in settings:
+        options.append("-workshop")
+    options += ["+map", settings["startup_map"]]
     if "theater" in settings:
         options += ["+mp_theater_override", settings["theater"]]
     options += settings.get("launch_options", [])

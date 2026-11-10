@@ -59,9 +59,11 @@ it with `tools/server_config.py`, which describes the keys: the names of the
 server and SourceTV, and the configs it runs (see [Configs](#configs)). It also
 copies the server's list of workshop items to `subscribed_file_ids.txt` in the
 `doi` folder, the list the game downloads and mounts by default. The launcher,
-`tools/start_server.sh`, takes the first map, the theater and the server's own
-options of the command line from it. Its RCON password is `RCON_PASSWORD` of its
-environment file, which `prepare_server.sh` writes to `cfg/rcon.cfg`.
+`tools/start_server.sh`, takes the server's slots, whether it's a LAN server,
+the first map, the theater and its own options of the command line from it, and
+starts it with the workshop if it has a list. Its RCON password is
+`RCON_PASSWORD` of its environment file, which `prepare_server.sh` writes to
+`cfg/rcon.cfg`.
 
 A server without a `server.toml`, of no config of `servers`, needs its own
 `cfg/server.cfg`, e.g. in the secrets.

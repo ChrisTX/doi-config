@@ -3,8 +3,9 @@
 # container's entrypoint, which share the command line this way.
 #
 #   start_server.sh ROOT   start the server of ROOT (srcds_linux there), with the settings of its
-#                          ROOT/doi/server.toml (tools/server_config.py: the first map, the theater and
-#                          more options) and its environment file's
+#                          ROOT/doi/server.toml (tools/server_config.py: the slots, LAN or not, the
+#                          workshop, the first map, the theater and more options) and its environment
+#                          file's
 #
 # SERVER_PORT, TV_PORT, CLIENT_PORT, SERVER_PASSWORD: the server's ports and password, from its
 # environment file (/etc/doi-server/<server>.env)
@@ -30,6 +31,5 @@ if [[ -n ${DOI_PATCH:-} ]]; then
 fi
 
 exec python3 "$repo/tools/srcds_watchdog.py" -- env "${preload[@]}" "$root/srcds_linux" -game doi -usercon \
-	+maxplayers 64 +sv_lan 0 -workshop -port "${SERVER_PORT:-27015}" +tv_port "${TV_PORT:-27020}" \
-	+clientport "${CLIENT_PORT:-27005}" +r_hunkalloclightmaps 0 +sv_password "${SERVER_PASSWORD:-}" \
-	"${settings[@]}"
+	-port "${SERVER_PORT:-27015}" +tv_port "${TV_PORT:-27020}" +clientport "${CLIENT_PORT:-27005}" \
+	+r_hunkalloclightmaps 0 +sv_password "${SERVER_PASSWORD:-}" "${settings[@]}"
