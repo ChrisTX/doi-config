@@ -24,7 +24,8 @@ update_game() {
 		((attempt < 3)) || exit 1
 	done
 
-	# Remove the shipped, outdated standard libraries, the system's are used instead
+	# Remove the shipped, outdated C++ runtime, so the system's is used instead, and libogg and
+	# libvorbis, which no library of the game loads (the engine has its own Vorbis decoder)
 	rm -f "$game"/bin/{libgcc_s.so.1,libstdc++.so.6,libogg.so,libvorbis.so}
 }
 
