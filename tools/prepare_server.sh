@@ -10,6 +10,14 @@ set -euo pipefail
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
 cd "$1" || exit
 
+# SourceMod looks for the engine's library, which gamedata of the library "engine" needs (e.g.
+# nwi_gamedata.smx's), in the game's bin folder (doi/bin) and the server's EXECUTABLE_PATH, which is the
+# server's root here, not bin/ with engine_srv.so. A link in the root lets it find the library srcds has
+# loaded; it caches a failed lookup, so the link has to be there when srcds starts.
+if [[ -f bin/engine_srv.so && ! -e engine_srv.so ]]; then
+	ln -s bin/engine_srv.so engine_srv.so
+fi
+
 # The server's server.cfg and subscribed_file_ids.txt, made from its server.toml
 # (tools/server_config.py), before rcon.cfg is added to it below. Without a server.toml, e.g. a
 # server of no config of servers/, its own cfg/server.cfg comes from the secrets.
