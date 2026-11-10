@@ -14,6 +14,18 @@
 // the server reports; CSteam3Server::SendUpdatedServerDetails passes them on to Steam, which answers
 // the server browsers' queries (A2S) with them. Windows: the call before the "players : %i humans, %i
 // bots (%i/%i max)" line of status, the same signature in both games' engine.dll.
+//
+// The playlists: CPlaylists (g_Playlists, the object) reads them in UpdateCache, which makes a Playlist
+// for each playlist and ruleset (CPlaylists::GeneratePlaylist: its key and ruleset first, then SetData).
+// Playlist::SetData(KeyValues *) copies the file's data to the Playlist's own (m_data) and goes on to
+// GenerateCoalescedData, which merges the ruleset's blocks into a copy that every Get*() reads. The
+// key is the playlist's name in sv_playlist, e.g. nwi/coop_commando. KeyValues::SaveToFile and
+// LoadFromFile take the IBaseFileSystem part of g_pFullFileSystem (IFileSystem), 4 bytes in, after
+// IAppSystem's vtable pointer; DoI's SaveToFile has a fourth parameter (bool) the SDK lacks. Linux
+// only so far.
+//
+// CServerUGCManager::IsEnabled: whether the server uses the workshop. In Day of Infamy, only
+// CDOIPersistence::RegisterServer asks, which then doesn't register the server for the game's stats.
 "Games"
 {
     "#default"
@@ -47,9 +59,65 @@
                 "library"   "engine"
                 "linux"     "@_ZN13CSteam3Server24SendUpdatedServerDetailsEv"
             }
+            "g_Playlists"
+            {
+                "library"   "server"
+                "linux"     "@g_Playlists"
+            }
+            "g_pFullFileSystem"
+            {
+                "library"   "server"
+                "linux"     "@g_pFullFileSystem"
+            }
+            "CPlaylists::UpdateCache"
+            {
+                "library"   "server"
+                "linux"     "@_ZN10CPlaylists11UpdateCacheEv"
+            }
+            "Playlist::SetData"
+            {
+                "library"   "server"
+                "linux"     "@_ZN8Playlist7SetDataEP9KeyValues"
+            }
+            "Playlist::GenerateCoalescedData"
+            {
+                "library"   "server"
+                "linux"     "@_ZN8Playlist21GenerateCoalescedDataEv"
+            }
+            "KeyValues::SaveToFile"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9KeyValues10SaveToFileEP15IBaseFileSystemPKcS3_b"
+            }
+            "KeyValues::LoadFromFile"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9KeyValues12LoadFromFileEP15IBaseFileSystemPKcS3_PFbS3_E"
+            }
+            "KeyValues::Clear"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9KeyValues5ClearEv"
+            }
         }
         "Addresses"
         {
+            "g_Playlists"
+            {
+                "linux"
+                {
+                    "signature" "g_Playlists"
+                }
+            }
+            // The IFileSystem *, read anew at each use
+            "g_pFullFileSystem"
+            {
+                "linux"
+                {
+                    "signature" "g_pFullFileSystem"
+                    "read"      "0"
+                }
+            }
             "physenv"
             {
                 "linux"
@@ -76,6 +144,24 @@
             {
                 "linux"     "38"
                 "windows"   "37"
+            }
+            // Playlist's fields: its key (char[260]), its ruleset (char[64]) and its own data (KeyValues *)
+            "Playlist::m_key"
+            {
+                "linux"     "4"
+            }
+            "Playlist::m_ruleset"
+            {
+                "linux"     "264"
+            }
+            "Playlist::m_data"
+            {
+                "linux"     "664"
+            }
+            // The IBaseFileSystem part of an IFileSystem
+            "IFileSystem::IBaseFileSystem"
+            {
+                "linux"     "4"
             }
         }
         "Functions"
@@ -108,6 +194,43 @@
                 "signature" "SendUpdatedServerDetails"
                 "callconv"  "thiscall"
                 "return"    "void"
+                "this"      "ignore"
+            }
+            "Playlist::SetData"
+            {
+                "signature" "Playlist::SetData"
+                "callconv"  "thiscall"
+                "return"    "void"
+                "this"      "address"
+                "arguments"
+                {
+                    "data"
+                    {
+                        "type"  "int"
+                    }
+                }
+            }
+        }
+    }
+
+    // What only Day of Infamy has
+    "doi"
+    {
+        "Signatures"
+        {
+            "CServerUGCManager::IsEnabled"
+            {
+                "library"   "server"
+                "linux"     "@_ZN17CServerUGCManager9IsEnabledEv"
+            }
+        }
+        "Functions"
+        {
+            "CServerUGCManager::IsEnabled"
+            {
+                "signature" "CServerUGCManager::IsEnabled"
+                "callconv"  "thiscall"
+                "return"    "bool"
                 "this"      "ignore"
             }
         }
