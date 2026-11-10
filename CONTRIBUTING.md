@@ -47,7 +47,7 @@ GitHub Actions runs the same checks on every push and pull request. The AUR isn'
 
 ## Writing
 
-- Texts are in British English: documentation, comments, commit messages and what players see, like the MOTDs and advertisements. Names keep their spelling, e.g. cvars, keywords of file formats, the game's terms like "theater", and texts from upstream like the licence texts and vendored code. typos checks the spelling of the files, American spellings included; the names and files it leaves alone are in `.typos.toml`.
+- Texts are in British English: documentation, comments, commit messages and what players see, like the MOTDs and advertisements. Names keep their spelling, e.g. cvars, keywords of file formats, the game's terms like "theater", and texts from upstream like the licence texts and vendored code. Terms of software keep theirs too, like "sanitizer" (the compilers' -fsanitize), as in the AUR packages. typos checks the spelling of the files, American spellings included; the names, terms and files it leaves alone are in `.typos.toml`.
 
 ## Commits
 
