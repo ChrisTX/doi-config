@@ -381,9 +381,11 @@ The `nwi_physics_timestep` plugin keeps the physics step at 1/64 s
 (`nwi_physics_timestep 0.015625`, 0 for the game's step): the physics then
 simulates on every other tick, and grenades bounce, roll and come to rest as at
 64 tick, measured with the same throws on a local server and checked in game.
-Everything else, like movement and hit registration, keeps the shorter tick. The
-plugin's gamedata covers Windows as well, found in the game's server.dll but not
-tested on a Windows server.
+Everything else, like movement and hit registration, keeps the shorter tick. It
+sets the step through `nwi_gamedata`, the plugin that has the game's calls and
+hooks for the others (`addons/sourcemod/gamedata/nwi.games.txt`, its include
+`nwi_gamedata.inc`), whose gamedata covers Windows as well, found in the game's
+server.dll but not tested on a Windows server.
 
 ### Difficulty scaler
 
@@ -490,8 +492,8 @@ their databases from there.
 
 The configuration, scripts and units are licensed under the [MIT](LICENSE)
 licence. The SourceMod plugins written for these servers, `nwi_cvar_unlocker`,
-`nwi_difficulty_scaler`, `nwi_mode_config` and `nwi_physics_timestep`, are
-available under the MIT licence or the GPL-3.0-only with SourceMod's linking
+`nwi_difficulty_scaler`, `nwi_gamedata`, `nwi_mode_config` and
+`nwi_physics_timestep`, are available under the MIT licence or the GPL-3.0-only with SourceMod's linking
 exception, at your choice, so they can be used in other SourceMod projects
 either way.
 

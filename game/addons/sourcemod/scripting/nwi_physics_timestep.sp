@@ -12,11 +12,11 @@
 // other tick, and a grenade's bounces, distance and time to come to rest are those of 64 tick.
 //
 // nwi_physics_timestep sets the step, 0 leaves the game's. The plugin sets it again after each map
-// start, as the game resets it then.
+// start, as the game resets it then, through nwi_gamedata.smx (nwi_gamedata.inc).
 
 #include <sourcemod>
-#include <sdktools>
 #include <nwi>
+#include <nwi_gamedata>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -26,38 +26,24 @@ public Plugin myinfo =
     name        = "NWI physics timestep",
     author      = "DOI revival project",
     description = "Keep the physics step of 64 tick at higher tickrates",
-    version     = "1.0",
+    version     = "1.1",
     url         = "https://rev-crew.info"
 };
 
 ConVar g_timestep;
-GameData g_gamedata;
-Handle g_getStep;
-Handle g_setStep;
 
 public void OnPluginStart()
 {
     NWI_RequireGame();
-    g_gamedata = new GameData("nwi_physics_timestep.games");
-    if (g_gamedata == null)
-        SetFailState("Can't load gamedata/nwi_physics_timestep.games.txt");
-    // IPhysicsEnvironment::GetSimulationTimestep and SetSimulationTimestep
-    StartPrepSDKCall(SDKCall_Raw);
-    if (!PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Virtual, "GetSimulationTimestep"))
-        SetFailState("No offset of GetSimulationTimestep in the gamedata");
-    PrepSDKCall_SetReturnInfo(SDKType_Float, SDKPass_Plain);
-    g_getStep = EndPrepSDKCall();
-    StartPrepSDKCall(SDKCall_Raw);
-    if (!PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Virtual, "SetSimulationTimestep"))
-        SetFailState("No offset of SetSimulationTimestep in the gamedata");
-    PrepSDKCall_AddParameter(SDKType_Float, SDKPass_Plain);
-    g_setStep = EndPrepSDKCall();
-
     g_timestep = CreateConVar("nwi_physics_timestep", "0.015625",
         "The step of the physics simulation in seconds, at least the tick's interval; 0 for the game's, the tick's interval",
         _, true, 0.0, true, 0.1);
     g_timestep.AddChangeHook(OnTimestepChanged);
-    // A plugin loaded on a running map
+}
+
+// Also when the plugin is loaded on a running map, once the library is there
+public void OnAllPluginsLoaded()
+{
     ApplyTimestep();
 }
 
@@ -73,9 +59,8 @@ void OnTimestepChanged(ConVar convar, const char[] oldValue, const char[] newVal
 
 void ApplyTimestep()
 {
-    // The physics environment, which the game creates anew at every map start
-    Address env = g_gamedata.GetAddress("physenv");
-    if (env == Address_Null)
+    float current;
+    if (!NWI_GetPhysicsTimestep(current))
         return;
     float step = g_timestep.FloatValue;
     float interval = GetTickInterval();
@@ -83,10 +68,8 @@ void ApplyTimestep()
     // per tick to no avail
     if (step < interval)
         step = interval;
-    float current = SDKCall(g_getStep, env);
-    if (current != step)
+    if (current != step && NWI_SetPhysicsTimestep(step))
     {
-        SDKCall(g_setStep, env, step);
         LogMessage("Physics step %.6f s instead of %.6f s, tick interval %.6f s", step, current, interval);
     }
 }

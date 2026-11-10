@@ -1,0 +1,115 @@
+// SPDX-FileCopyrightText: Christian Pfeiffer
+// SPDX-License-Identifier: MIT OR GPL-3.0-only WITH LicenseRef-SourceMod-exception
+
+// What nwi_gamedata.sp calls and hooks in the game, for Day of Infamy and Insurgency, which share all of
+// it. Linux by symbol; Windows by signature, as its libraries have no symbols.
+//
+// physenv: the server's physics environment (IPhysicsEnvironment *), read anew at each use. On Windows
+// it comes from PhysFrame, which starts by comparing it with 0 (cmp dword ptr [physenv], 0 at +6, its
+// address at +8). The slots of its timestep methods are those of the SDK's IPhysicsEnvironment
+// (public/vphysics_interface.h); on Windows, the virtual destructor takes one slot instead of GCC's two,
+// so they're one lower (PhysFrame calls Simulate through slot 34 on Windows, 35 on Linux).
+//
+// CBaseServer::GetMasterServerPlayerCounts(int &humans, int &maximum, int &bots) computes the counts
+// the server reports; CSteam3Server::SendUpdatedServerDetails passes them on to Steam, which answers
+// the server browsers' queries (A2S) with them. Windows: the call before the "players : %i humans, %i
+// bots (%i/%i max)" line of status, the same signature in both games' engine.dll.
+"Games"
+{
+    "#default"
+    {
+        "#supported"
+        {
+            "game"  "doi"
+            "game"  "insurgency"
+        }
+
+        "Signatures"
+        {
+            "physenv"
+            {
+                "library"   "server"
+                "linux"     "@physenv"
+            }
+            "PhysFrame"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x1C\x83\x3D\x2A\x2A\x2A\x2A\x00\x53\x56\x57\x0F\x84\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85"
+            }
+            "GetMasterServerPlayerCounts"
+            {
+                "library"   "engine"
+                "linux"     "@_ZN11CBaseServer27GetMasterServerPlayerCountsERiS0_S0_"
+                "windows"   "\x55\x8B\xEC\x56\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x8B\x55\x08"
+            }
+            "SendUpdatedServerDetails"
+            {
+                "library"   "engine"
+                "linux"     "@_ZN13CSteam3Server24SendUpdatedServerDetailsEv"
+            }
+        }
+        "Addresses"
+        {
+            "physenv"
+            {
+                "linux"
+                {
+                    "signature" "physenv"
+                    "read"      "0"
+                }
+                "windows"
+                {
+                    "signature" "PhysFrame"
+                    "read"      "8"
+                    "read"      "0"
+                }
+            }
+        }
+        "Offsets"
+        {
+            "GetSimulationTimestep"
+            {
+                "linux"     "37"
+                "windows"   "36"
+            }
+            "SetSimulationTimestep"
+            {
+                "linux"     "38"
+                "windows"   "37"
+            }
+        }
+        "Functions"
+        {
+            // The three counts as pointers: the plugin writes them with StoreToAddress
+            "GetMasterServerPlayerCounts"
+            {
+                "signature" "GetMasterServerPlayerCounts"
+                "callconv"  "thiscall"
+                "return"    "void"
+                "this"      "ignore"
+                "arguments"
+                {
+                    "humans"
+                    {
+                        "type"  "int"
+                    }
+                    "maximum"
+                    {
+                        "type"  "int"
+                    }
+                    "bots"
+                    {
+                        "type"  "int"
+                    }
+                }
+            }
+            "SendUpdatedServerDetails"
+            {
+                "signature" "SendUpdatedServerDetails"
+                "callconv"  "thiscall"
+                "return"    "void"
+                "this"      "ignore"
+            }
+        }
+    }
+}
