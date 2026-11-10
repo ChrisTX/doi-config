@@ -258,6 +258,48 @@ and prints the commands that copy the server's environment file and secrets to
 deploy/container/test-instance.sh up --db-only coop-commando
 ```
 
+### Testing with sanitisers
+
+Test builds of SourceMod, Metamod:Source and their extensions with Clang's
+sanitisers find undefined behaviour and memory errors in them:
+UndefinedBehaviorSanitizer (`undefined`), AddressSanitizer (`address`) or both
+(`address,undefined`). The AUR packages build them on request, into a repository
+of their own that the build keeps and names at the end, not into the local one:
+
+```bash
+./aur-packages build --sanitize=undefined metamod-source sourcemod \
+  sourcemod-smjansson sourcemod-steamworks
+```
+
+`deploy/container/sanitiser` builds an image on top of the usual one with these
+packages and the sanitisers' 32-bit runtime (`compiler-rt`), from that
+repository's folder. With `SANITISER` set to the sanitisers of the build,
+`test-instance.sh up` starts the server from that image, and
+`tools/start_server.sh` preloads the runtime into srcds. The reports go to the
+server's output, with stack traces:
+
+```bash
+podman build --format docker --build-context packages=/tmp/aur-build.XXXXXX \
+  -f deploy/container/sanitiser/Containerfile \
+  -t localhost/doi-server-sanitiser .
+SANITISER=undefined deploy/container/test-instance.sh up soak-bots
+podman logs doi-test-server 2>&1 |
+  grep -E 'runtime error:|ERROR: AddressSanitizer'
+```
+
+The `soak-bots` server is for long runs without players: 20 bots a team on the
+frontline maps at 128 tick, the maps changing as in a game. Meanwhile
+`tools/soak_watch.py` logs the map, the bots, srcds' memory and the number of
+reports every five minutes as TSV, and adds the bots again when a map change
+lost them. AddressSanitizer takes a lot more memory and time than
+UndefinedBehaviorSanitizer, so a long run with it is best left overnight:
+
+```bash
+env=~/.local/state/doi-config-test/server.env
+RCON_PASSWORD=$(sed -n 's/^RCON_PASSWORD=//p' "$env") \
+  tools/soak_watch.py --container doi-test-server --hours 8 soak.tsv
+```
+
 ## Server notes
 
 ### Engine hunk overflow
