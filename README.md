@@ -503,6 +503,24 @@ tools/make_mods.py --game GAME --workshop WORKSHOP --check
 the workshop items, and `OUTPUT`, which is replaced, gets the `custom` folder
 for the server's `doi` folder.
 
+### Playlists
+
+The `nwi_playlist_unlock` plugin lifts the playlists' restrictions without the
+server patch below, in Day of Infamy and Insurgency: any map and game mode may
+run, the playlists force no settings (their configs from `tools/make_mods.py`
+take over those we keep), and any number of slots is fine. In Day of Infamy,
+the server also registers for the game's stats with workshop content. It edits
+each playlist's data in memory, through `nwi_gamedata` (`NWI_AddPlaylistEditor`
+of `nwi_gamedata.inc`, which other plugins can use for edits of their own):
+the files and their checksums stay as they are. The game reads its playlists
+before SourceMod is there, so `nwi_gamedata` has it read them again once the
+plugins are loaded, still before the first map's settings.
+
+Tested against the patch on a local `coop-commando` server: the playlist's
+limits, forced settings and maps are the same with either, and without both,
+the game enforces them. Not tested yet: the registration for the stats. Linux
+only so far, as the gamedata has no signatures for Windows yet.
+
 ### Server patch
 
 The game's server library, `doi/bin/server_srv.so`, is patched so it enables
@@ -552,7 +570,7 @@ their databases from there.
 The configuration, scripts and units are licensed under the [MIT](LICENSE)
 licence. The SourceMod plugins written for these servers, `nwi_cvar_unlocker`,
 `nwi_difficulty_scaler`, `nwi_gamedata`, `nwi_mode_config`,
-`nwi_physics_timestep` and `nwi_server_visibility`, are available under the MIT licence or the GPL-3.0-only with SourceMod's linking
+`nwi_physics_timestep`, `nwi_playlist_unlock` and `nwi_server_visibility`, are available under the MIT licence or the GPL-3.0-only with SourceMod's linking
 exception, at your choice, so they can be used in other SourceMod projects
 either way.
 
