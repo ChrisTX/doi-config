@@ -25,7 +25,8 @@ update_game() {
 	done
 
 	# Remove the shipped, outdated C++ runtime, so the system's is used instead, and libogg and
-	# libvorbis, which no library of the game loads (the engine has its own Vorbis decoder)
+	# libvorbis, which no library of the game loads (the engine has its own Vorbis decoder): the
+	# server puts bin/ on LD_LIBRARY_PATH, where they could take the place of the system's
 	rm -f "$game"/bin/{libgcc_s.so.1,libstdc++.so.6,libogg.so,libvorbis.so}
 }
 
