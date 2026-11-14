@@ -9,69 +9,42 @@ and those of the game's own block, count; signatures without a Linux symbol are 
 """
 
 import argparse
-import re
 import struct
 import sys
 from pathlib import Path
 
-# A token of the KeyValues format: a quoted string, a brace or a bare word; comments are left out
-TOKEN = re.compile(r'"((?:[^"\\]|\\.)*)"|([{}])|//[^\n]*|([^\s{}"]+)')
+from srctools.keyvalues import Keyvalues
 
 
-def parse_keyvalues(text: str) -> list:
-    """The file as nested lists of (key, value) pairs, a value a string or such a list."""
-    stack: list[list] = [[]]
-    key = None
-    for match in TOKEN.finditer(text):
-        string, brace, bare = match.groups()
-        if brace == "{":
-            block: list = []
-            stack[-1].append((key, block))
-            stack.append(block)
-            key = None
-        elif brace == "}":
-            stack.pop()
-        elif string is not None or bare is not None:
-            word = string if string is not None else bare
-            if key is None:
-                key = word
-            else:
-                stack[-1].append((key, word))
-                key = None
-    return stack[0]
+def values(block: Keyvalues, name: str) -> list[str]:
+    """The values of the block's keys of the name, without its blocks of that name."""
+    return [key.value for key in block.find_all(name) if not key.has_children()]
 
 
-def blocks(pairs: list, name: str) -> list:
-    return [value for key, value in pairs if key == name and isinstance(value, list)]
-
-
-def strings(pairs: list, name: str) -> list[str]:
-    return [value for key, value in pairs if key == name and isinstance(value, str)]
-
-
-def symbols_of(gamedata: list, game: str) -> list[tuple[str, str, str]]:
-    """The Linux symbols the gamedata names for the game: (entry, library, symbol)."""
+def symbols_of(gamedata: Keyvalues, game: str) -> list[tuple[str, str, str]]:
+    """The Linux symbols the gamedata names for the game: (entry, library, symbol). srctools compares
+    the keys' names in lower case, as SourceMod's gamedata does."""
     found = []
-    for games in blocks(gamedata, "Games"):
-        for key, block in games:
-            if not isinstance(block, list):
+    for games in gamedata.find_all("Games"):
+        for block in games:
+            if not block.has_children():
                 continue
-            if key == "#default":
+            if block.name == "#default":
                 supported = [
-                    g for s in blocks(block, "#supported") for g in strings(s, "game")
+                    g for s in block.find_all("#supported") for g in values(s, "game")
                 ]
                 if supported and game not in supported:
                     continue
-            elif key != game:
+            elif block.name != game:
                 continue
-            for signatures in blocks(block, "Signatures"):
-                for entry, signature in signatures:
-                    if not isinstance(signature, list):
+            for signatures in block.find_all("Signatures"):
+                for signature in signatures:
+                    if not signature.has_children():
                         continue
-                    linux = strings(signature, "linux")
-                    library = strings(signature, "library")
+                    linux = values(signature, "linux")
+                    library = values(signature, "library")
                     if linux and linux[0].startswith("@") and library:
-                        found.append((entry, library[0], linux[0][1:]))
+                        found.append((signature.real_name, library[0], linux[0][1:]))
     return found
 
 
@@ -142,7 +115,10 @@ def main() -> int:
         "server": args.game_dir / game / "bin/server_srv.so",
         "engine": args.game_dir / "bin/engine_srv.so",
     }
-    gamedata = parse_keyvalues(args.gamedata.read_text(encoding="utf-8"))
+    # Signatures keep their backslashes, e.g. \\x2A, as SourceMod reads them
+    gamedata = Keyvalues.parse(
+        args.gamedata.read_text(encoding="utf-8"), args.gamedata, allow_escapes=False
+    )
     missing = []
     loaded: dict[str, set[str]] = {}
     for entry, library, symbol in symbols_of(gamedata, game):

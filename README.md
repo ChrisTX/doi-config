@@ -150,7 +150,7 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   differ break the game.
 
 Setting up a server, as root, with the packages above and `steamcmd`, `git`,
-and `python-a2s` installed:
+`python-a2s` and `python-srctools` installed:
 
 ```bash
 cp deploy/sysusers.d/doi-server.conf /etc/sysusers.d/
