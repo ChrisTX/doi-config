@@ -25,11 +25,30 @@
 # (${XDG_STATE_HOME:-~/.local/state}/doi-server, as for the Quadlet units of deploy/quadlet)
 # DISABLE_PLUGINS: plugins the server starts without, by name, e.g. nwi_cvar_unlocker for the game's own
 # bounds in tools/dump_cvars.py
-# TEST_ADMIN: a SteamID (STEAM_0:…) that gets root admin
+# TEST_ADMIN: SteamIDs that get root admin, separated by spaces, each as STEAM_0:…, STEAM_1:…, [U:1:…]
+# or SteamID64: in the database, and in admins_simple.ini through the server's environment file
+# (prepare_server.sh), so also on servers without the database
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 # SANITISER: undefined, address or address,undefined: up starts the server from the sanitiser image
 # (localhost/doi-server-sanitiser, deploy/container/sanitiser, see README.md), with its runtime preloaded
+#
+# These variables can be kept in ${XDG_CONFIG_HOME:-~/.config}/doi-config/test-instance.env, one VAR=value
+# a line, e.g. TEST_ADMIN=[U:1:123]; the environment's take precedence.
 set -euo pipefail
+
+# The settings file's variables, those the environment doesn't set. Read, not sourced: it holds settings,
+# not commands.
+settings=${XDG_CONFIG_HOME:-$HOME/.config}/doi-config/test-instance.env
+if [[ -f $settings ]]; then
+	while IFS= read -r line || [[ -n $line ]]; do
+		[[ $line =~ ^[[:space:]]*(#|$) ]] && continue
+		if [[ ! $line =~ ^(AUR_REPO|AUR_DBROOT|DOI_TEST_DIR|DOI_STATE|DISABLE_PLUGINS|TEST_ADMIN|TEST_DB_PORT|SANITISER)=(.*)$ ]]; then
+			echo "Error: $settings: not a setting of this script: $line" >&2
+			exit 1
+		fi
+		[[ -v ${BASH_REMATCH[1]} ]] || export "${BASH_REMATCH[1]}=${BASH_REMATCH[2]}"
+	done <"$settings"
+fi
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
 # Set by find_repo
@@ -132,6 +151,41 @@ password() {
 	head -c 18 /dev/urandom | base64 | tr -d '/+='
 }
 
+# A SteamID as STEAM_0:Y:Z, the form SourceBans++ matches admins by (SourceMod takes all forms itself),
+# converted like SourceMod's AdminCache::GetUnifiedSteamIdentity does
+steam2() {
+	local id=$1 account=
+	if [[ $id =~ ^STEAM_[0-5]:([01]):([0-9]+)$ ]]; then
+		echo "STEAM_0:${BASH_REMATCH[1]}:$((10#${BASH_REMATCH[2]}))"
+		return
+	elif [[ $id =~ ^\[U:1:([0-9]+)\]$ ]]; then
+		account=$((10#${BASH_REMATCH[1]}))
+	elif [[ $id =~ ^[0-9]{17}$ ]]; then
+		# An individual account (type 1) of a valid universe (1-4), instance up to 4 (web)
+		local universe=$((10#$id >> 56)) type=$(((10#$id >> 52) & 0xf)) instance=$(((10#$id >> 32) & 0xfffff))
+		if ((universe >= 1 && universe <= 4 && type == 1 && instance <= 4)); then
+			account=$((10#$id & 0xffffffff))
+		fi
+	fi
+	if [[ -z $account ]] || ((account == 0 || account > 0xffffffff)); then
+		echo "Error: TEST_ADMIN has no SteamID like STEAM_0:0:123, [U:1:246] or 76561197960265974: $id" >&2
+		return 1
+	fi
+	echo "STEAM_0:$((account & 1)):$((account >> 1))"
+}
+
+# TEST_ADMIN's SteamIDs, as STEAM_0:Y:Z
+admins=()
+read_admins() {
+	local id admin
+	local -a ids
+	read -ra ids <<<"${TEST_ADMIN:-}"
+	for id in "${ids[@]}"; do
+		admin=$(steam2 "$id") || exit 1
+		admins+=("$admin")
+	done
+}
+
 # The tables of SourceBans++ (from the web panel's package, its placeholders filled in), SourceMod's
 # admins and client preferences (from the image), the test server and the admin
 write_database() {
@@ -160,22 +214,20 @@ write_database() {
 		(100, 'Day of Infamy', 'web.png', 'doi', 0, 1);
 		INSERT INTO sb_servers (sid, ip, port, rcon, modid, enabled) VALUES (1, '127.0.0.1', 27015, '', 100, 1);
 	EOF
-	if [[ -n ${TEST_ADMIN:-} ]]; then
-		if [[ ! $TEST_ADMIN =~ ^STEAM_[0-5]:[01]:[0-9]+$ ]]; then
-			echo "Error: TEST_ADMIN isn't a SteamID like STEAM_0:0:123: $TEST_ADMIN" >&2
-			exit 1
-		fi
-		# Root on the test server for SourceMod and SourceBans++, without a web panel login: the password
-		# isn't a hash
-		cat >"$dir/init/04-admin.sql" <<-EOF
+	# Root on the test server for SourceMod and SourceBans++, without a web panel login: the password
+	# isn't a hash. SourceBans++'s admin names are unique.
+	local admin i=0
+	for admin in "${admins[@]}"; do
+		i=$((i + 1))
+		cat <<-EOF
 			INSERT INTO sm_admins (authtype, identity, password, flags, name, immunity) VALUES
-			('steam', '$TEST_ADMIN', NULL, 'z', 'Test admin', 100);
+			('steam', '$admin', NULL, 'z', 'Test admin $i', 100);
 			INSERT INTO sb_admins (user, authid, password, gid, email, extraflags, immunity, srv_flags) VALUES
-			('Test admin', '$TEST_ADMIN', '!', -1, '', 0, 100, 'z');
+			('Test admin $i', '$admin', '!', -1, '', 0, 100, 'z');
 			INSERT INTO sb_admins_servers_groups (admin_id, group_id, srv_group_id, server_id)
-			SELECT aid, 0, -1, 1 FROM sb_admins WHERE authid = '$TEST_ADMIN';
+			SELECT aid, 0, -1, 1 FROM sb_admins WHERE authid = '$admin';
 		EOF
-	fi
+	done >"$dir/init/04-admin.sql"
 }
 
 write_secrets() {
@@ -211,6 +263,7 @@ cmd_up() {
 	fi
 	local config=${1:-coop-commando} db_password volume
 	check_config "$config"
+	read_admins
 	if [[ -z $db_only ]] && ! podman image exists "$server_image"; then
 		echo "Error: no image $server_image, build it first (see README.md)" >&2
 		exit 1
@@ -234,6 +287,10 @@ cmd_up() {
 		# A client port other than the game's 27005, which a client on this machine sends from
 		printf 'SERVER_PORT=27015\nTV_PORT=27020\nCLIENT_PORT=27025\nSERVER_PASSWORD=\n'
 		printf 'SOURCEBANS_SERVER_IP=127.0.0.1\nRCON_PASSWORD=%s\n' "$(password)"
+		# For admins_simple.ini (prepare_server.sh)
+		if ((${#admins[@]})); then
+			printf 'TEST_ADMIN=%s\n' "${admins[*]}"
+		fi
 	} >"$dir/server.env"
 	write_database
 	write_secrets "$db_password"

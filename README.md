@@ -229,13 +229,20 @@ host's is a private one. Images in the OCI format have no health check, hence
 Podman pod, together with a new MariaDB. The database has the tables of
 SourceBans++ and SourceMod and the test server registered, the passwords are
 generated, and without its config the Discord forward stays silent, so nothing
-reaches the live servers. `TEST_ADMIN` makes a SteamID root admin:
+reaches the live servers. `TEST_ADMIN` makes SteamIDs root admin, separated by
+spaces, each in any of Steam's forms (`STEAM_0:0:123`, `STEAM_1:0:123`,
+`[U:1:246]` or the SteamID64 `76561197960265974`). Your settings, like your own
+SteamID, can stay in `~/.config/doi-config/test-instance.env`, one `VAR=value` a
+line, so you don't type them each time; variables of the environment take
+precedence:
 
 ```bash
+mkdir -p ~/.config/doi-config
+echo 'TEST_ADMIN=[U:1:246]' >>~/.config/doi-config/test-instance.env
 deploy/container/test-instance.sh build
 # The game and the workshop items into the state folder: about 20 GB at first
 deploy/container/test-instance.sh update
-TEST_ADMIN=STEAM_0:0:123 deploy/container/test-instance.sh up coop-commando
+deploy/container/test-instance.sh up coop-commando
 deploy/container/test-instance.sh rcon sm plugins list
 deploy/container/test-instance.sh down
 ```
