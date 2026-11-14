@@ -8,7 +8,7 @@ For problems with a server or a script, open an issue. Problems of the game, Sou
 
 ## Getting started
 
-The tools of the checks are in the Arch Linux repositories, apart from four from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, `hadolint`, `google-java-format` and `pmd`:
+The tools of the checks are in the Arch Linux repositories, apart from five from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, `hadolint`, `google-java-format`, `pmd` and `python-srctools`, the library the tools read the game's files with (KeyValues, VDF, VPK):
 
 ```bash
 sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
@@ -30,7 +30,7 @@ prek install
 prek run --all-files
 ```
 
-GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run and downloads hadolint's release, see `.github/workflows/check.yml`.
+GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run and downloads the releases of hadolint, google-java-format, PMD and srctools, see `.github/workflows/check.yml`.
 
 ## Checks
 

@@ -23,6 +23,8 @@ import re
 import sys
 from pathlib import Path
 
+from srctools.keyvalues import Keyvalues
+
 REPO = Path(__file__).resolve().parent.parent
 SCRIPTING = REPO / "game/addons/sourcemod/scripting"
 UNLOCKER = REPO / "game/addons/sourcemod/configs/nwi_cvar_unlocker.cfg"
@@ -71,40 +73,20 @@ def plugin_names() -> tuple[set[str], set[str]]:
     return cvars, commands
 
 
-def keyvalues(text: str) -> dict:
-    """A KeyValues text as nested dicts (sections) and strings (values); keys in lower case."""
-    tokens = re.findall(r'"([^"]*)"|(//[^\n]*)|([{}])|([^\s"{}]+)', text)
-    stack: list[dict] = [{}]
-    key = None
-    for quoted, comment, brace, bare in tokens:
-        if comment:
-            continue
-        if brace == "{":
-            section: dict = {}
-            stack[-1][key.lower()] = section
-            stack.append(section)
-            key = None
-        elif brace == "}":
-            stack.pop()
-        elif key is None:
-            key = quoted or bare
-        else:
-            stack[-1][key.lower()] = quoted or bare
-            key = None
-    return stack[0]
-
-
 def unlocker() -> tuple[set[str], dict[str, float | None]]:
     """The cvars nwi_cvar_unlocker removes the cheat flag of in Day of Infamy, and its upper bounds: a
     number, None where the plugin calculates it, or missing where it keeps the game's."""
-    config = keyvalues(UNLOCKER.read_text())["nwi_cvar_unlocker"].get("doi", {})
+    root = Keyvalues.parse(UNLOCKER.read_text(), UNLOCKER)
+    # The keys' names in lower case, as srctools gives them
+    config = root.find_key("nwi_cvar_unlocker").find_key("doi", or_blank=True)
     cheats = {
-        name
-        for name, flags in config.get("remove_flags", {}).items()
-        if "cheat" in flags.split()
+        flags.name
+        for flags in config.find_key("remove_flags", or_blank=True)
+        if "cheat" in flags.value.split()
     }
     bounds: dict[str, float | None] = {}
-    for name, value in config.get("bounds", {}).items():
+    for bound in config.find_key("bounds", or_blank=True):
+        name, value = bound.name, bound.value
         parts = value.split()
         if len(parts) == 3 and parts[1] == "team_slots":
             bounds[name] = None

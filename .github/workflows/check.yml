@@ -35,13 +35,21 @@ jobs:
       GOOGLE_JAVA_FORMAT_SHA256: c351f587e6dd1f11836be7296894ea2ab3bd91847dbd14101f4f04d390380fe9
       PMD_VERSION: 7.29.0
       PMD_SHA256: d27177c185b837fa57f097e482d1253468aa035379c5eb2671fa0a279109b179
+      # srctools (python-srctools), the KeyValues, VDF and VPK library of the tools: the release's wheel
+      # for Arch Linux's Python, its dependencies from Arch Linux but useful_types, which the AUR package
+      # patches out and the wheel needs
+      SRCTOOLS_WHEEL: https://files.pythonhosted.org/packages/df/a3/58773c876042e2046271bf57dd1a01b6eb83b0d0c8811dac68f423e7ed19/srctools-2.7.0-cp314-cp314-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+      SRCTOOLS_SHA256: 76f666fb85f2fafe0f27d624072e2acd51c00184a1e047ece795265fe1f8fb97
+      USEFUL_TYPES_WHEEL: https://files.pythonhosted.org/packages/13/23/c194fd6c6258727f694e22b106c262c7d2678049dbc2d2045743e235f43a/useful_types-0.2.1-py3-none-any.whl
+      USEFUL_TYPES_SHA256: 0dca32763d7271b5c8c7c395c44c10d09dba47a41aec97dcb085041ad096e0e9
     steps:
       # Before the checkout, which only makes a git repository with git installed. Ghidra and its Java
       # for the Ghidra scripts (tools/ghidra/*.java).
       - name: Install the tools of the checks
         run: |
           pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint tombi \
-            rumdl typos trivy editorconfig-checker reuse clang ghidra jdk21-openjdk unzip
+            rumdl typos trivy editorconfig-checker reuse clang ghidra jdk21-openjdk unzip python-pip \
+            python-attrs python-typing_extensions python-exceptiongroup
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -62,6 +70,15 @@ jobs:
             "https://github.com/google/google-java-format/releases/download/v$GOOGLE_JAVA_FORMAT_VERSION/google-java-format_linux-x86-64"
           echo "$GOOGLE_JAVA_FORMAT_SHA256  /tmp/google-java-format" | sha256sum -c
           install -m755 /tmp/google-java-format /usr/local/bin/google-java-format
+
+      - name: Install srctools
+        run: |
+          for wheel in "$SRCTOOLS_WHEEL $SRCTOOLS_SHA256" "$USEFUL_TYPES_WHEEL $USEFUL_TYPES_SHA256"; do
+            read -r url sha256 <<<"$wheel"
+            curl -fsSLo "/tmp/${url##*/}" "$url"
+            echo "$sha256  /tmp/${url##*/}" | sha256sum -c
+            pip install --quiet --no-deps --break-system-packages --root-user-action ignore "/tmp/${url##*/}"
+          done
 
       # PMD finds its folder through the link of its script
       - name: Install PMD
