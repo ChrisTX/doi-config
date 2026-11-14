@@ -104,6 +104,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from srctools.tokenizer import Token, Tokenizer, TokenSyntaxError
 from srctools.vpk import VPK, FileInfo
 
 GAME_APP = 447820
@@ -148,10 +149,6 @@ class ModError(Exception):
 # KeyValues, the format of the map scripts: a list of (key, value) pairs, where a value is a string or
 # a block, a list of pairs again. Keys repeat, e.g. "controlpoint" once for every control point.
 Pairs = list[tuple[str, "str | Pairs"]]
-
-TOKEN = re.compile(
-    r'"(?P<quoted>[^"\n]*)"|(?P<comment>//[^\n]*)|(?P<brace>[{}])|[^\s{}"]+'
-)
 
 
 @dataclass(frozen=True)
@@ -218,16 +215,24 @@ def parse_script(
     its level doesn't have, but a level it's in, closes the blocks up to that level, e.g. a game mode in
     a game mode that isn't closed, and a closing brace after the file's block is dropped. Returns the
     pairs and what was repaired; a script whose blocks still don't match, or that has a key no level
-    takes, is an error. With level None, any key goes, for other files of the game's format."""
+    takes, is an error. With level None, any key goes, for other files of the game's format.
+
+    srctools' Tokenizer reads the tokens, without escapes, as the game reads its scripts; the repair
+    needs the tokens, which srctools' Keyvalues would reject the broken braces of."""
     # (brace, text): a brace is "{" or "}", not a quoted "{"
-    tokens = [
-        (
-            match["brace"] is not None,
-            match["quoted"] if match["quoted"] is not None else match[0],
-        )
-        for match in TOKEN.finditer(text)
-        if match["comment"] is None
-    ]
+    tokens = []
+    try:
+        for token, value in Tokenizer(
+            text, source, allow_escapes=False, string_parens=False
+        ):
+            if token in (Token.BRACE_OPEN, Token.BRACE_CLOSE):
+                tokens.append((True, value))
+            elif token is Token.STRING:
+                tokens.append((False, value))
+            elif token is not Token.NEWLINE:
+                raise ModError(f"{source}: unexpected {value!r}")
+    except TokenSyntaxError as error:
+        raise ModError(f"{source}: {error}") from error
     file: Pairs = []
     # The open blocks, the file's first: their level, their pairs and their key
     stack: list[tuple[Level | None, Pairs, str]] = [(level, file, "the file")]
@@ -279,7 +284,8 @@ def parse_script(
 
 
 def format_keyvalues(pairs: Pairs, depth: int = 0) -> str:
-    """Write pairs in the format of the game's scripts, indented with tabs."""
+    """Write pairs in the format of the game's scripts, indented with tabs. Not srctools' Keyvalues,
+    which escapes backslashes and quotes, while the game reads its scripts without escapes."""
     indent = "\t" * depth
     lines = []
     for key, value in pairs:
