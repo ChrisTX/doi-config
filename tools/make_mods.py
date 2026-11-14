@@ -97,7 +97,6 @@ import argparse
 import fnmatch
 import re
 import shutil
-import struct
 import sys
 import tomllib
 import zlib
@@ -105,10 +104,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from srctools.vpk import VPK, FileInfo
+
 GAME_APP = 447820
-VPK_SIGNATURE = 0x55AA1234
-# A file's data in the directory file rather than in an archive of the VPK
-VPK_IN_DIRECTORY = 0x7FFF
 
 # The game modes, the blocks of a map's script that copies are made from and to
 GAME_MODES = {
@@ -295,57 +293,26 @@ def format_keyvalues(pairs: Pairs, depth: int = 0) -> str:
 
 
 def vpk_files(vpk: Path) -> dict[str, Callable[[], bytes]]:
-    """List a VPK's files, version 1 or 2, by their paths, with a function each that reads the file: of
-    a VPK of several files, its directory file (<name>_dir.vpk), or a VPK of one file."""
-    data = vpk.read_bytes()
-    signature, version, tree_size = struct.unpack_from("<III", data)
-    if signature != VPK_SIGNATURE or version not in (1, 2):
-        raise ModError(f"{vpk} isn't a VPK of version 1 or 2")
-    # Version 2's header has four more fields, the sizes of the sections after the tree
-    position = 12 if version == 1 else 28
-    tree_end = position + tree_size
+    """List a VPK's files by their paths in lower case, with a function each that reads the file and
+    checks it against its checksum: of a VPK of several files, its directory file (<name>_dir.vpk),
+    or a VPK of one file. srctools reads the VPK."""
+    try:
+        archive = VPK(vpk)
+    except ValueError as error:
+        raise ModError(f"{vpk} isn't a VPK: {error}") from error
 
-    def string() -> str:
-        nonlocal position
-        end = data.index(b"\0", position)
-        text = data[position:end].decode(errors="replace")
-        position = end + 1
-        return text
-
-    def reader(
-        path: str, crc: int, preload: bytes, archive: int, offset: int, size: int
-    ) -> Callable[[], bytes]:
+    def reader(info: FileInfo, path: str) -> Callable[[], bytes]:
         def read() -> bytes:
-            if archive == VPK_IN_DIRECTORY:
-                body = data[tree_end + offset : tree_end + offset + size]
-            else:
-                stem = vpk.name.removesuffix("_dir.vpk")
-                with vpk.with_name(f"{stem}_{archive:03}.vpk").open("rb") as file:
-                    file.seek(offset)
-                    body = file.read(size)
-            content = preload + body
-            if zlib.crc32(content) != crc:
+            content = info.read()
+            if zlib.crc32(content) != info.crc:
                 raise ModError(f"{path} in {vpk} doesn't match its checksum")
             return content
 
         return read
 
-    # The tree: by extension, then by path, the files, each a list ending with an empty string. A
-    # single space stands for no extension or path.
-    files = {}
-    while extension := string():
-        while directory := string():
-            while name := string():
-                crc, preload_size, archive, offset, size, _ = struct.unpack_from(
-                    "<IHHIIH", data, position
-                )
-                position += 18
-                preload = data[position : position + preload_size]
-                position += preload_size
-                file = name if extension == " " else f"{name}.{extension}"
-                path = (file if directory == " " else f"{directory}/{file}").lower()
-                files[path] = reader(path, crc, preload, archive, offset, size)
-    return files
+    return {
+        info.filename.lower(): reader(info, info.filename.lower()) for info in archive
+    }
 
 
 def map_scripts(folder: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
