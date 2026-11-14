@@ -48,6 +48,23 @@ for plugin in "${disabled[@]}"; do
 done
 popd || exit
 
+# Test admins: TEST_ADMIN's SteamIDs, separated by spaces, get root in admins_simple.ini, which
+# admin-flatfile.smx reads with or without a database, e.g. on a test server of no database. SourceMod
+# takes STEAM_0:…, STEAM_1:…, [U:1:…] and SteamID64 there. deploy/container/test-instance.sh sets it in the
+# test instance's environment file; the live servers' don't have it.
+admins=doi/addons/sourcemod/configs/admins_simple.ini
+read -ra test_admins <<<"${TEST_ADMIN:-}"
+for admin in "${test_admins[@]}"; do
+	if [[ ! $admin =~ ^(STEAM_[0-5]:[01]:[0-9]+|\[U:1:[0-9]+\]|[0-9]{17})$ ]]; then
+		echo "Error: TEST_ADMIN has no SteamID like STEAM_0:0:123, [U:1:246] or 76561197960265974: $admin" >&2
+		exit 1
+	fi
+	# Once: a container that restarts keeps its writable layer
+	if ! grep -qF "\"$admin\"" "$admins" 2>/dev/null; then
+		printf '"%s"\t"100:z"\t// Test admin (TEST_ADMIN)\n' "$admin" >>"$admins"
+	fi
+done
+
 sourcebans_replacer() {
 	sed -i -E "s/(\"$1\"\s+)\"[^\"]*\"/\1\"$2\"/" doi/addons/sourcemod/configs/sourcebans/sourcebans.cfg
 }

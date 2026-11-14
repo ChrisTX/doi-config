@@ -257,6 +257,12 @@ with systemd](#running-with-systemd), with only the test instance's database:
 and prints the commands that copy the server's environment file and secrets to
 `/etc/doi-server`. `down` removes the database again.
 
+The admins get into the database and, through the server's environment file,
+into SourceMod's `admins_simple.ini` (`tools/prepare_server.sh`). So
+`TEST_ADMIN` in the environment file of any server, e.g.
+`/etc/doi-server/<server>.env`, makes test admins on a server without the
+database, too. The live servers' environment files don't have it.
+
 ```bash
 deploy/container/test-instance.sh up --db-only coop-commando
 ```
