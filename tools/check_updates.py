@@ -25,6 +25,9 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from srctools.keyvalues import Keyvalues
+from srctools.tokenizer import Tokenizer
+
 SERVER_APP = 462310
 GAME_APP = 447820
 DETAILS_URL = (
@@ -36,36 +39,21 @@ UPDATES = 0
 NO_UPDATES = 1
 UNKNOWN = 255
 
-TOKEN = re.compile(r'"(?P<quoted>[^"\n]*)"|(?P<brace>[{}])')
-
-# Steam's text KeyValues (VDF): a key's value is a string or a dict
+# Steam's text KeyValues (VDF), read by srctools: a key's value is a string or a dict
 Tree = dict[str, "str | Tree"]
 
 
-def parse_vdf(text: str) -> Tree:
-    """Parse Steam's VDF text into dicts, later keys replacing earlier ones."""
-    stack: list[Tree] = [{}]
-    key = None
-    for match in TOKEN.finditer(text):
-        if match["brace"] == "{":
-            if key is None:
-                raise ValueError("a block without a key")
-            block: Tree = {}
-            stack[-1][key] = block
-            stack.append(block)
-            key = None
-        elif match["brace"] == "}":
-            if len(stack) == 1:
-                raise ValueError("a closing brace too many")
-            stack.pop()
-        elif key is None:
-            key = match["quoted"]
-        else:
-            stack[-1][key] = match["quoted"]
-            key = None
-    if len(stack) != 1:
-        raise ValueError("a block isn't closed")
-    return stack[0]
+def as_tree(keyvalues: Keyvalues) -> Tree:
+    """A block's keys as dicts, later keys replacing earlier ones, as Steam reads them."""
+    return {
+        key.real_name: as_tree(key) if key.has_children() else key.value
+        for key in keyvalues
+    }
+
+
+def parse_vdf(path: Path) -> Tree:
+    """Parse a VDF file of Steam's into dicts."""
+    return as_tree(Keyvalues.parse(path.read_text(), path))
 
 
 def block(tree: "str | Tree", *keys: str) -> Tree:
@@ -80,7 +68,7 @@ def block(tree: "str | Tree", *keys: str) -> Tree:
 def game_updates(game: Path) -> list[str]:
     """The installed depots whose manifest isn't the public branch's any more."""
     manifest = game / f"steamapps/appmanifest_{SERVER_APP}.acf"
-    installed = block(parse_vdf(manifest.read_text()), "AppState", "InstalledDepots")
+    installed = block(parse_vdf(manifest), "AppState", "InstalledDepots")
     # A fresh app info: SteamCMD caches it otherwise
     output = subprocess.run(
         [
@@ -103,7 +91,9 @@ def game_updates(game: Path) -> list[str]:
     start = re.search(rf'^"{SERVER_APP}"$', output, re.MULTILINE)
     if start is None:
         raise ValueError("SteamCMD printed no app info")
-    depots = block(parse_vdf(output[start.start() :]), str(SERVER_APP), "depots")
+    # Only the app's block: SteamCMD prints more after it
+    tokenizer = Tokenizer(output[start.start() :], "SteamCMD's app info")
+    depots = block(as_tree(Keyvalues.parse(tokenizer, single_block=True)), "depots")
     if not depots:
         raise ValueError("SteamCMD's app info has no depots")
     updates = []
@@ -129,7 +119,7 @@ def workshop_updates(workshop: Path) -> list[str]:
         return []
     manifest = workshop / f"steamapps/workshop/appworkshop_{GAME_APP}.acf"
     installed = (
-        block(parse_vdf(manifest.read_text()), "AppWorkshop", "WorkshopItemsInstalled")
+        block(parse_vdf(manifest), "AppWorkshop", "WorkshopItemsInstalled")
         if manifest.is_file()
         else {}
     )
