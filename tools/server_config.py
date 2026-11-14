@@ -7,9 +7,10 @@ folder:
 
     hostname        the server's name in the server browser; SourceTV's is "<hostname> | SourceTV"
     startup_map     the first map and its game mode, e.g. "bastogne stronghold"
-    playlist        optional: the playlist (sv_playlist), e.g. "nwi/coop_commando", whose config of the
-                    settings we take over, doi-config/playlists/<playlist>.cfg, tools/make_mods.py makes
-    ruleset         optional, with a playlist: its ruleset (sv_ruleset), e.g. "american_campaign" of
+    playlist        optional: the playlist (+sv_playlist), e.g. "nwi/coop_commando"; its config of the
+                    settings we take over, doi-config/playlists/<playlist>.cfg, which tools/make_mods.py
+                    makes, runs in server.cfg
+    ruleset         optional, with a playlist: its ruleset (+sv_ruleset), e.g. "american_campaign" of
                     nwi/coop_commando; the playlist's default one without
     theater         optional: the theater to use instead of the game's (mp_theater_override)
     mapcycle        optional: the maps the server cycles through (mapcyclefile)
@@ -25,9 +26,14 @@ folder:
     configs_after   optional: configs to run after ours, e.g. ["doi-config/basic_coop.cfg"]
 
 The server.cfg it makes runs, in this order, so that a later one's setting replaces an earlier one's:
-configs_before, doi-config/tv_settings.cfg, the ruleset, the playlist's config,
-doi-config/basic_settings.cfg, configs_after. The ruleset comes before the playlist, which its config
-sets, so that the game takes the playlist with its ruleset at once. The game modes' configs run at every map start, after these (nwi_mode_config.sp).
+configs_before, doi-config/tv_settings.cfg, the playlist's config, doi-config/basic_settings.cfg,
+configs_after. The game modes' configs run at every map start, after these (nwi_mode_config.sp).
+
+The playlist and its ruleset are on the command line, before +map, so that the game applies the
+playlist's "cvars" on the first map as on every map change: before server.cfg, which our settings
+then replace where we have some. Set in server.cfg, the playlist came too late for that on the first
+map. The game takes the playlist only once the plugins are loaded, so nwi_playlist_unlock's
+replacements are in place and the game's forced settings are never applied.
 
 Usage:
     server_config.py prepare ROOT   write ROOT/doi/cfg/server.cfg and ROOT/doi/subscribed_file_ids.txt
@@ -111,8 +117,6 @@ def server_cfg(settings: dict) -> str:
     configs = list(settings.get("configs_before", []))
     configs.append("doi-config/tv_settings.cfg")
     lines += [f"exec {quote(config)}" for config in configs]
-    if "ruleset" in settings:
-        lines.append(f"sv_ruleset {quote(settings['ruleset'])}")
     configs = []
     if "playlist" in settings:
         configs.append(f"doi-config/playlists/{settings['playlist']}.cfg")
@@ -140,6 +144,10 @@ def args(root: Path) -> None:
     options += ["+sv_lan", "1" if settings.get("lan", False) else "0"]
     if "workshop" in settings:
         options.append("-workshop")
+    if "ruleset" in settings:
+        options += ["+sv_ruleset", settings["ruleset"]]
+    if "playlist" in settings:
+        options += ["+sv_playlist", settings["playlist"]]
     options += ["+map", settings["startup_map"]]
     if "theater" in settings:
         options += ["+mp_theater_override", settings["theater"]]
