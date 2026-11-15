@@ -18,8 +18,8 @@ placed on top of a server as they are:
 - `game` holds what all servers share: the configs in `cfg/doi-config` (see
   [Configs](#configs)) and the SourceMod plugins, their translations and
   configs in `addons/sourcemod`.
-- `mods` has the rules of the mods, which are made from the game's map scripts
-  (see [Mods](#mods)).
+- `mods/<game>` has the rules of the mods of a game, which are made from its map
+  scripts (see [Mods](#mods)).
 - `servers/<config>` holds what one server adds: its settings in `server.toml`
   (see [Server settings](#server-settings)), its `motd.txt` and its
   advertisements
@@ -380,7 +380,7 @@ A server's configs run once, when it starts, from the `server.cfg` its
 playlist forces, as far as we take them over, then ours, those all servers
 share (`basic_settings.cfg`), and its `configs_after`, like those of the coop or
 PvP servers (`basic_coop.cfg`, `basic_pvp.cfg`). The game forces a playlist's settings, but the server
-library's patch stops it, so `mods/playlists.toml` says which of them the
+library's patch stops it, so `mods/doi/playlists.toml` says which of them the
 servers take over; `tools/make_mods.py` makes the playlist's config of them
 from the installed game, `cfg/doi-config/playlists/<playlist>.cfg`.
 
@@ -476,7 +476,7 @@ cooperative offensive, to maps that only have offensive. A map's script
 (`maps/<map>.txt`) has a block for each of its game modes, with its control
 points, spawn zones and entities. The scripts come from the game's VPKs or from
 a map's workshop item, so they aren't part of this repository: each
-`mods/<mod>.toml` says which blocks of which maps to copy and how to adjust the
+`mods/<game>/<mod>.toml` says which blocks of which maps to copy and how to adjust the
 copies, and `tools/make_mods.py` makes the mod folder `custom/<mod>` from the
 installed game and workshop items. The mods follow the game's updates, and a
 change that a rule no longer fits, e.g. a control point it removes, stops the
@@ -524,8 +524,8 @@ for the server's `doi` folder.
 The `nwi_playlist_unlock` plugin lifts the playlists' restrictions, in Day of
 Infamy and Insurgency: the server takes each playlist from a replacement in
 `cfg/doi-config/playlists/<playlist>.playlist` where there is one, which
-`tools/make_mods.py` makes by the `[[replace]]` tables of `mods/*.toml`. Ours
-(`mods/playlists.toml`) drop `allowed_maps`, the forced settings and the
+`tools/make_mods.py` makes by the `[[replace]]` tables of `mods/<game>/*.toml`. Ours
+(`mods/doi/playlists.toml`) drop `allowed_maps`, the forced settings and the
 required slots from every playlist, in its own keys and its rulesets: any map
 and game mode may run, the playlists force no settings (their configs, also
 from `tools/make_mods.py`, take over those we keep), and any number of slots is

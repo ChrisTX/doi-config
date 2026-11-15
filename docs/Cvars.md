@@ -148,4 +148,4 @@ there any more, logs
 and goes on without it, the cvar staying at 1. The default is 0. On our servers
 the playlists don't set it: the `nwi_playlist_unlock` plugin stops the game
 forcing their `forced_cvars` and `forced_cvars_dedicated`, and
-`mods/playlists.toml` doesn't take it over.
+`mods/doi/playlists.toml` doesn't take it over.

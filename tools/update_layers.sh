@@ -45,7 +45,7 @@ update() {
 	# without the maps.
 	python3 "$repo/tools/make_mods.py" --game "$dir/game" --workshop "$dir/workshop" --check ||
 		echo "Warning: map scripts that can't be repaired, see above" >&2
-	python3 "$repo/tools/make_mods.py" --game "$dir/game" --workshop "$dir/workshop" "$dir/mods" "$repo/mods"
+	python3 "$repo/tools/make_mods.py" --game "$dir/game" --workshop "$dir/workshop" "$dir/mods" "$repo/mods/doi"
 }
 
 stage() {

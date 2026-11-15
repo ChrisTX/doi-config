@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make the mods of mods/*.toml from the game's map scripts and playlists.
+"""Make the mods of mods/<game>/*.toml from the game's map scripts and playlists.
 
 A map's script, maps/<map>.txt, configures its game modes, a block each: the teams, the control points
 in the order they're taken, the spawn zones and the entities. The game ships the scripts in its VPKs
@@ -7,7 +7,7 @@ in the order they're taken, the spawn zones and the entities. The game ships the
 e.g. offensive as invasion, which the map doesn't have, and adjusts the copy. The mods are made from
 the installed game, so they follow its updates, and this repository only holds the rules.
 
-Each mods/<mod>.toml makes the mod folder custom/<mod> of the output, with the scripts of its maps:
+Each mods/<game>/<mod>.toml makes the mod folder custom/<mod> of the output, with the scripts of its maps:
 
     # A map's script comes from the game, unless the map is from the workshop: map = item ID
     [workshop]
@@ -779,7 +779,7 @@ class Playlist:
 
 
 def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> list[Replace]:
-    """Make the mod of a mods/<mod>.toml in output/custom/<mod>, and its playlists' configs in
+    """Make the mod of a mods/<game>/<mod>.toml in output/custom/<mod>, and its playlists' configs in
     output/cfg/doi-config/playlists; returns its replacements of playlists, which make_replacements()
     makes with those of all mods."""
     mod = config.stem
@@ -822,7 +822,7 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> list[Rep
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Make the mods of mods/*.toml from the game's map scripts and playlists."
+        description="Make the mods of mods/<game>/*.toml from the game's map scripts and playlists."
     )
     parser.add_argument(
         "--game",
