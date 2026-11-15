@@ -1,5 +1,5 @@
 #!/bin/bash
-# Starts a server, prepared by prepare_server.sh, under srcds_watchdog.py: for doi-server@.service and the
+# Starts a server, prepared by prepare_server.sh, under srcds_watchdog.py: for nwi-server@.service and the
 # container's entrypoint, which share the command line this way.
 #
 #   start_server.sh ROOT   start the server of ROOT (srcds_linux there), with the settings of its
@@ -8,7 +8,7 @@
 #                          file's
 #
 # SERVER_PORT, TV_PORT, CLIENT_PORT, SERVER_PASSWORD: the server's ports and password, from its
-# environment file (/etc/doi-server/<server>.env)
+# environment file (/etc/nwi-server/<server>.env)
 # SANITISER: undefined, address or address,undefined, for a server with test builds of SourceMod and
 # Metamod:Source with these sanitisers (./aur-packages build --sanitize of the AUR packages, see
 # README.md): their 32-bit runtime of compiler-rt is preloaded into srcds too, and they report to the

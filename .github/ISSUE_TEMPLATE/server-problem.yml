@@ -31,5 +31,5 @@ body:
     id: log
     attributes:
       label: Log
-      description: The console output of the server, or the output of the failing script or unit (`journalctl --user -u doi-server@<name>`)
+      description: The console output of the server, or the output of the failing script or unit (`journalctl --user -u nwi-server@<name>`)
       render: text

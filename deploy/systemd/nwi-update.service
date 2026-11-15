@@ -1,22 +1,22 @@
 [Unit]
-Description=Update the games of the Day of Infamy or Insurgency servers and doi-config
+Description=Update the games of the Day of Infamy or Insurgency servers and their configs
 After=network-online.target
 Wants=network-online.target
 # The servers are the overlays of the game install, which mustn't change while they run: they start
-# after it, and doi-restart.service stops them before running it again
-Before=doi-servers.target
+# after it, and nwi-restart.service stops them before running it again
+Before=nwi-servers.target
 
 [Service]
 Type=oneshot
 # Active once done, so a server that starts or restarts on its own doesn't run it again
 RemainAfterExit=yes
-User=doi
-StateDirectory=doi-server
+User=nwi-server
+StateDirectory=nwi-server
 StateDirectoryMode=0750
 # SteamCMD keeps its files in the home folder
-Environment=HOME=%S/doi-server
-# Puts an update that doi-stage.service staged in place, or updates in place, e.g. at boot
-ExecStart=/usr/lib/doi-config/tools/update_layers.sh %S/doi-server
+Environment=HOME=%S/nwi-server
+# Puts an update that nwi-stage.service staged in place, or updates in place, e.g. at boot
+ExecStart=/usr/lib/nwi-server-kit/update_layers.sh %S/nwi-server
 TimeoutStartSec=infinity
 PrivateTmp=yes
 PrivateDevices=yes

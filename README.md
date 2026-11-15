@@ -81,19 +81,19 @@ A server without a `server.toml`, of no config of `servers`, needs its own
 
 ### Running with systemd
 
-The servers run as system services of the `doi` user, one instance per server,
+The servers run as system services of the `nwi-server` user, one instance per server,
 which share one install of each game. The games, and the workshop items, are
-those of the servers: each `/etc/doi-server/<server>.env` is a server, its game
+those of the servers: each `/etc/nwi-server/<server>.env` is a server, its game
 its config's or `GAME` of its environment file without one (`tools/games.py`).
 Each server is put together with overlayfs from read-only layers, top first:
 
-- `/etc/doi-server/secrets`, laid out like the game's folder, e.g. the database
+- `/etc/nwi-server/secrets`, laid out like the game's folder, e.g. the database
   credentials of SourceMod and SourceBans++ in
   `addons/sourcemod/configs/databases.cfg`
 - the server's folder in `servers`, if there's one
-- this repository's plugins, compiled by `doi-update.service`
+- this repository's plugins, compiled by `nwi-update.service`
 - the mods of `mods/<game>` and the playlists' configs, made by
-  `doi-update.service`
+  `nwi-update.service`
 - `game` of this repository
 - `/usr/lib/sourcemod` and `/usr/lib/metamod`: SourceMod, Metamod:Source and
   the plugins from their packages (`sourcemod`, `metamod-source`,
@@ -107,40 +107,40 @@ Their writable layer starts empty whenever the layers are mounted, so changes
 to the layers always show. What the server writes and keeps, like its logs, is
 bind-mounted from the server's state folder instead (see
 `tools/mount_server.sh`). The layers are mounted while the server runs, in
-`/run/doi-server/<server>`.
+`/run/nwi-server/<server>`.
 
-The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`. They
+The units are in `deploy/systemd`, the `nwi-server` user in `deploy/sysusers.d`. They
 run the tools installed with them (`make install`, or the package of
-`deploy/arch/PKGBUILD`), in `/usr/lib/doi-config/tools`, which read the configs
-from the servers' clone of this repository in `/var/lib/doi-server/doi-config`
-(`DOI_CONFIG`, see `tools/games.py`). SourceMod and Metamod:Source are those of
+`deploy/arch/PKGBUILD`), in `/usr/lib/nwi-server-kit`, which read the configs
+from the servers' clone of this repository in `/var/lib/nwi-server/config`
+(`NWI_CONFIG`, see `tools/games.py`). SourceMod and Metamod:Source are those of
 `SOURCEMOD_DIR` and `METAMOD_DIR`, `/usr/lib/sourcemod` and `/usr/lib/metamod`
 by default.
 
-- `doi-update.service` updates the layers (`tools/update_layers.sh`): it pulls
-  this repository in `/var/lib/doi-server/doi-config`, compiles its plugins and
+- `nwi-update.service` updates the layers (`tools/update_layers.sh`): it pulls
+  this repository in `/var/lib/nwi-server/config`, compiles its plugins and
   runs `tools/update_game.sh` for each game of the servers, which installs or
-  updates the game in `/var/lib/doi-server/<game>/game` with SteamCMD, checks
+  updates the game in `/var/lib/nwi-server/<game>/game` with SteamCMD, checks
   it against the plugins' gamedata (see [Playlists](#playlists)) and makes the
-  game's mods (see [Mods](#mods)) in `/var/lib/doi-server/<game>/mods`. It runs
+  game's mods (see [Mods](#mods)) in `/var/lib/nwi-server/<game>/mods`. It runs
   before the servers start. It also downloads the workshop items of the game's
-  servers' lists into `/var/lib/doi-server/<game>/workshop`, once for all of
+  servers' lists into `/var/lib/nwi-server/<game>/workshop`, once for all of
   them. SteamCMD gets their current versions, which the game itself never does
   once it has an item, and items no list names any more are removed. The
-  layers of a state folder from before Insurgency, in `/var/lib/doi-server`
+  layers of a state folder from before Insurgency, in `/var/lib/nwi-server`
   itself, are moved into `doi` once.
-- `doi-mount@<server>.service` mounts the layers (`tools/mount_server.sh`)
-  after `doi-update.service`, and unmounts them after the server stops. It's
+- `nwi-mount@<server>.service` mounts the layers (`tools/mount_server.sh`)
+  after `nwi-update.service`, and unmounts them after the server stops. It's
   stopped and restarted with the server, systemd's restarts of the server
   included, and the server only runs with it.
-- `doi-server@<server>.service` configures the server
+- `nwi-server@<server>.service` configures the server
   (`tools/prepare_server.sh`: the plugins SourceBans++ needs, its website from
   `SOURCEBANS_WEBSITE`, `RCON_PASSWORD` in `rcon.cfg`) and runs it. SourceBans++
   finds the server in the panel by its address and port: the address the server
   reports, or `SOURCEBANS_SERVER_IP` if that's a private one, as in a container.
   `SOURCEBANS_SERVER_ID` sets the panel's ID of the server instead. Its ports
   and password come from
-  `/etc/doi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`,
+  `/etc/nwi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`,
   `SERVER_PASSWORD`), the rest of its settings from its `server.toml`. The server
   uses the folder of the same name in `servers`, or the one `SERVER_CONFIG_NAME`
   names; without one, the secrets layer needs a `cfg/server.cfg` as described
@@ -149,20 +149,20 @@ by default.
   service is ready once the server first answers, and systemd's watchdog
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
   The hung server has 30 seconds to dump its core first.
-- `doi-servers.target` starts the enabled servers.
-- `doi-restart.timer` updates and restarts the servers every day at 06:00. The
-  layers mustn't change while servers use them, so `doi-stage.service` updates
-  a copy of them in `/var/lib/doi-server/next` while the servers run. The copy
+- `nwi-servers.target` starts the enabled servers.
+- `nwi-restart.timer` updates and restarts the servers every day at 06:00. The
+  layers mustn't change while servers use them, so `nwi-stage.service` updates
+  a copy of them in `/var/lib/nwi-server/next` while the servers run. The copy
   is reflinked, on btrfs or XFS: it shares the files' data with the layers, so
   it takes only the space of what the update changes, and the servers' files
-  stay as they are. Then the servers are stopped, `doi-update.service` puts the
+  stay as they are. Then the servers are stopped, `nwi-update.service` puts the
   copy in place, keeping the layers it replaced in
-  `/var/lib/doi-server/previous`, and the servers start again: they're only
-  down for the restart. Without reflinks, `doi-update.service` updates in place
+  `/var/lib/nwi-server/previous`, and the servers start again: they're only
+  down for the restart. Without reflinks, `nwi-update.service` updates in place
   while the servers are stopped.
-- `doi-update-check.timer` checks the games and the workshop items for updates
+- `nwi-update-check.timer` checks the games and the workshop items for updates
   every three hours (`tools/check_updates.py`), and on an update restarts the
-  servers like `doi-restart.timer`. The game's depots are compared, not its
+  servers like `nwi-restart.timer`. The game's depots are compared, not its
   build, as the Steam client library's depot changes on its own, and the
   workshop items must be the versions the players download: theater files that
   differ break the game.
@@ -181,11 +181,11 @@ sudo pacman -S --needed --asdeps sourcemod-sourcebans-pp \
 Then, as root:
 
 ```bash
-install -d -o doi -g doi -m 750 /var/lib/doi-server
-sudo -u doi git clone https://github.com/ChrisTX/doi-config.git /var/lib/doi-server/doi-config
-# The server's settings in /etc/doi-server/coop-commando.env, its secrets in /etc/doi-server/secrets
-systemctl enable --now doi-server@coop-commando.service doi-servers.target
-systemctl enable --now doi-restart.timer doi-update-check.timer
+install -d -o nwi-server -g nwi-server -m 750 /var/lib/nwi-server
+sudo -u nwi-server git clone https://github.com/ChrisTX/doi-config.git /var/lib/nwi-server/config
+# The server's settings in /etc/nwi-server/coop-commando.env, its secrets in /etc/nwi-server/secrets
+systemctl enable --now nwi-server@coop-commando.service nwi-servers.target
+systemctl enable --now nwi-restart.timer nwi-update-check.timer
 ```
 
 ### Running in a container
@@ -194,7 +194,7 @@ systemctl enable --now doi-restart.timer doi-update-check.timer
 Metamod:Source and the plugins from their packages, this repository and its
 compiled plugins. The game and the workshop items aren't part
 of it, as they may not be passed on: they're in a state folder on the host,
-which the image's updater fills with SteamCMD, like `doi-update.service` for
+which the image's updater fills with SteamCMD, like `nwi-update.service` for
 the systemd units, and which the servers mount. The packages come from a local
 pacman repository, like the one of aurutils, verified with its signing key: the
 build context `repo` is its folder, `REPO_NAME` its name. With Podman, from the
@@ -204,7 +204,7 @@ repository's root, for aurutils' `aur` repository in `/var/lib/aurutils-repo`:
 gpg --homedir /etc/pacman.d/gnupg --export -a <key> >repo-key.asc
 podman build --format docker --build-context repo=/var/lib/aurutils-repo \
   --build-arg REPO_NAME=aur --secret id=repo-key,src=repo-key.asc \
-  -f deploy/container/Containerfile -t doi-server .
+  -f deploy/container/Containerfile -t nwi-server .
 ```
 
 `deploy/container/test-instance.sh build` does the same with the repository
@@ -212,27 +212,27 @@ aurutils uses. The image's commands (`deploy/container/entrypoint.sh`) are the
 server, `update [--stage]` and `check`: the updater and the check of
 `tools/update_layers.sh` and `tools/check_updates.py` on the state folder,
 mounted at `/srv/state`, for the servers whose environment files are mounted at
-`/etc/doi-server`.
+`/etc/nwi-server`.
 
 `deploy/quadlet` has the units for rootless Podman, the containers'
 counterparts of `deploy/systemd`, with the state folder
-`~/.local/state/doi-server` and the settings in `~/.config/doi-server`:
+`~/.local/state/nwi-server` and the settings in `~/.config/nwi-server`:
 
-- `doi-update.container` and `doi-stage.container` update the state folder in
+- `nwi-update.container` and `nwi-stage.container` update the state folder in
   place or stage the update in a reflinked copy, as their systemd counterparts.
-- `doi-server@<server>.container` runs a server: its settings in
-  `~/.config/doi-server/<server>.env`, as for `doi-server@.service`, its secrets
-  in `~/.config/doi-server/secrets` (which may be empty), on the host's
+- `nwi-server@<server>.container` runs a server: its settings in
+  `~/.config/nwi-server/<server>.env`, as for `nwi-server@.service`, its secrets
+  in `~/.config/nwi-server/secrets` (which may be empty), on the host's
   network. Its game's install and workshop items are mounted with an overlay of
   the container's own (`:O`), its mods read-only, through the links the updater
-  keeps in `~/.local/state/doi-server/servers/<server>`, as a unit can't pick
+  keeps in `~/.local/state/nwi-server/servers/<server>`, as a unit can't pick
   the folders by the server's game. It's ready once the image's
   health check, A2S like the systemd units' watchdog, passes, and restarted
   when the server stops answering. What it keeps goes into volumes.
-- `doi-build.service` pulls a clone of this repository and builds the image
-  anew; `doi-restart.service` builds, stages, stops the servers, puts the
+- `nwi-build.service` pulls a clone of this repository and builds the image
+  anew; `nwi-restart.service` builds, stages, stops the servers, puts the
   update in place and starts them again, with the new image, every day with
-  `doi-restart.timer`; `doi-update-check.timer` checks for updates every three
+  `nwi-restart.timer`; `nwi-update-check.timer` checks for updates every three
   hours, as for the systemd units.
 
 ```bash
@@ -240,10 +240,10 @@ cp deploy/quadlet/*.container ~/.config/containers/systemd/
 cp deploy/quadlet/*.service deploy/quadlet/*.timer deploy/quadlet/*.target \
   ~/.config/systemd/user/
 systemctl --user daemon-reload
-# The server's settings in ~/.config/doi-server/coop-commando.env
-systemctl --user start doi-update.service
-systemctl --user enable --now doi-server@coop-commando.service doi-servers.target
-systemctl --user enable --now doi-restart.timer doi-update-check.timer
+# The server's settings in ~/.config/nwi-server/coop-commando.env
+systemctl --user start nwi-update.service
+systemctl --user enable --now nwi-server@coop-commando.service nwi-servers.target
+systemctl --user enable --now nwi-restart.timer nwi-update-check.timer
 loginctl enable-linger
 ```
 
@@ -260,13 +260,13 @@ generated, and without its config the Discord forward stays silent, so nothing
 reaches the live servers. `TEST_ADMIN` makes SteamIDs root admin, separated by
 spaces, each in any of Steam's forms (`STEAM_0:0:123`, `STEAM_1:0:123`,
 `[U:1:246]` or the SteamID64 `76561197960265974`). Your settings, like your own
-SteamID, can stay in `~/.config/doi-config/test-instance.env`, one `VAR=value` a
+SteamID, can stay in `~/.config/nwi-server-kit/test-instance.env`, one `VAR=value` a
 line, so you don't type them each time; variables of the environment take
 precedence:
 
 ```bash
-mkdir -p ~/.config/doi-config
-echo 'TEST_ADMIN=[U:1:246]' >>~/.config/doi-config/test-instance.env
+mkdir -p ~/.config/nwi-server-kit
+echo 'TEST_ADMIN=[U:1:246]' >>~/.config/nwi-server-kit/test-instance.env
 deploy/container/test-instance.sh build
 # The games and the workshop items of all configs into the state folder: about
 # 20 GB for Day of Infamy at first, and 10 GB for Insurgency's test server;
@@ -292,12 +292,12 @@ The systemd units can be tested on this machine as well, set up as in [Running
 with systemd](#running-with-systemd), with only the test instance's database:
 `up --db-only` starts it at `127.0.0.1:3306` (`TEST_DB_PORT` for another port)
 and prints the commands that copy the server's environment file and secrets to
-`/etc/doi-server`. `down` removes the database again.
+`/etc/nwi-server`. `down` removes the database again.
 
 The admins get into the database and, through the server's environment file,
 into SourceMod's `admins_simple.ini` (`tools/prepare_server.sh`). So
 `TEST_ADMIN` in the environment file of any server, e.g.
-`/etc/doi-server/<server>.env`, makes test admins on a server without the
+`/etc/nwi-server/<server>.env`, makes test admins on a server without the
 database, too. The live servers' environment files don't have it.
 
 ```bash
@@ -327,9 +327,9 @@ server's output, with stack traces:
 ```bash
 podman build --format docker --build-context packages=/tmp/aur-build.XXXXXX \
   -f deploy/container/sanitiser/Containerfile \
-  -t localhost/doi-server-sanitiser .
+  -t localhost/nwi-server-sanitiser .
 SANITISER=undefined deploy/container/test-instance.sh up soak-bots
-podman logs doi-test-server 2>&1 |
+podman logs nwi-test-server 2>&1 |
   grep -E 'runtime error:|ERROR: AddressSanitizer'
 ```
 
@@ -341,9 +341,9 @@ lost them. AddressSanitizer takes a lot more memory and time than
 UndefinedBehaviorSanitizer, so a long run with it is best left overnight:
 
 ```bash
-env=~/.local/state/doi-config-test/server.env
+env=~/.local/state/nwi-test/server.env
 RCON_PASSWORD=$(sed -n 's/^RCON_PASSWORD=//p' "$env") \
-  tools/soak_watch.py --container doi-test-server --hours 8 soak.tsv
+  tools/soak_watch.py --container nwi-test-server --hours 8 soak.tsv
 ```
 
 ## Server notes
@@ -355,7 +355,7 @@ maps like `ardennes`. Community maps of that size contain a lot of lightmap data
 and otherwise crash the server with an [Engine Hunk
 Overflow](https://developer.valvesoftware.com/wiki/Engine_Hunk_Overflow). In
 some cases, like when such a map is the server's startup map, the setting also
-has to be passed on the server's command line, as `doi-server@.service` does.
+has to be passed on the server's command line, as `nwi-server@.service` does.
 
 ### Libraries (Linux)
 
@@ -454,7 +454,7 @@ without the unlocker, e.g. with
 ### Tickrate
 
 The servers run at 128 tick (`-tickrate 128` on their command lines, see
-`doi-server@.service` and `deploy/container/entrypoint.sh`), where Day of
+`nwi-server@.service` and `deploy/container/entrypoint.sh`), where Day of
 Infamy's default is 64. `basic_settings.cfg` makes clients send and get 128
 updates per second, whatever their own settings, which default to 64.
 
@@ -536,7 +536,7 @@ formatted, without copies.
 
 With `--check`, the tool makes nothing, but parses every map script of the game
 and of the workshop items, as files or in VPKs, and lists those it had to repair
-and those it can't, the latter with an exit status of 1. `doi-update.service`
+and those it can't, the latter with an exit status of 1. `nwi-update.service`
 runs it after each update, so its log shows broken scripts of new workshop
 maps.
 

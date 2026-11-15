@@ -6,19 +6,19 @@ files: the depots from the app (DepotDownloader picks them), the workshop's app 
 (the Web API's consumer_app_id), the game's folder from the install, the folder with gameinfo.txt.
 A game's name is the name of its folder.
 
-The configs, servers/ and game/ of this repository, are those of DOI_CONFIG: a clone of it, by default
-the checkout the tools are in, or /var/lib/doi-server/doi-config, the servers' clone, for the
+The configs, servers/ and game/ of this repository, are those of NWI_CONFIG: a clone of it, by default
+the checkout the tools are in, or /var/lib/nwi-server/config, the servers' clone, for the
 installed tools (make install).
 
 The servers, whose games are installed and whose workshop items are downloaded, are found, in this
-order: the configs of servers/ in DOI_SERVER_CONFIGS, separated by spaces (e.g. a test instance's);
-the environment files of DOI_SERVERS_DIR (/etc/doi-server by default), <server>.env each, if there
+order: the configs of servers/ in NWI_SERVER_CONFIGS, separated by spaces (e.g. a test instance's);
+the environment files of NWI_SERVERS_DIR (/etc/nwi-server by default), <server>.env each, if there
 is one; every config of servers/ otherwise. A server's game is its server.toml's (game), or GAME of
 its environment file without one, Day of Infamy by default; its workshop items those of its
 server.toml's list (workshop).
 
 Usage:
-    games.py config            print the folder of the configs (DOI_CONFIG)
+    games.py config            print the folder of the configs (NWI_CONFIG)
     games.py app GAME          print the dedicated server's app of the game, e.g. 462310 of doi
     games.py folder INSTALL    print the name of the game's folder of an install, e.g. doi
     games.py server NAME       print the game of the server NAME
@@ -45,13 +45,13 @@ SERVER_APPS = {
 }
 DEFAULT = "doi"
 TOOLS = Path(__file__).resolve().parent
-CLONE = Path("/var/lib/doi-server/doi-config")
+CLONE = Path("/var/lib/nwi-server/config")
 
 
 def config_folder() -> Path:
     """The folder of the configs, see the module's documentation."""
-    if os.environ.get("DOI_CONFIG"):
-        return Path(os.environ["DOI_CONFIG"])
+    if os.environ.get("NWI_CONFIG"):
+        return Path(os.environ["NWI_CONFIG"])
     return TOOLS.parent if (TOOLS.parent / "servers").is_dir() else CLONE
 
 
@@ -115,12 +115,12 @@ def server(name: str, env: dict[str, str]) -> Server:
 
 def servers() -> list[Server]:
     """The servers, see the module's documentation."""
-    configs = os.environ.get("DOI_SERVER_CONFIGS")
+    configs = os.environ.get("NWI_SERVER_CONFIGS")
     if configs is not None:
         return [
             server(config, {"SERVER_CONFIG_NAME": config}) for config in configs.split()
         ]
-    folder = Path(os.environ.get("DOI_SERVERS_DIR", "/etc/doi-server"))
+    folder = Path(os.environ.get("NWI_SERVERS_DIR", "/etc/nwi-server"))
     envs = sorted(folder.glob("*.env")) if folder.is_dir() else []
     if envs:
         return [server(env.stem, read_env(env)) for env in envs]
@@ -234,7 +234,7 @@ def main() -> int:
         elif command == "folder":
             print(game_folder(Path(operand)).name)
         elif command == "server":
-            folder = Path(os.environ.get("DOI_SERVERS_DIR", "/etc/doi-server"))
+            folder = Path(os.environ.get("NWI_SERVERS_DIR", "/etc/nwi-server"))
             env = folder / f"{operand}.env"
             print(server(operand, read_env(env) if env.is_file() else {}).game)
         elif command == "used":

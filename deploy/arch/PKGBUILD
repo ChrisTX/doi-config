@@ -1,12 +1,12 @@
 # shellcheck shell=bash disable=SC2034,SC2154 # makepkg reads the variables and sets pkgdir, startdir
 # The tools and the systemd units of the servers (make install, see the Makefile), built from the
 # commits of the checkout this file is in: makepkg in deploy/arch. The configs aren't part of it, the
-# servers' clone in /var/lib/doi-server/doi-config has them (README.md).
+# servers' clone in /var/lib/nwi-server/config has them (README.md).
 
-pkgname=doi-config-git
-pkgver=r0
+pkgname=nwi-server-kit-git
+pkgver=r323.a621adb
 pkgrel=1
-pkgdesc='Tools and systemd units of the Kim Jong Un Day of Infamy servers, also for Insurgency'
+pkgdesc='Tools and systemd units of Day of Infamy and Insurgency servers'
 arch=(any)
 url='https://github.com/ChrisTX/doi-config'
 license=(MIT)
@@ -31,18 +31,18 @@ optdepends=(
   'sourcemod-sourcebans-pp: the bans and admins of the configs'
   'sourcemod-sourcebans-pp-discord-forward: the reports of the configs to Discord'
 )
-provides=(doi-config)
-conflicts=(doi-config)
-source=("doi-config::git+file://${startdir%/deploy/arch}")
+provides=(nwi-server-kit)
+conflicts=(nwi-server-kit)
+source=("nwi-server-kit::git+file://${startdir%/deploy/arch}")
 sha256sums=(SKIP)
 
 pkgver() {
-  cd doi-config || exit
+  cd nwi-server-kit || exit
   printf 'r%s.%s' "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
 }
 
 package() {
-  cd doi-config || exit
+  cd nwi-server-kit || exit
   make DESTDIR="$pkgdir" PREFIX=/usr install
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

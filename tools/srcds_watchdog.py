@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run SRCDS under systemd's watchdog.
 
-The main process of doi-server@.service (Type=notify): it starts SRCDS as its child and queries it
+The main process of nwi-server@.service (Type=notify): it starts SRCDS as its child and queries it
 with A2S. Once the server first answers, it tells systemd that the service is ready, and after every
 answer it pings systemd's watchdog. A server that stops answering for WatchdogSec= is restarted by
 systemd (Restart=), within the limits of StartLimitBurst=.

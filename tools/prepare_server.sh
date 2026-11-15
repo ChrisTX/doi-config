@@ -1,6 +1,6 @@
 #!/bin/bash
 # Configures a server in its writable layer: one assembled by mount_server.sh, whose writable layer starts
-# empty whenever doi-mount@.service mounts it, on every start of the server (doi-server@.service runs
+# empty whenever nwi-mount@.service mounts it, on every start of the server (nwi-server@.service runs
 # this as root with "!", as the layers of the packages belong to root), or the container's
 # (deploy/container/entrypoint.sh), which keeps its writable layer when the container restarts, so
 # changing it twice changes nothing.

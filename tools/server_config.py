@@ -2,7 +2,7 @@
 """A server's settings, servers/<name>/server.toml, for its start.
 
 The file says what the server is; its machine's settings and secrets (ports, passwords) are in its
-environment file instead (/etc/doi-server/<server>.env). Its keys, the paths relative to the game's cfg
+environment file instead (/etc/nwi-server/<server>.env). Its keys, the paths relative to the game's cfg
 folder:
 
     game            optional: the game, by the name of its folder, "doi" (Day of Infamy, the default)
@@ -44,7 +44,7 @@ Usage, with GAME the game's folder of the install ROOT (tools/games.py):
                                     line (tools/start_server.sh)
     server_config.py game FILE      print the game of a server.toml
     server_config.py check FILE...  check server.toml files: their keys, and that the configs and lists
-                                    they name exist in game/cfg of the configs (DOI_CONFIG, see
+                                    they name exist in game/cfg of the configs (NWI_CONFIG, see
                                     tools/games.py)
 """
 

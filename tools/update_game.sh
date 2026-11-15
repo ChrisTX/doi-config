@@ -1,6 +1,6 @@
 #!/bin/bash
 # Updates the layers the servers share: a game's install, the workshop items of its servers and this
-# repository's compiled plugins, and checks the plugins' gamedata against a game. doi-update.service
+# repository's compiled plugins, and checks the plugins' gamedata against a game. nwi-update.service
 # runs it as the servers' user while no server runs, as the lower layers of an overlay mustn't change
 # while it's mounted; the container image runs each step in a layer of its own.
 #
@@ -17,7 +17,7 @@
 set -euo pipefail
 
 tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
-# The configs, with the plugins' sources (DOI_CONFIG, see tools/games.py)
+# The configs, with the plugins' sources (NWI_CONFIG, see tools/games.py)
 config=$(python3 "$tools/games.py" config)
 
 update_game() {

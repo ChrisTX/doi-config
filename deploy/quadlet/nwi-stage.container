@@ -1,20 +1,20 @@
 # Stages an update of the state folder in a reflinked copy (next/) while the servers run, which
-# doi-update.service puts in place once doi-restart.service has stopped them
+# nwi-update.service puts in place once nwi-restart.service has stopped them
 [Unit]
 Description=Stage an update of the games, workshop items and mods of the Day of Infamy or Insurgency servers, in a container
 Wants=network-online.target
-After=network-online.target doi-build.service
+After=network-online.target nwi-build.service
 
 [Container]
-Image=localhost/doi-server
+Image=localhost/nwi-server
 Exec=update --stage
 UserNS=keep-id:uid=1000,gid=1000
-Volume=%S/doi-server:/srv/state
+Volume=%S/nwi-server:/srv/state
 # The servers' environment files, which say which games and workshop items to update (tools/games.py)
-Volume=%E/doi-server:/etc/doi-server:ro
+Volume=%E/nwi-server:/etc/nwi-server:ro
 HealthCmd=none
 
 [Service]
 Type=oneshot
-StateDirectory=doi-server
+StateDirectory=nwi-server
 TimeoutStartSec=infinity

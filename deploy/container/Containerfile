@@ -1,6 +1,6 @@
 # The Day of Infamy server, with SourceMod and the plugins from their packages and this configuration,
 # without the game and the workshop items: those are the state folder's, which the updater of the same
-# image fills with SteamCMD, as doi-update.service does for the systemd units (see entrypoint.sh). The
+# image fills with SteamCMD, as nwi-update.service does for the systemd units (see entrypoint.sh). The
 # image has nothing of the game's, which may not be passed on. See README.md for building and running.
 #
 # Build arguments:
@@ -21,14 +21,14 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # The game's libraries (see README.md) and the servers' user with a fixed ID, which the files of the
 # volumes belong to: a system user's ID depends on the users the base image has
-COPY deploy/container/enable-repos.sh /usr/local/lib/doi/
-RUN /usr/local/lib/doi/enable-repos.sh "$TESTING" \
+COPY deploy/container/enable-repos.sh /usr/local/lib/nwi-server-kit/
+RUN /usr/local/lib/nwi-server-kit/enable-repos.sh "$TESTING" \
   && pacman -Syu --noconfirm --needed lib32-gcc-libs lib32-glibc lib32-sdl3 lib32-zlib-ng-compat \
   && pacman -Scc --noconfirm \
-  && groupadd --gid 1000 doi \
-  && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/doi doi \
-  && install -d -o doi -g doi /srv/doi /srv/state /opt/steamcmd \
-    /srv/doi-data/dumps /srv/doi-data/logs /srv/doi-data/sourcemod/logs /srv/doi-data/sourcemod/data
+  && groupadd --gid 1000 nwi-server \
+  && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/nwi-server nwi-server \
+  && install -d -o nwi-server -g nwi-server /srv/game /srv/state /opt/steamcmd \
+    /srv/nwi-data/dumps /srv/nwi-data/logs /srv/nwi-data/sourcemod/logs /srv/nwi-data/sourcemod/data
 
 # SteamCMD, which updates itself on its first run (and may exit with an error status after that)
 USER 1000:1000
@@ -40,7 +40,7 @@ RUN printf '#!/bin/sh\nexec /opt/steamcmd/steamcmd.sh "$@"\n' >/usr/local/bin/st
 
 # The packages from the repository, verified with its key. SourceMod's optional dependencies, those of
 # its MySQL, PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source go into
-# /opt/doi-layer, the image's files of the game's doi folder, which the server's entrypoint copies into
+# /opt/nwi-layer, the image's files of the game's folder, which the server's entrypoint copies into
 # it on every start.
 USER 0:0
 ARG REPO_NAME=aur
@@ -56,22 +56,22 @@ RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key
     lib32-mariadb-connector-c lib32-postgresql-libs lib32-libmaxminddb lib32-pcre2 lib32-curl \
   && mv /etc/pacman.conf.orig /etc/pacman.conf \
   && pacman -Scc --noconfirm \
-  && install -d -o doi -g doi /opt/doi-layer \
-  && cp -a --no-preserve=ownership /usr/lib/metamod/. /usr/lib/sourcemod/. /opt/doi-layer/ \
-  && chown -R doi:doi /opt/doi-layer
+  && install -d -o nwi-server -g nwi-server /opt/nwi-layer \
+  && cp -a --no-preserve=ownership /usr/lib/metamod/. /usr/lib/sourcemod/. /opt/nwi-layer/ \
+  && chown -R nwi-server:nwi-server /opt/nwi-layer
 
-# This repository and its plugins, on top of SourceMod in /opt/doi-layer
+# This repository and its plugins, on top of SourceMod in /opt/nwi-layer
 USER 1000:1000
-COPY --chown=doi:doi . /opt/doi-config
-RUN /opt/doi-config/tools/update_game.sh --plugins /tmp/plugins \
-  && cp -a /tmp/plugins/. /opt/doi-config/game/. /opt/doi-layer/ \
+COPY --chown=nwi-server:nwi-server . /opt/nwi-server-kit
+RUN /opt/nwi-server-kit/tools/update_game.sh --plugins /tmp/plugins \
+  && cp -a /tmp/plugins/. /opt/nwi-server-kit/game/. /opt/nwi-layer/ \
   && rm -rf /tmp/plugins
 
-WORKDIR /srv/doi
-ENV LD_LIBRARY_PATH=/srv/doi:/srv/doi/bin
+WORKDIR /srv/game
+ENV LD_LIBRARY_PATH=/srv/game:/srv/game/bin
 # SRCDS shuts down on SIGINT, which srcds_watchdog.py passes on
 STOPSIGNAL SIGINT
 # The server answers A2S queries, as the systemd units' watchdog checks; the port is SERVER_PORT
 HEALTHCHECK --start-period=10m --interval=30s --retries=3 \
-  CMD ["python3", "/opt/doi-config/tools/srcds_watchdog.py", "--check"]
-ENTRYPOINT ["/opt/doi-config/deploy/container/entrypoint.sh"]
+  CMD ["python3", "/opt/nwi-server-kit/tools/srcds_watchdog.py", "--check"]
+ENTRYPOINT ["/opt/nwi-server-kit/deploy/container/entrypoint.sh"]

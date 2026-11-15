@@ -1,12 +1,12 @@
 [Unit]
 Description=Day of Infamy or Insurgency server (%i)
-After=network-online.target doi-update.service doi-mount@%i.service
-Wants=network-online.target doi-update.service
-# The server's layers (doi-mount@.service, after doi-update.service): the server only runs with them, and
+After=network-online.target nwi-update.service nwi-mount@%i.service
+Wants=network-online.target nwi-update.service
+# The server's layers (nwi-mount@.service, after nwi-update.service): the server only runs with them, and
 # stops when they're unmounted
-BindsTo=doi-mount@%i.service
-# Stopped and restarted with the servers' target, see doi-restart.service
-PartOf=doi-servers.target
+BindsTo=nwi-mount@%i.service
+# Stopped and restarted with the servers' target, see nwi-restart.service
+PartOf=nwi-servers.target
 # srcds_watchdog.py's restarts of a server that stopped answering: at most 6 an hour
 StartLimitIntervalSec=1h
 StartLimitBurst=6
@@ -19,19 +19,19 @@ WatchdogSec=90
 # The time the hung server has to dump its core after the watchdog's SIGABRT, before it's killed. A
 # stopped process (SIGSTOP) only dies then, as it doesn't receive the SIGABRT.
 TimeoutAbortSec=30
-User=doi
-EnvironmentFile=/etc/doi-server/%i.env
-StateDirectory=doi-server
+User=nwi-server
+EnvironmentFile=/etc/nwi-server/%i.env
+StateDirectory=nwi-server
 StateDirectoryMode=0750
-# The server's layers, which doi-mount@.service mounts there, not a RuntimeDirectory=: systemd would
+# The server's layers, which nwi-mount@.service mounts there, not a RuntimeDirectory=: systemd would
 # remove it with the server's files when the server stops, before the layers are unmounted
-ReadWritePaths=/run/doi-server/%i
-WorkingDirectory=/run/doi-server/%i
-Environment=LD_LIBRARY_PATH=/run/doi-server/%i:/run/doi-server/%i/bin
+ReadWritePaths=/run/nwi-server/%i
+WorkingDirectory=/run/nwi-server/%i
+Environment=LD_LIBRARY_PATH=/run/nwi-server/%i:/run/nwi-server/%i/bin
 # Configured as root ("!"), as the layers of the packages belong to root
-ExecStartPre=!/usr/lib/doi-config/tools/prepare_server.sh /run/doi-server/%i %i
+ExecStartPre=!/usr/lib/nwi-server-kit/prepare_server.sh /run/nwi-server/%i %i
 # The command line of the server's server.toml and environment file, run by srcds_watchdog.py
-ExecStart=/usr/lib/doi-config/tools/start_server.sh /run/doi-server/%i
+ExecStart=/usr/lib/nwi-server-kit/start_server.sh /run/nwi-server/%i
 KillSignal=SIGINT
 # The stop signal to srcds_watchdog.py only, which passes it on to the server
 KillMode=mixed
@@ -47,4 +47,4 @@ RestartSec=10
 TimeoutStartSec=infinity
 
 [Install]
-WantedBy=doi-servers.target
+WantedBy=nwi-servers.target

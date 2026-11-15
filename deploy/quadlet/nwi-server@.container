@@ -1,0 +1,46 @@
+# A server in a container, the image's counterpart of nwi-server@.service, as a user unit (Quadlet):
+# ~/.config/containers/systemd/. Its settings are ~/.config/nwi-server/<server>.env, as for
+# nwi-server@.service, its secrets ~/.config/nwi-server/secrets (may be empty), the game, the workshop
+# items and the mods those of its game in the state folder, ~/.local/state/nwi-server, which
+# nwi-update.service fills, through the server's links to them there (servers/<server>/, see
+# tools/update_layers.sh): a unit can't pick the folders by the server's game.
+[Unit]
+Description=Day of Infamy or Insurgency server (%i), in a container
+Wants=network-online.target nwi-update.service
+After=network-online.target nwi-update.service
+PartOf=nwi-servers.target
+
+[Container]
+Image=localhost/nwi-server
+ContainerName=nwi-server-%i
+Environment=SERVER_NAME=%i
+EnvironmentFile=%E/nwi-server/%i.env
+# The ports of the environment file on the host's network: through a pod's port forwarding, connections
+# would come from an address the server ignores as its own
+Network=host
+# The image's user is the host's, who owns the state folder
+UserNS=keep-id:uid=1000,gid=1000
+# The game and the workshop items with an overlay of the container's own, which starts empty on every
+# start, the mods read-only
+Volume=%S/nwi-server/servers/%i/game:/srv/game:O
+Volume=%S/nwi-server/servers/%i/workshop/steamapps/workshop:/srv/game/steamapps/workshop:O
+Volume=%S/nwi-server/servers/%i/mods:/srv/mods:ro
+Volume=%E/nwi-server/secrets:/run/secrets/nwi-server:ro
+# What the server writes and keeps
+Volume=nwi-server-%i-dumps:/srv/nwi-data/dumps
+Volume=nwi-server-%i-logs:/srv/nwi-data/logs
+Volume=nwi-server-%i-sm-logs:/srv/nwi-data/sourcemod/logs
+Volume=nwi-server-%i-sm-data:/srv/nwi-data/sourcemod/data
+# Ready once the image's health check (A2S) passes; a server that stops answering is stopped and
+# restarted, like the systemd units' watchdog
+Notify=healthy
+HealthOnFailure=kill
+StopTimeout=30
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=15min
+
+[Install]
+WantedBy=nwi-servers.target

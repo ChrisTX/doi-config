@@ -1,10 +1,10 @@
 #!/bin/bash
-# Assembles a server from read-only layers with overlayfs in /run/doi-server/<name>, as root, for
-# doi-mount@.service; doi-server@.service runs the server there:
+# Assembles a server from read-only layers with overlayfs in /run/nwi-server/<name>, as root, for
+# nwi-mount@.service; nwi-server@.service runs the server there:
 #
 #   <runtime>          the workshop items of the game's servers and the game's install, which the
 #                      servers of the game share, with a writable layer
-#   <runtime>/<game>   /etc/doi-server/secrets, servers/<config> (its links resolved), the compiled
+#   <runtime>/<game>   /etc/nwi-server/secrets, servers/<config> (its links resolved), the compiled
 #                      plugins, the mods made for the game from mods/<game> (tools/make_mods.py), game/
 #                      of the configs, SourceMod and Metamod:Source (SOURCEMOD_DIR, METAMOD_DIR), the
 #                      game's folder of its install (doi, insurgency), with a writable layer
@@ -14,12 +14,12 @@
 # The writable layers start empty whenever the layers are mounted, so updates of the lower layers always
 # show. What the server writes and has to keep is bind-mounted from the server's state folder instead.
 #
-#   mount_server.sh NAME USER       mount the layers of the server NAME (the instance of doi-server@),
+#   mount_server.sh NAME USER       mount the layers of the server NAME (the instance of nwi-server@),
 #                                   which runs as USER, anew
 #   mount_server.sh --unmount NAME  unmount them
 #
 # SERVER_CONFIG_NAME: the config of servers/ to use, by default the server's name if there's one
-# DOI_CONFIG: the configs, the servers' clone of this repository by default (see tools/games.py)
+# NWI_CONFIG: the configs, the servers' clone of this repository by default (see tools/games.py)
 # SOURCEMOD_DIR, METAMOD_DIR: SourceMod's and Metamod:Source's files, laid out like the game's folder
 # (/usr/lib/sourcemod and /usr/lib/metamod, of the sourcemod and metamod-source packages)
 # GAME: the server's game without a config, doi by default
@@ -36,16 +36,16 @@ unmount() {
 }
 
 if [[ ${1:-} == --unmount ]]; then
-	unmount "/run/doi-server/$2"
+	unmount "/run/nwi-server/$2"
 	exit
 fi
 
 name=$1
 user=$2
 tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
-state=/var/lib/doi-server
+state=/var/lib/nwi-server
 repo=$(python3 "$tools/games.py" config)
-runtime=/run/doi-server/$name
+runtime=/run/nwi-server/$name
 server=$state/servers/$name
 
 config=${SERVER_CONFIG_NAME:-}
@@ -63,7 +63,7 @@ else
 fi
 games=$state/$game
 if [[ ! -d $games/game/$game ]]; then
-	echo "Error: $game isn't installed in $games/game, update first (doi-update.service)" >&2
+	echo "Error: $game isn't installed in $games/game, update first (nwi-update.service)" >&2
 	exit 1
 fi
 
@@ -79,7 +79,7 @@ state_paths=(
 )
 
 unmount "$runtime"
-install -d -m 755 /run/doi-server "$runtime"
+install -d -m 755 /run/nwi-server "$runtime"
 rm -rf "$server/upper" "$server/work"
 mkdir -p "$server"/{upper,work}/{root,game} "$server/state"
 chown "$user:" "$server" "$server"/{upper,work}/{root,game} "$server/state"
@@ -93,7 +93,7 @@ fi
 
 # Top layer first
 lower=()
-[[ -d /etc/doi-server/secrets ]] && lower+=(/etc/doi-server/secrets)
+[[ -d /etc/nwi-server/secrets ]] && lower+=(/etc/nwi-server/secrets)
 [[ -n $config ]] && lower+=("$server/config")
 lower+=("$state/plugins" "$games/mods" "$repo/game" "${SOURCEMOD_DIR:-/usr/lib/sourcemod}"
 	"${METAMOD_DIR:-/usr/lib/metamod}" "$games/game/$game")

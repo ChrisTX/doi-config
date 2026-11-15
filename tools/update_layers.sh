@@ -1,5 +1,5 @@
 #!/bin/bash
-# Updates the layers the servers share in the state folder STATE (/var/lib/doi-server): this
+# Updates the layers the servers share in the state folder STATE (/var/lib/nwi-server): this
 # repository's clone and the compiled plugins, and of each game of the servers (tools/games.py) its
 # install, its servers' workshop items and the mods made for it, in STATE/<game>/game,
 # STATE/<game>/workshop and STATE/<game>/mods. The layers mustn't change while servers run on them, so
@@ -13,8 +13,8 @@
 #                                   keeping the layers it replaces in STATE/previous, or without one,
 #                                   update the layers in place
 #
-# The tools are those this script is with, the configs those of the clone, STATE/doi-config, which is
-# pulled first (DOI_CONFIG of the tools, see tools/games.py). With --image first, for the container
+# The tools are those this script is with, the configs those of the clone, STATE/config, which is
+# pulled first (NWI_CONFIG of the tools, see tools/games.py). With --image first, for the container
 # image (deploy/container), the layers are only the games': the configs and the plugins are the
 # image's, the repository this script is in.
 #
@@ -22,8 +22,8 @@
 # which the containers of deploy/quadlet mount, as a unit can't pick the folders by the server's game.
 # The systemd units' tools/mount_server.sh picks them itself, and STATE/servers is root's there.
 #
-# doi-restart.service stages, stops the servers, runs doi-update.service, which runs this without
-# --stage, and starts them again: the servers are only down for the restart. At boot, doi-update.service
+# nwi-restart.service stages, stops the servers, runs nwi-update.service, which runs this without
+# --stage, and starts them again: the servers are only down for the restart. At boot, nwi-update.service
 # updates in place, before the servers start.
 set -euo pipefail
 
@@ -31,7 +31,7 @@ tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 
 # The layers all games share, as the units and tools/mount_server.sh name them in STATE; each game's
 # are in STATE/<game>
-shared=(doi-config plugins)
+shared=(config plugins)
 image=
 if [[ ${1:-} == --image ]]; then
 	shared=()
@@ -56,9 +56,9 @@ migrate() {
 update() {
 	local dir=$1 from=${2:-} used game
 	local -a games
-	export DOI_CONFIG=${image:-$1/doi-config}
+	export NWI_CONFIG=${image:-$1/config}
 	if [[ -z $image ]]; then
-		git -C "$DOI_CONFIG" pull --ff-only
+		git -C "$NWI_CONFIG" pull --ff-only
 		"$tools/update_game.sh" --plugins "$dir/plugins"
 	fi
 	used=$(python3 "$tools/games.py" used)
@@ -74,11 +74,11 @@ update() {
 		# the workshop items, which the mods are made from: the log lists those whose braces are repaired,
 		# or can't be, which a mod's fix table repairs. Broken ones don't fail the update, as the servers
 		# run without the maps.
-		if [[ -d $DOI_CONFIG/mods/$game ]]; then
+		if [[ -d $NWI_CONFIG/mods/$game ]]; then
 			python3 "$tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" --check ||
 				echo "Warning: map scripts of $game that can't be repaired, see above" >&2
 			python3 "$tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" \
-				"$dir/$game/mods" "$DOI_CONFIG/mods/$game"
+				"$dir/$game/mods" "$NWI_CONFIG/mods/$game"
 		else
 			rm -rf "$dir/$game/mods"
 			mkdir "$dir/$game/mods"
@@ -90,7 +90,7 @@ update() {
 link_servers() {
 	local state=$1 used names game name layer
 	local -a games servers
-	export DOI_CONFIG=${image:-$1/doi-config}
+	export NWI_CONFIG=${image:-$1/config}
 	used=$(python3 "$tools/games.py" used)
 	mapfile -t games <<<"$used"
 	for game in "${games[@]}"; do

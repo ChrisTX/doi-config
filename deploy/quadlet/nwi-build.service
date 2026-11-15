@@ -1,0 +1,16 @@
+# Builds the image anew from a clone of this repository, the containers' counterpart of the pull of
+# nwi-update.service: the next start of a container uses it. NWI_CONFIG is the clone, which is pulled
+# first, by default ~/.local/state/nwi-server/config; a drop-in can set another, e.g. a checkout
+# (systemctl --user edit nwi-build.service). The build needs the local pacman repository of
+# deploy/container/test-instance.sh build.
+[Unit]
+Description=Build the image of the Day of Infamy or Insurgency servers
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+Environment=NWI_CONFIG=%S/nwi-server/config
+ExecStart=/usr/bin/git -C ${NWI_CONFIG} pull --ff-only
+ExecStart=/usr/bin/bash -c 'exec "$NWI_CONFIG/deploy/container/test-instance.sh" build'
+TimeoutStartSec=infinity

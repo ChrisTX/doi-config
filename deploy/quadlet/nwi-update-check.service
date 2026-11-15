@@ -1,5 +1,5 @@
 # Checks the state folder's game and workshop items for updates, with the image (check_updates.py), and
-# restarts the servers on an update, like doi-update-check.service of the systemd units
+# restarts the servers on an update, like nwi-update-check.service of the systemd units
 [Unit]
 Description=Check the games and workshop items of the Day of Infamy or Insurgency servers for updates, in a container
 Wants=network-online.target
@@ -8,5 +8,5 @@ After=network-online.target
 [Service]
 Type=oneshot
 # Skips the rest unless there are updates (exit status 1 skips, 255, when it can't tell, fails)
-ExecCondition=/usr/bin/podman run --rm --userns=keep-id:uid=1000,gid=1000 --health-cmd=none --volume %S/doi-server:/srv/state --volume %E/doi-server:/etc/doi-server:ro localhost/doi-server check
-ExecStart=/usr/bin/systemctl --user start --no-block doi-restart.service
+ExecCondition=/usr/bin/podman run --rm --userns=keep-id:uid=1000,gid=1000 --health-cmd=none --volume %S/nwi-server:/srv/state --volume %E/nwi-server:/etc/nwi-server:ro localhost/nwi-server check
+ExecStart=/usr/bin/systemctl --user start --no-block nwi-restart.service

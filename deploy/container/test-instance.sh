@@ -22,9 +22,9 @@
 # it (aur repo --status, or the one file:// repository of pacman.conf without aurutils); its package of
 # the SourceBans++ web panel has the tables, and the signature of its database names its key
 # AUR_REPO, AUR_DBROOT: the repository's name and folder, as for aurutils
-# DOI_TEST_DIR: the test instance's files (${XDG_STATE_HOME:-~/.local/state}/doi-config-test)
-# DOI_STATE: the state folder with the game, the workshop items and the mods
-# (${XDG_STATE_HOME:-~/.local/state}/doi-server, as for the Quadlet units of deploy/quadlet)
+# NWI_TEST_DIR: the test instance's files (${XDG_STATE_HOME:-~/.local/state}/nwi-test)
+# NWI_STATE: the state folder with the game, the workshop items and the mods
+# (${XDG_STATE_HOME:-~/.local/state}/nwi-server, as for the Quadlet units of deploy/quadlet)
 # DISABLE_PLUGINS: plugins the server starts without, by name, e.g. nwi_cvar_unlocker for the game's own
 # bounds in tools/dump_cvars.py
 # TEST_ADMIN: SteamIDs that get root admin, separated by spaces, each as STEAM_0:…, STEAM_1:…, [U:1:…]
@@ -32,19 +32,19 @@
 # (prepare_server.sh), so also on servers without the database
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 # SANITISER: undefined, address or address,undefined: up starts the server from the sanitiser image
-# (localhost/doi-server-sanitiser, deploy/container/sanitiser, see README.md), with its runtime preloaded
+# (localhost/nwi-server-sanitiser, deploy/container/sanitiser, see README.md), with its runtime preloaded
 #
-# These variables can be kept in ${XDG_CONFIG_HOME:-~/.config}/doi-config/test-instance.env, one VAR=value
+# These variables can be kept in ${XDG_CONFIG_HOME:-~/.config}/nwi-server-kit/test-instance.env, one VAR=value
 # a line, e.g. TEST_ADMIN=[U:1:123]; the environment's take precedence.
 set -euo pipefail
 
 # The settings file's variables, those the environment doesn't set. Read, not sourced: it holds settings,
 # not commands.
-settings=${XDG_CONFIG_HOME:-$HOME/.config}/doi-config/test-instance.env
+settings=${XDG_CONFIG_HOME:-$HOME/.config}/nwi-server-kit/test-instance.env
 if [[ -f $settings ]]; then
 	while IFS= read -r line || [[ -n $line ]]; do
 		[[ $line =~ ^[[:space:]]*(#|$) ]] && continue
-		if [[ ! $line =~ ^(AUR_REPO|AUR_DBROOT|DOI_TEST_DIR|DOI_STATE|DISABLE_PLUGINS|TEST_ADMIN|TEST_DB_PORT|SANITISER)=(.*)$ ]]; then
+		if [[ ! $line =~ ^(AUR_REPO|AUR_DBROOT|NWI_TEST_DIR|NWI_STATE|DISABLE_PLUGINS|TEST_ADMIN|TEST_DB_PORT|SANITISER)=(.*)$ ]]; then
 			echo "Error: $settings: not a setting of this script: $line" >&2
 			exit 1
 		fi
@@ -56,17 +56,17 @@ repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
 # Set by find_repo
 repo_name=''
 repo_root=''
-dir=${DOI_TEST_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/doi-config-test}
-state=${DOI_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/doi-server}
+dir=${NWI_TEST_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/nwi-test}
+state=${NWI_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/nwi-server}
 # The image's user is this one, who owns the state folder
 userns=keep-id:uid=1000,gid=1000
-image=localhost/doi-server
+image=localhost/nwi-server
 # The server's image, the sanitiser one with SANITISER
 server_image=$image
 if [[ -n ${SANITISER:-} ]]; then
-	server_image=localhost/doi-server-sanitiser
+	server_image=localhost/nwi-server-sanitiser
 fi
-pod=doi-test
+pod=nwi-test
 db_port=${TEST_DB_PORT:-3306}
 # Set by up --db-only
 db_only=
@@ -271,7 +271,7 @@ cmd_update() {
 	# The configs' games and items (tools/games.py), without the servers' environment files: all
 	# configs' without configs
 	if ((${#configs[@]})); then
-		env=(-e DOI_SERVER_CONFIGS="${configs[*]}")
+		env=(-e NWI_SERVER_CONFIGS="${configs[*]}")
 	fi
 	mkdir -p "$state"
 	podman run --rm --userns "$userns" --health-cmd none "${env[@]}" -v "$state:/srv/state" "$image" \
@@ -338,17 +338,17 @@ cmd_up() {
 	done
 	if [[ -n $db_only ]]; then
 		echo "The database of the test instance of $config is up at 127.0.0.1:$db_port." \
-			"For doi-server@$config.service, its settings and the server's secrets, as root:"
-		printf '\n  install -D -m 640 -g doi %q /etc/doi-server/%q\n' "$dir/server.env" "$config.env"
-		printf '  install -d -m 750 -g doi /etc/doi-server/secrets\n'
-		printf '  cp -r %q /etc/doi-server/secrets/\n' "$dir/secrets/."
-		printf '  chgrp -R doi /etc/doi-server/secrets\n  chmod -R u=rwX,g=rX,o= /etc/doi-server/secrets\n'
+			"For nwi-server@$config.service, its settings and the server's secrets, as root:"
+		printf '\n  install -D -m 640 -g nwi-server %q /etc/nwi-server/%q\n' "$dir/server.env" "$config.env"
+		printf '  install -d -m 750 -g nwi-server /etc/nwi-server/secrets\n'
+		printf '  cp -r %q /etc/nwi-server/secrets/\n' "$dir/secrets/."
+		printf '  chgrp -R nwi-server /etc/nwi-server/secrets\n  chmod -R u=rwX,g=rX,o= /etc/nwi-server/secrets\n'
 		return
 	fi
 
 	local -a volumes=()
-	for volume in dumps:/srv/doi-data/dumps logs:/srv/doi-data/logs sm-logs:/srv/doi-data/sourcemod/logs \
-		sm-data:/srv/doi-data/sourcemod/data; do
+	for volume in dumps:/srv/nwi-data/dumps logs:/srv/nwi-data/logs sm-logs:/srv/nwi-data/sourcemod/logs \
+		sm-data:/srv/nwi-data/sourcemod/data; do
 		volumes+=(-v "$pod-$volume")
 	done
 	local -a geoip=()
@@ -367,13 +367,13 @@ cmd_up() {
 	fi
 	podman run -d --pod "$pod" --name "$pod-server" --env-file "$dir/server.env" -e SERVER_NAME="$config" \
 		"${extra_env[@]}" \
-		-v "$state/$game/game:/srv/doi:O" \
-		-v "$state/$game/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O" \
+		-v "$state/$game/game:/srv/game:O" \
+		-v "$state/$game/workshop/steamapps/workshop:/srv/game/steamapps/workshop:O" \
 		-v "$state/$game/mods:/srv/mods:ro" \
-		-v "$dir/secrets:/run/secrets/doi-server:ro" "${geoip[@]}" "${volumes[@]}" \
+		-v "$dir/secrets:/run/secrets/nwi-server:ro" "${geoip[@]}" "${volumes[@]}" \
 		--health-on-failure restart "$server_image" >/dev/null
 	echo "Waiting for the server"
-	until podman exec "$pod-server" python3 /opt/doi-config/tools/srcds_watchdog.py --check --port 27015 \
+	until podman exec "$pod-server" python3 /opt/nwi-server-kit/tools/srcds_watchdog.py --check --port 27015 \
 		--timeout 2 >/dev/null 2>&1; do
 		if [[ $(podman inspect -f '{{.State.Running}}' "$pod-server") != true ]]; then
 			echo "Error: the server stopped, see $0 logs" >&2

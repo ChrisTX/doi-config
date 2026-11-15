@@ -5,16 +5,16 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=doi
-StateDirectory=doi-server
+User=nwi-server
+StateDirectory=nwi-server
 StateDirectoryMode=0750
 # SteamCMD keeps its files in the home folder
-Environment=HOME=%S/doi-server
+Environment=HOME=%S/nwi-server
 # Skips the rest unless there are updates (exit status 1 skips, 255, when it can't tell, fails): the
 # games' depots, the Steam client library's included, and the workshop items of the servers. Workshop
 # items must be the versions the players download, as theater files that differ break the game.
-ExecCondition=/usr/bin/python3 /usr/lib/doi-config/tools/check_updates.py %S/doi-server
-ExecStart=+/usr/bin/systemctl start --no-block doi-restart.service
+ExecCondition=/usr/bin/python3 /usr/lib/nwi-server-kit/check_updates.py %S/nwi-server
+ExecStart=+/usr/bin/systemctl start --no-block nwi-restart.service
 PrivateTmp=yes
 PrivateDevices=yes
 NoNewPrivileges=yes

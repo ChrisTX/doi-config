@@ -1,0 +1,11 @@
+[Unit]
+Description=Update and restart the Day of Infamy or Insurgency servers
+
+[Service]
+Type=oneshot
+# The update first, while the servers run, so that they're only down for the restart. Without a staged
+# update, e.g. on a file system without reflinks, nwi-update.service updates in place.
+ExecStart=-/usr/bin/systemctl start nwi-stage.service
+ExecStart=/usr/bin/systemctl stop nwi-servers.target
+ExecStart=/usr/bin/systemctl restart nwi-update.service
+ExecStart=/usr/bin/systemctl start nwi-servers.target
