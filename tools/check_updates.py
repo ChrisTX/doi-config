@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Check whether the game or the workshop items have updates, without downloading them.
 
-The game: each depot of the installed dedicated server (steamapps/appmanifest_462310.acf) against the
-public branch's manifest from SteamCMD's app info. The depots, not the build ID, as the shared depot
+The game: each depot of the installed dedicated server (steamapps/appmanifest_<app>.acf, the app of
+the install's game, see tools/games.py) against the public branch's manifest from SteamCMD's app info. The depots, not the build ID, as the shared depot
 1006, the Steam client library (steamclient.so), changes without a new build of the game.
 
 The workshop items: each item of the workshop-ids-*.txt files against the Steam Web API's current
-manifest of the item (GetPublishedFileDetails, no key needed), which SteamCMD's manifest of the
-installed items (steamapps/workshop/appworkshop_447820.acf) records too. An item of a list that isn't
+manifest of the item (GetPublishedFileDetails, no key needed), which SteamCMD's manifests of the
+installed items (steamapps/workshop/appworkshop_<app>.acf) record too. An item of a list that isn't
 installed counts as an update.
 
 Exit status: 0 if there are updates, which it lists, 1 if there are none, 255 if it can't tell, e.g.
@@ -28,8 +28,8 @@ from pathlib import Path
 from srctools.keyvalues import Keyvalues
 from srctools.tokenizer import Tokenizer
 
-SERVER_APP = 462310
-GAME_APP = 447820
+from games import SERVER_APPS, game_folder
+
 DETAILS_URL = (
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
 )
@@ -67,7 +67,8 @@ def block(tree: "str | Tree", *keys: str) -> Tree:
 
 def game_updates(game: Path) -> list[str]:
     """The installed depots whose manifest isn't the public branch's any more."""
-    manifest = game / f"steamapps/appmanifest_{SERVER_APP}.acf"
+    app = SERVER_APPS[game_folder(game).name]
+    manifest = game / f"steamapps/appmanifest_{app}.acf"
     installed = block(parse_vdf(manifest), "AppState", "InstalledDepots")
     # A fresh app info: SteamCMD caches it otherwise
     output = subprocess.run(
@@ -78,7 +79,7 @@ def game_updates(game: Path) -> list[str]:
             "+app_info_update",
             "1",
             "+app_info_print",
-            str(SERVER_APP),
+            str(app),
             "+quit",
         ],
         capture_output=True,
@@ -88,7 +89,7 @@ def game_updates(game: Path) -> list[str]:
         check=False,
     ).stdout
     # The app info is SteamCMD's output from the app's ID on its own line to the block's end
-    start = re.search(rf'^"{SERVER_APP}"$', output, re.MULTILINE)
+    start = re.search(rf'^"{app}"$', output, re.MULTILINE)
     if start is None:
         raise ValueError("SteamCMD printed no app info")
     # Only the app's block: SteamCMD prints more after it
@@ -117,12 +118,10 @@ def workshop_updates(workshop: Path) -> list[str]:
     )
     if not items:
         return []
-    manifest = workshop / f"steamapps/workshop/appworkshop_{GAME_APP}.acf"
-    installed = (
-        block(parse_vdf(manifest), "AppWorkshop", "WorkshopItemsInstalled")
-        if manifest.is_file()
-        else {}
-    )
+    # The items of the workshop's app, whichever it is: the items' IDs are unique across them
+    installed: Tree = {}
+    for manifest in sorted(workshop.glob("steamapps/workshop/appworkshop_*.acf")):
+        installed |= block(parse_vdf(manifest), "AppWorkshop", "WorkshopItemsInstalled")
     fields = {"itemcount": len(items)}
     fields.update({f"publishedfileids[{i}]": item for i, item in enumerate(items)})
     request = urllib.request.Request(

@@ -5,6 +5,8 @@ The file says what the server is; its machine's settings and secrets (ports, pas
 environment file instead (/etc/doi-server/<server>.env). Its keys, the paths relative to the game's cfg
 folder:
 
+    game            optional: the game, by the name of its folder, "doi" (Day of Infamy, the default)
+                    or "insurgency"; the server's install has to be one of it
     hostname        the server's name in the server browser; SourceTV's is "<hostname> | SourceTV"
     startup_map     the first map and its game mode, e.g. "bastogne stronghold"
     playlist        optional: the playlist (+sv_playlist), e.g. "nwi/coop_commando"; its config of the
@@ -35,11 +37,12 @@ then replace where we have some. Set in server.cfg, the playlist came too late f
 map. The game takes the playlist only once the plugins are loaded, so nwi_playlist_unlock's
 replacements are in place and the game's forced settings are never applied.
 
-Usage:
-    server_config.py prepare ROOT   write ROOT/doi/cfg/server.cfg and ROOT/doi/subscribed_file_ids.txt
-                                    from ROOT/doi/server.toml (tools/prepare_server.sh)
-    server_config.py args ROOT      print the command line's options of ROOT/doi/server.toml, one per
+Usage, with GAME the game's folder of the install ROOT (tools/games.py):
+    server_config.py prepare ROOT   write ROOT/GAME/cfg/server.cfg and ROOT/GAME/subscribed_file_ids.txt
+                                    from ROOT/GAME/server.toml (tools/prepare_server.sh)
+    server_config.py args ROOT      print the command line's options of ROOT/GAME/server.toml, one per
                                     line (tools/start_server.sh)
+    server_config.py game FILE      print the game of a server.toml
     server_config.py check FILE...  check server.toml files: their keys, and that the configs and lists
                                     they name exist in game/cfg of this repository
 """
@@ -49,9 +52,12 @@ import sys
 import tomllib
 from pathlib import Path
 
+from games import DEFAULT, SERVER_APPS, game_folder
+
 REPO = Path(__file__).resolve().parent.parent
 # The keys and their types
 KEYS = {
+    "game": str,
     "hostname": str,
     "startup_map": str,
     "playlist": str,
@@ -90,6 +96,9 @@ def load(path: Path) -> dict:
             wrong = not all(isinstance(item, str) for item in value)
         if wrong:
             errors.append(f"{path}: {key} is {KINDS[kind]}")
+    if settings.get("game", DEFAULT) not in SERVER_APPS:
+        games = ", ".join(SERVER_APPS)
+        errors.append(f"{path}: game is one of {games}, not {settings['game']}")
     if "ruleset" in settings and "playlist" not in settings:
         errors.append(f"{path}: a ruleset needs a playlist")
     if errors:
@@ -128,18 +137,31 @@ def server_cfg(settings: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def server_settings(root: Path) -> tuple[Path, dict]:
+    """The game's folder of the install and the settings of its server.toml, which has to be of the
+    install's game."""
+    folder = game_folder(root)
+    path = folder / "server.toml"
+    settings = load(path)
+    game = settings.get("game", DEFAULT)
+    if game != folder.name:
+        raise ValueError(
+            f"{path}: the server is of {game}, the install of {folder.name}"
+        )
+    return folder, settings
+
+
 def prepare(root: Path) -> None:
-    doi = root / "doi"
-    settings = load(doi / "server.toml")
-    (doi / "cfg" / "server.cfg").write_text(server_cfg(settings))
-    workshop = doi / "subscribed_file_ids.txt"
+    folder, settings = server_settings(root)
+    (folder / "cfg" / "server.cfg").write_text(server_cfg(settings))
+    workshop = folder / "subscribed_file_ids.txt"
     workshop.unlink(missing_ok=True)
     if "workshop" in settings:
-        shutil.copyfile(doi / "cfg" / settings["workshop"], workshop)
+        shutil.copyfile(folder / "cfg" / settings["workshop"], workshop)
 
 
 def args(root: Path) -> None:
-    settings = load(root / "doi" / "server.toml")
+    _, settings = server_settings(root)
     options = ["+maxplayers", str(settings.get("maxplayers", 64))]
     options += ["+sv_lan", "1" if settings.get("lan", False) else "0"]
     if "workshop" in settings:
@@ -179,14 +201,17 @@ def check(paths: list[Path]) -> int:
 
 
 def main() -> int:
-    if len(sys.argv) < 3 or sys.argv[1] not in ("prepare", "args", "check"):
+    if len(sys.argv) < 3 or sys.argv[1] not in ("prepare", "args", "game", "check"):
         print(__doc__.split("Usage:")[1], file=sys.stderr)
         return 2
     command, operands = sys.argv[1], [Path(arg) for arg in sys.argv[2:]]
     if command == "check":
         return check(operands)
     try:
-        (prepare if command == "prepare" else args)(operands[0])
+        if command == "game":
+            print(load(operands[0]).get("game", DEFAULT))
+        else:
+            (prepare if command == "prepare" else args)(operands[0])
     except (ValueError, OSError, tomllib.TOMLDecodeError) as error:
         print(f"server_config.py: {error}", file=sys.stderr)
         return 1

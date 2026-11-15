@@ -88,8 +88,8 @@ broken script of a workshop map can be repaired with a mod that has the map in i
 Usage: make_mods.py --game DIR --workshop DIR OUTPUT MODS...
        make_mods.py --game DIR --workshop DIR --check
 
---game is the game's install, with doi/ in it, --workshop SteamCMD's folder of the workshop items
-(steamapps/workshop/content/447820/<item> in it). MODS are the mods' .toml files, or folders of them.
+--game is the game's install, with its game's folder, e.g. doi/, in it (tools/games.py), --workshop
+SteamCMD's folder of the workshop items (steamapps/workshop/content/<app>/<item> in it). MODS are the mods' .toml files, or folders of them.
 OUTPUT is replaced.
 """
 
@@ -107,7 +107,8 @@ from pathlib import Path
 from srctools.tokenizer import Token, Tokenizer, TokenSyntaxError
 from srctools.vpk import VPK, FileInfo
 
-GAME_APP = 447820
+from games import game_folder, item_folders
+from games import item_folder as find_item
 
 # The game modes, the blocks of a map's script that copies are made from and to
 GAME_MODES = {
@@ -322,7 +323,7 @@ def vpk_files(vpk: Path) -> dict[str, Callable[[], bytes]]:
 
 
 def map_scripts(folder: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
-    """List the map scripts of the game's doi folder or of a workshop item, by their paths
+    """List the map scripts of the game's folder or of a workshop item, by their paths
     (maps/<map>.txt), with where each is from and a function that reads it: its files first, then its
     VPKs. The numbered archives of a VPK (<name>_000.vpk) are read through its directory file."""
     scripts = {}
@@ -339,20 +340,23 @@ def map_scripts(folder: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
 
 def item_folder(workshop: Path, item: int) -> Path:
     """The folder of a workshop item in SteamCMD's folder of the workshop items."""
-    return workshop / "steamapps/workshop/content" / str(GAME_APP) / str(item)
+    folder = find_item(workshop, item)
+    if folder is None:
+        raise ModError(f"the workshop item {item} isn't installed")
+    return folder
 
 
 def read_script(
     game: Path, workshop: Path, workshop_maps: dict[str, int], name: str
 ) -> tuple[Pairs, list[str]]:
     """Read and parse a map's script, see parse_script(): a workshop map's from its item, a map of the
-    game's from its doi folder."""
+    game's from its folder."""
     wanted = f"maps/{name.lower()}.txt"
     if name in workshop_maps:
         scripts = map_scripts(item_folder(workshop, workshop_maps[name]))
         where = f"the workshop item {workshop_maps[name]}"
     else:
-        scripts = map_scripts(game / "doi")
+        scripts = map_scripts(game_folder(game))
         where = "the game"
     if wanted not in scripts:
         raise ModError(f"{name}: {where} has no {wanted}")
@@ -361,11 +365,12 @@ def read_script(
 
 
 def game_file(game: Path, path: str) -> tuple[str, bytes]:
-    """Read a file of the game's doi folder, with where it's from: the file itself, or from a VPK."""
-    loose = game / "doi" / path
+    """Read a file of the game's folder, with where it's from: the file itself, or from a VPK."""
+    folder = game_folder(game)
+    loose = folder / path
     if loose.is_file():
         return str(loose), loose.read_bytes()
-    for vpk in sorted((game / "doi").glob("*_dir.vpk")):
+    for vpk in sorted(folder.glob("*_dir.vpk")):
         read = vpk_files(vpk).get(path.lower())
         if read is not None:
             return f"{vpk}/{path}", read()
@@ -376,10 +381,7 @@ def check_scripts(game: Path, workshop: Path) -> int:
     """Parse every map script of the game and of the workshop items, and report those that had to be
     repaired, or can't be: they'd need a mod that has their maps in its fix list. Returns the number of
     scripts that can't be repaired."""
-    folders = [game / "doi"]
-    content = workshop / "steamapps/workshop/content" / str(GAME_APP)
-    if content.is_dir():
-        folders += sorted(path for path in content.iterdir() if path.is_dir())
+    folders = [game_folder(game), *item_folders(workshop)]
     checked = repaired = broken = 0
     for folder in folders:
         for source, read in map_scripts(folder).values():
@@ -622,12 +624,12 @@ def game_playlists(game: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
     """The game's playlists by their names (scripts/playlists/<name>.playlist), with where each is from
     and a function that reads it: its loose files first, then its VPKs."""
     playlists: dict[str, tuple[str, Callable[[], bytes]]] = {}
-    folder = game / "doi/scripts/playlists"
+    folder = game_folder(game) / "scripts/playlists"
     if folder.is_dir():
         for path in sorted(folder.rglob("*.playlist")):
             name = path.relative_to(folder).with_suffix("").as_posix().lower()
             playlists[name] = (str(path), path.read_bytes)
-    for vpk in sorted((game / "doi").glob("*_dir.vpk")):
+    for vpk in sorted(game_folder(game).glob("*_dir.vpk")):
         for path, read in vpk_files(vpk).items():
             match = re.fullmatch(r"scripts/playlists/(.+)\.playlist", path)
             if match and match[1] not in playlists:
@@ -823,7 +825,10 @@ def main() -> int:
         description="Make the mods of mods/*.toml from the game's map scripts and playlists."
     )
     parser.add_argument(
-        "--game", type=Path, required=True, help="the game's install, with doi/ in it"
+        "--game",
+        type=Path,
+        required=True,
+        help="the game's install, with its game's folder, e.g. doi/, in it",
     )
     parser.add_argument(
         "--workshop",
@@ -848,7 +853,7 @@ def main() -> int:
             parser.error("--check takes no output or mods")
         try:
             return 1 if check_scripts(arguments.game, arguments.workshop) else 0
-        except (ModError, OSError) as error:
+        except (ModError, OSError, ValueError) as error:
             print(f"make_mods.py: {error}", file=sys.stderr)
             return 1
     if arguments.output is None or not arguments.mods:
@@ -868,7 +873,7 @@ def main() -> int:
         for config in configs:
             replaces += make_mod(config, arguments.game, arguments.workshop, new)
         make_replacements(arguments.game, replaces, new)
-    except (ModError, OSError, tomllib.TOMLDecodeError) as error:
+    except (ModError, OSError, ValueError) as error:
         shutil.rmtree(new, ignore_errors=True)
         print(f"make_mods.py: {error}", file=sys.stderr)
         return 1

@@ -15,6 +15,8 @@ from pathlib import Path
 
 from srctools.keyvalues import Keyvalues
 
+from games import game_folder
+
 
 def values(block: Keyvalues, name: str) -> list[str]:
     """The values of the block's keys of the name, without its blocks of that name."""
@@ -95,7 +97,7 @@ def main() -> int:
         "game_dir",
         type=Path,
         metavar="GAME",
-        help="the game install, with doi/ or insurgency/ in it",
+        help="the game install, with its game's folder, doi/ or insurgency/, in it",
     )
     parser.add_argument(
         "--gamedata",
@@ -105,14 +107,14 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    game = next(
-        (g for g in ("doi", "insurgency") if (args.game_dir / g).is_dir()), None
-    )
-    if game is None:
-        print(f"Error: no doi or insurgency folder in {args.game_dir}", file=sys.stderr)
+    try:
+        folder = game_folder(args.game_dir)
+    except ValueError as error:
+        print(f"Error: {error}", file=sys.stderr)
         return 2
+    game = folder.name
     libraries = {
-        "server": args.game_dir / game / "bin/server_srv.so",
+        "server": folder / "bin/server_srv.so",
         "engine": args.game_dir / "bin/engine_srv.so",
     }
     # Signatures keep their backslashes, e.g. \\x2A, as SourceMod reads them
