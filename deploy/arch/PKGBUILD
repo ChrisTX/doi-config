@@ -1,0 +1,48 @@
+# shellcheck shell=bash disable=SC2034,SC2154 # makepkg reads the variables and sets pkgdir, startdir
+# The tools and the systemd units of the servers (make install, see the Makefile), built from the
+# commits of the checkout this file is in: makepkg in deploy/arch. The configs aren't part of it, the
+# servers' clone in /var/lib/doi-server/doi-config has them (README.md).
+
+pkgname=doi-config-git
+pkgver=r0
+pkgrel=1
+pkgdesc='Tools and systemd units of the Kim Jong Un Day of Infamy servers, also for Insurgency'
+arch=(any)
+url='https://github.com/ChrisTX/doi-config'
+license=(MIT)
+depends=(
+  bash
+  git
+  metamod-source
+  python
+  python-a2s
+  python-srctools
+  sourcemod
+  # spcomp, which compiles the plugins of the clone at every update
+  sourcemod-scripting
+  steamcmd
+  util-linux
+)
+makedepends=(git make)
+optdepends=(
+  'podman: the container image and the Quadlet units (deploy/quadlet)'
+  'sourcemod-advertisements: the advertisements of the configs'
+  'sourcemod-multicolors: the colours of the AFK Manager'
+  'sourcemod-sourcebans-pp: the bans and admins of the configs'
+  'sourcemod-sourcebans-pp-discord-forward: the reports of the configs to Discord'
+)
+provides=(doi-config)
+conflicts=(doi-config)
+source=("doi-config::git+file://${startdir%/deploy/arch}")
+sha256sums=(SKIP)
+
+pkgver() {
+  cd doi-config || exit
+  printf 'r%s.%s' "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+package() {
+  cd doi-config || exit
+  make DESTDIR="$pkgdir" PREFIX=/usr install
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

@@ -109,7 +109,13 @@ bind-mounted from the server's state folder instead (see
 `tools/mount_server.sh`). The layers are mounted while the server runs, in
 `/run/doi-server/<server>`.
 
-The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
+The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`. They
+run the tools installed with them (`make install`, or the package of
+`deploy/arch/PKGBUILD`), in `/usr/lib/doi-config/tools`, which read the configs
+from the servers' clone of this repository in `/var/lib/doi-server/doi-config`
+(`DOI_CONFIG`, see `tools/games.py`). SourceMod and Metamod:Source are those of
+`SOURCEMOD_DIR` and `METAMOD_DIR`, `/usr/lib/sourcemod` and `/usr/lib/metamod`
+by default.
 
 - `doi-update.service` updates the layers (`tools/update_layers.sh`): it pulls
   this repository in `/var/lib/doi-server/doi-config`, compiles its plugins and
@@ -161,13 +167,20 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   workshop items must be the versions the players download: theater files that
   differ break the game.
 
-Setting up a server, as root, with the packages above and `steamcmd`, `git`,
-`python-a2s` and `python-srctools` installed:
+Setting up a server: the package of the tools and units, built from this
+checkout's commits, which also installs `steamcmd`, `git`, `python-a2s`,
+`python-srctools`, SourceMod and Metamod:Source, and the plugin packages above:
 
 ```bash
-cp deploy/sysusers.d/doi-server.conf /etc/sysusers.d/
-cp deploy/systemd/* /etc/systemd/system/
-systemd-sysusers
+cd deploy/arch && makepkg -si && cd -
+sudo pacman -S --needed --asdeps sourcemod-sourcebans-pp \
+  sourcemod-sourcebans-pp-discord-forward sourcemod-advertisements \
+  sourcemod-multicolors
+```
+
+Then, as root:
+
+```bash
 install -d -o doi -g doi -m 750 /var/lib/doi-server
 sudo -u doi git clone https://github.com/ChrisTX/doi-config.git /var/lib/doi-server/doi-config
 # The server's settings in /etc/doi-server/coop-commando.env, its secrets in /etc/doi-server/secrets

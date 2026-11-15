@@ -16,7 +16,7 @@ StateDirectoryMode=0750
 # SteamCMD keeps its files in the home folder
 Environment=HOME=%S/doi-server
 # Puts an update that doi-stage.service staged in place, or updates in place, e.g. at boot
-ExecStart=%S/doi-server/doi-config/tools/update_layers.sh %S/doi-server
+ExecStart=/usr/lib/doi-config/tools/update_layers.sh %S/doi-server
 TimeoutStartSec=infinity
 PrivateTmp=yes
 PrivateDevices=yes

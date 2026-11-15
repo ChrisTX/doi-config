@@ -7,3 +7,8 @@ __pycache__/
 .claude/worktrees/
 # The Python tools' virtual environment (uv sync)
 .venv/
+# makepkg's files of deploy/arch/PKGBUILD: the clone, the build folders and the package
+deploy/arch/doi-config/
+deploy/arch/src/
+deploy/arch/pkg/
+deploy/arch/*.pkg.tar.*

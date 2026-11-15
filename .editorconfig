@@ -18,6 +18,10 @@ indent_size = 4
 [*.sh]
 indent_style = tab
 
+# make needs tabs before the recipes' commands
+[Makefile]
+indent_style = tab
+
 # The game renders the MOTDs differently without their trailing whitespace
 [servers/*/motd.txt]
 trim_trailing_whitespace = false

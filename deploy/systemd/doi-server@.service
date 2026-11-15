@@ -29,9 +29,9 @@ ReadWritePaths=/run/doi-server/%i
 WorkingDirectory=/run/doi-server/%i
 Environment=LD_LIBRARY_PATH=/run/doi-server/%i:/run/doi-server/%i/bin
 # Configured as root ("!"), as the layers of the packages belong to root
-ExecStartPre=!%S/doi-server/doi-config/tools/prepare_server.sh /run/doi-server/%i %i
+ExecStartPre=!/usr/lib/doi-config/tools/prepare_server.sh /run/doi-server/%i %i
 # The command line of the server's server.toml and environment file, run by srcds_watchdog.py
-ExecStart=%S/doi-server/doi-config/tools/start_server.sh /run/doi-server/%i
+ExecStart=/usr/lib/doi-config/tools/start_server.sh /run/doi-server/%i
 KillSignal=SIGINT
 # The stop signal to srcds_watchdog.py only, which passes it on to the server
 KillMode=mixed
