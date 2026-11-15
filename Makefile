@@ -4,6 +4,7 @@
 # See README.md.
 
 PREFIX ?= /usr
+BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib
 DATADIR ?= $(PREFIX)/share
 # The tools' folder, which the units run them from
@@ -23,6 +24,9 @@ all:
 
 install:
 	install -Dm755 -t "$(DESTDIR)$(TOOLSDIR)" $(addprefix tools/,$(TOOLS))
+	# The admins' RCON client
+	install -dm755 "$(DESTDIR)$(BINDIR)"
+	ln -sf "$(TOOLSDIR)/rcon.py" "$(DESTDIR)$(BINDIR)/nwi-rcon"
 	install -dm755 "$(DESTDIR)$(LIBDIR)/systemd/system"
 	for unit in $(UNITS); do \
 		sed 's|/usr/lib/nwi-server-kit/|$(TOOLSDIR)/|g' "$$unit" \
@@ -37,7 +41,7 @@ uninstall:
 	rm -rf "$(DESTDIR)$(LIBDIR)/nwi-server-kit" "$(DESTDIR)$(DATADIR)/nwi-server-kit" \
 		"$(DESTDIR)$(DATADIR)/doc/nwi-server-kit"
 	rm -f $(addprefix "$(DESTDIR)$(LIBDIR)/systemd/system/,$(addsuffix ",$(notdir $(UNITS)))) \
-		"$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf"
+		"$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf" "$(DESTDIR)$(BINDIR)/nwi-rcon"
 
 # The checks of the git hooks on all files (CONTRIBUTING.md)
 check:
