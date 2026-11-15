@@ -44,7 +44,8 @@ Usage, with GAME the game's folder of the install ROOT (tools/games.py):
                                     line (tools/start_server.sh)
     server_config.py game FILE      print the game of a server.toml
     server_config.py check FILE...  check server.toml files: their keys, and that the configs and lists
-                                    they name exist in game/cfg of this repository
+                                    they name exist in game/cfg of the configs (DOI_CONFIG, see
+                                    tools/games.py)
 """
 
 import shutil
@@ -52,9 +53,8 @@ import sys
 import tomllib
 from pathlib import Path
 
-from games import DEFAULT, SERVER_APPS, game_folder
+from games import CONFIG, DEFAULT, SERVER_APPS, game_folder
 
-REPO = Path(__file__).resolve().parent.parent
 # The keys and their types
 KEYS = {
     "game": str,
@@ -182,7 +182,7 @@ def args(root: Path) -> None:
 
 def check(paths: list[Path]) -> int:
     status = 0
-    cfg = REPO / "game" / "cfg"
+    cfg = CONFIG / "game" / "cfg"
     for path in paths:
         try:
             settings = load(path)

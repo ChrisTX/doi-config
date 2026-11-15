@@ -13,8 +13,10 @@
 #                                   keeping the layers it replaces in STATE/previous, or without one,
 #                                   update the layers in place
 #
-# With --image first, for the container image (deploy/container), the layers are only the games': the
-# repository and its plugins are the image's, and the repository is the one this script is in.
+# The tools are those this script is with, the configs those of the clone, STATE/doi-config, which is
+# pulled first (DOI_CONFIG of the tools, see tools/games.py). With --image first, for the container
+# image (deploy/container), the layers are only the games': the configs and the plugins are the
+# image's, the repository this script is in.
 #
 # With --image, each server gets links to its game's layers, STATE/servers/<server>/{game,workshop,mods},
 # which the containers of deploy/quadlet mount, as a unit can't pick the folders by the server's game.
@@ -24,6 +26,8 @@
 # --stage, and starts them again: the servers are only down for the restart. At boot, doi-update.service
 # updates in place, before the servers start.
 set -euo pipefail
+
+tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 
 # The layers all games share, as the units and tools/mount_server.sh name them in STATE; each game's
 # are in STATE/<game>
@@ -47,34 +51,34 @@ migrate() {
 	done
 }
 
-# The update of the layers in DIR, with the tools of the clone in DIR once it's pulled, as the
-# repository may have changed them, or those of the image. With FROM, the layers of a game that DIR
-# doesn't have yet are reflinked from there first.
+# The update of the layers in DIR, with the configs of the clone in DIR once it's pulled, or those of
+# the image. With FROM, the layers of a game that DIR doesn't have yet are reflinked from there first.
 update() {
-	local dir=$1 from=${2:-} repo=${image:-$1/doi-config} used game
+	local dir=$1 from=${2:-} used game
 	local -a games
+	export DOI_CONFIG=${image:-$1/doi-config}
 	if [[ -z $image ]]; then
-		git -C "$repo" pull --ff-only
-		"$repo/tools/update_game.sh" --plugins "$dir/plugins"
+		git -C "$DOI_CONFIG" pull --ff-only
+		"$tools/update_game.sh" --plugins "$dir/plugins"
 	fi
-	used=$(python3 "$repo/tools/games.py" used)
+	used=$(python3 "$tools/games.py" used)
 	mapfile -t games <<<"$used"
 	for game in "${games[@]}"; do
 		if [[ -n $from && -e $from/$game && ! -e $dir/$game ]]; then
 			cp -a --reflink=always "$from/$game" "$dir/"
 		fi
 		mkdir -p "$dir/$game"
-		"$repo/tools/update_game.sh" --game "$game" "$dir/$game/game" \
+		"$tools/update_game.sh" --game "$game" "$dir/$game/game" \
 			--workshop "$game" "$dir/$game/workshop" --check-gamedata "$dir/$game/game"
 		# The mods of mods/<game>, an empty layer for a game without. First the map scripts of the game and
 		# the workshop items, which the mods are made from: the log lists those whose braces are repaired,
 		# or can't be, which a mod's fix table repairs. Broken ones don't fail the update, as the servers
 		# run without the maps.
-		if [[ -d $repo/mods/$game ]]; then
-			python3 "$repo/tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" --check ||
+		if [[ -d $DOI_CONFIG/mods/$game ]]; then
+			python3 "$tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" --check ||
 				echo "Warning: map scripts of $game that can't be repaired, see above" >&2
-			python3 "$repo/tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" \
-				"$dir/$game/mods" "$repo/mods/$game"
+			python3 "$tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" \
+				"$dir/$game/mods" "$DOI_CONFIG/mods/$game"
 		else
 			rm -rf "$dir/$game/mods"
 			mkdir "$dir/$game/mods"
@@ -84,12 +88,13 @@ update() {
 
 # The servers' links to their games' layers
 link_servers() {
-	local state=$1 repo=${image:-$1/doi-config} used names game name layer
+	local state=$1 used names game name layer
 	local -a games servers
-	used=$(python3 "$repo/tools/games.py" used)
+	export DOI_CONFIG=${image:-$1/doi-config}
+	used=$(python3 "$tools/games.py" used)
 	mapfile -t games <<<"$used"
 	for game in "${games[@]}"; do
-		names=$(python3 "$repo/tools/games.py" servers "$game")
+		names=$(python3 "$tools/games.py" servers "$game")
 		mapfile -t servers <<<"$names"
 		for name in "${servers[@]}"; do
 			[[ -n $name ]] || continue

@@ -16,11 +16,13 @@
 #                    rather than the plugins when the servers start
 set -euo pipefail
 
-repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
+tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
+# The configs, with the plugins' sources (DOI_CONFIG, see tools/games.py)
+config=$(python3 "$tools/games.py" config)
 
 update_game() {
 	local app game=$2 attempt
-	app=$(python3 "$repo/tools/games.py" app "$1")
+	app=$(python3 "$tools/games.py" app "$1")
 	# A new SteamCMD fails its first install with "Missing configuration", before it has the app's
 	# configuration, and downloads fail at times: tried three times
 	for attempt in 1 2 3; do
@@ -42,7 +44,7 @@ update_workshop() {
 	local -a items=() pending downloads failed
 	# "<app> <item>" a line, the app being the workshop's, the same for all. Kept apart from the loop's
 	# variables, which read empties at the end of the list.
-	listing=$(python3 "$repo/tools/games.py" items "$1")
+	listing=$(python3 "$tools/games.py" items "$1")
 	while read -r line_app item; do
 		[[ -n $item ]] || continue
 		app=$line_app
@@ -87,15 +89,15 @@ update_plugins() {
 	local layer=$1 plugin
 	rm -rf "$layer"
 	mkdir -p "$layer/addons/sourcemod/plugins"
-	for plugin in "$repo"/game/addons/sourcemod/scripting/*.sp; do
-		spcomp -i "$repo/game/addons/sourcemod/scripting/include" \
+	for plugin in "$config"/game/addons/sourcemod/scripting/*.sp; do
+		spcomp -i "$config/game/addons/sourcemod/scripting/include" \
 			-o "$layer/addons/sourcemod/plugins/$(basename "$plugin" .sp).smx" "$plugin"
 	done
 }
 
 # The plugins' gamedata against the game in DIR
 check_gamedata() {
-	python3 "$repo/tools/check_gamedata.py" "$1"
+	python3 "$tools/check_gamedata.py" "$1"
 }
 
 while (($#)); do

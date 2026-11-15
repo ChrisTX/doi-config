@@ -15,7 +15,7 @@ from pathlib import Path
 
 from srctools.keyvalues import Keyvalues
 
-from games import game_folder
+from games import CONFIG, game_folder
 
 
 def values(block: Keyvalues, name: str) -> list[str]:
@@ -89,7 +89,6 @@ def elf_symbols(path: Path) -> set[str]:
 
 
 def main() -> int:
-    repo = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -102,7 +101,7 @@ def main() -> int:
     parser.add_argument(
         "--gamedata",
         type=Path,
-        default=repo / "game/addons/sourcemod/gamedata/nwi.games.txt",
+        default=CONFIG / "game/addons/sourcemod/gamedata/nwi.games.txt",
         help="the gamedata file (%(default)s)",
     )
     args = parser.parse_args()

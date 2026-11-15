@@ -6,6 +6,10 @@ files: the depots from the app (DepotDownloader picks them), the workshop's app 
 (the Web API's consumer_app_id), the game's folder from the install, the folder with gameinfo.txt.
 A game's name is the name of its folder.
 
+The configs, servers/ and game/ of this repository, are those of DOI_CONFIG: a clone of it, by default
+the checkout the tools are in, or /var/lib/doi-server/doi-config, the servers' clone, for the
+installed tools (make install).
+
 The servers, whose games are installed and whose workshop items are downloaded, are found, in this
 order: the configs of servers/ in DOI_SERVER_CONFIGS, separated by spaces (e.g. a test instance's);
 the environment files of DOI_SERVERS_DIR (/etc/doi-server by default), <server>.env each, if there
@@ -14,6 +18,7 @@ its environment file without one, Day of Infamy by default; its workshop items t
 server.toml's list (workshop).
 
 Usage:
+    games.py config            print the folder of the configs (DOI_CONFIG)
     games.py app GAME          print the dedicated server's app of the game, e.g. 462310 of doi
     games.py folder INSTALL    print the name of the game's folder of an install, e.g. doi
     games.py server NAME       print the game of the server NAME
@@ -39,7 +44,18 @@ SERVER_APPS = {
     "insurgency": 237410,
 }
 DEFAULT = "doi"
-REPO = Path(__file__).resolve().parent.parent
+TOOLS = Path(__file__).resolve().parent
+CLONE = Path("/var/lib/doi-server/doi-config")
+
+
+def config_folder() -> Path:
+    """The folder of the configs, see the module's documentation."""
+    if os.environ.get("DOI_CONFIG"):
+        return Path(os.environ["DOI_CONFIG"])
+    return TOOLS.parent if (TOOLS.parent / "servers").is_dir() else CLONE
+
+
+CONFIG = config_folder()
 DETAILS_URL = (
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
 )
@@ -77,7 +93,7 @@ def server(name: str, env: dict[str, str]) -> Server:
     from server_config import load
 
     config = env.get("SERVER_CONFIG_NAME") or env.get("SERVER_NAME") or name
-    toml = REPO / "servers" / config / "server.toml"
+    toml = CONFIG / "servers" / config / "server.toml"
     if not toml.is_file():
         if "SERVER_CONFIG_NAME" in env:
             raise ValueError(f"{name}: the config {config} is unknown")
@@ -93,7 +109,7 @@ def server(name: str, env: dict[str, str]) -> Server:
         name,
         config,
         settings.get("game", DEFAULT),
-        REPO / "game/cfg" / workshop if workshop else None,
+        CONFIG / "game/cfg" / workshop if workshop else None,
     )
 
 
@@ -110,7 +126,7 @@ def servers() -> list[Server]:
         return [server(env.stem, read_env(env)) for env in envs]
     return [
         server(toml.parent.name, {"SERVER_CONFIG_NAME": toml.parent.name})
-        for toml in sorted((REPO / "servers").glob("*/server.toml"))
+        for toml in sorted((CONFIG / "servers").glob("*/server.toml"))
     ]
 
 
@@ -197,13 +213,23 @@ def known(game: str) -> str:
 
 
 def main() -> int:
-    operands = {"app": 1, "folder": 1, "server": 1, "used": 0, "servers": 1, "items": 1}
+    operands = {
+        "config": 0,
+        "app": 1,
+        "folder": 1,
+        "server": 1,
+        "used": 0,
+        "servers": 1,
+        "items": 1,
+    }
     if len(sys.argv) < 2 or operands.get(sys.argv[1]) != len(sys.argv) - 2:
         print(__doc__.split("Usage:")[1], file=sys.stderr)
         return 2
     command, operand = sys.argv[1], (sys.argv[2:] or [""])[0]
     try:
-        if command == "app":
+        if command == "config":
+            print(CONFIG)
+        elif command == "app":
             print(SERVER_APPS[known(operand)])
         elif command == "folder":
             print(game_folder(Path(operand)).name)

@@ -15,13 +15,13 @@
 # server's output with stack traces (UBSAN_OPTIONS and ASAN_OPTIONS, unless they're set)
 set -euo pipefail
 
-repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
+tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 root=$1
 # The game's folder, doi or insurgency (tools/games.py)
-game=$(python3 "$repo/tools/games.py" folder "$root")
+game=$(python3 "$tools/games.py" folder "$root")
 
 # The options of server.toml, one per line
-options=$(python3 "$repo/tools/server_config.py" args "$root")
+options=$(python3 "$tools/server_config.py" args "$root")
 mapfile -t settings <<<"$options"
 
 # Preloaded into srcds only, as srcds_watchdog.py is a 64-bit Python: the sanitisers' runtime
@@ -51,6 +51,6 @@ if ((${#libraries[@]})); then
 	)")
 fi
 
-exec python3 "$repo/tools/srcds_watchdog.py" -- env "${preload[@]}" "$root/srcds_linux" -game "$game" -usercon \
+exec python3 "$tools/srcds_watchdog.py" -- env "${preload[@]}" "$root/srcds_linux" -game "$game" -usercon \
 	-port "${SERVER_PORT:-27015}" +tv_port "${TV_PORT:-27020}" +clientport "${CLIENT_PORT:-27005}" \
 	+r_hunkalloclightmaps 0 +sv_password "${SERVER_PASSWORD:-}" "${settings[@]}"

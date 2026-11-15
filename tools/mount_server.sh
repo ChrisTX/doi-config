@@ -6,8 +6,8 @@
 #                      servers of the game share, with a writable layer
 #   <runtime>/<game>   /etc/doi-server/secrets, servers/<config> (its links resolved), the compiled
 #                      plugins, the mods made for the game from mods/<game> (tools/make_mods.py), game/
-#                      of this repository, /usr/lib/sourcemod, /usr/lib/metamod, the game's folder of
-#                      its install (doi, insurgency), with a writable layer
+#                      of the configs, SourceMod and Metamod:Source (SOURCEMOD_DIR, METAMOD_DIR), the
+#                      game's folder of its install (doi, insurgency), with a writable layer
 #
 # The server's game is its config's (server.toml), or GAME of its environment file, see tools/games.py.
 #
@@ -19,6 +19,9 @@
 #   mount_server.sh --unmount NAME  unmount them
 #
 # SERVER_CONFIG_NAME: the config of servers/ to use, by default the server's name if there's one
+# DOI_CONFIG: the configs, the servers' clone of this repository by default (see tools/games.py)
+# SOURCEMOD_DIR, METAMOD_DIR: SourceMod's and Metamod:Source's files, laid out like the game's folder
+# (/usr/lib/sourcemod and /usr/lib/metamod, of the sourcemod and metamod-source packages)
 # GAME: the server's game without a config, doi by default
 set -euo pipefail
 
@@ -39,8 +42,9 @@ fi
 
 name=$1
 user=$2
+tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 state=/var/lib/doi-server
-repo=$state/doi-config
+repo=$(python3 "$tools/games.py" config)
 runtime=/run/doi-server/$name
 server=$state/servers/$name
 
@@ -53,7 +57,7 @@ if [[ -n $config && ! -d $repo/servers/$config ]]; then
 	exit 1
 fi
 if [[ -f $repo/servers/$config/server.toml ]]; then
-	game=$(python3 "$repo/tools/server_config.py" game "$repo/servers/$config/server.toml")
+	game=$(python3 "$tools/server_config.py" game "$repo/servers/$config/server.toml")
 else
 	game=${GAME:-doi}
 fi
@@ -91,7 +95,8 @@ fi
 lower=()
 [[ -d /etc/doi-server/secrets ]] && lower+=(/etc/doi-server/secrets)
 [[ -n $config ]] && lower+=("$server/config")
-lower+=("$state/plugins" "$games/mods" "$repo/game" /usr/lib/sourcemod /usr/lib/metamod "$games/game/$game")
+lower+=("$state/plugins" "$games/mods" "$repo/game" "${SOURCEMOD_DIR:-/usr/lib/sourcemod}"
+	"${METAMOD_DIR:-/usr/lib/metamod}" "$games/game/$game")
 
 root_lower=("$games/game")
 [[ -d $games/workshop ]] && root_lower=("$games/workshop" "${root_lower[@]}")
