@@ -5,7 +5,9 @@
 # so the servers get the playlist's gameplay as a baseline, which our configs change where they want to.
 # Settings that would get in the way aren't taken over: the theater override and the workshop, which
 # the servers use, BattlEye, stats (basic_settings.cfg), and the rules we set differently, like dead
-# talk, voice and team kill punishment.
+# talk, voice and team kill punishment. The replacements force one setting of their own instead:
+# BattlEye off, which the game no longer has (docs/Cvars.md). Forced, the setting is hidden from the
+# console, and the server never looks for BattlEye's library.
 
 [[replace]]
 playlists = ["*"]
@@ -16,6 +18,7 @@ drop = [
   "require_maxplayers_min",
   "require_maxplayers_max",
 ]
+set = { forced_cvars = { sv_battleye = "0" } }
 
 # The rulesets force no settings either, and run any map, except the campaigns (american_campaign and
 # the like), which keep their maps and the teams they set: a campaign is a choice of maps

@@ -146,6 +146,7 @@ there any more, logs
 ```
 
 and goes on without it, the cvar staying at 1. The default is 0. On our servers
-the playlists don't set it: the `nwi_playlist_unlock` plugin stops the game
-forcing their `forced_cvars` and `forced_cvars_dedicated`, and
-`mods/doi/playlists.toml` doesn't take it over.
+the playlists' replacements force it to 0 instead (`mods/doi/playlists.toml`):
+the `nwi_playlist_unlock` plugin stops the game forcing their own `forced_cvars`
+and `forced_cvars_dedicated`, and forced, the cvar is hidden from the console
+and the server never looks for the module.
