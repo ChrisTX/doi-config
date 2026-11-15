@@ -111,18 +111,17 @@ instead. The layers are mounted while the server runs, in
 The units are in `deploy/systemd`, the group `nwi-rcon` in `deploy/sysusers.d`.
 They run the tools installed with them (`make install`, or the package of
 `deploy/arch/PKGBUILD`), in `/usr/lib/nwi-server-kit`, which read the configs
-from the servers' clone of this repository in
-`/var/lib/nwi-server/layers/config`
-(`NWI_CONFIG`, see `tools/games.py`). SourceMod and Metamod:Source are those of
-`SOURCEMOD_DIR` and `METAMOD_DIR`, `/usr/lib/sourcemod` and `/usr/lib/metamod`
-by default.
+of the servers' config sources (see [Config sources](#config-sources)).
+SourceMod and Metamod:Source are those of `SOURCEMOD_DIR` and `METAMOD_DIR`,
+`/usr/lib/sourcemod` and `/usr/lib/metamod` by default.
 
 - `nwi-update.service` updates the layers (`tools/update_layers.sh`), its state
-  `/var/lib/nwi-server/layers`: it pulls this repository in `config`, compiles
-  its plugins and runs `tools/update_game.sh` for each game of the servers,
-  which installs or updates the game in `<game>/game` with SteamCMD, checks it
-  against the plugins' gamedata (see [Playlists](#playlists)) and makes the
-  game's mods (see [Mods](#mods)) in `<game>/mods`. It runs before the servers
+  `/var/lib/nwi-server/layers`: it brings the clone of each config source in
+  `configs/<source>` up to date, compiles its plugins into `plugins/<source>`
+  and runs `tools/update_game.sh` for each game of the servers, which installs
+  or updates the game in `<game>/game` with SteamCMD, checks it against each
+  source's gamedata (see [Playlists](#playlists)) and makes each source's mods
+  of the game (see [Mods](#mods)) in `<game>/mods/<source>`. It runs before the servers
   start. It also downloads the workshop items of the game's servers' lists into
   `<game>/workshop`, once for all of them. SteamCMD gets their current versions,
   which the game itself never does once it has an item, and items no list names
@@ -174,16 +173,37 @@ sudo pacman -S --needed --asdeps sourcemod-sourcebans-pp \
 ```
 
 Then, as root, with the server's settings in `/etc/nwi-server/coop-commando.env`
-and its secrets as credentials (see [Secrets](#secrets)), and this repository
-cloned once into the updater's state, as its user:
+and its secrets as credentials (see [Secrets](#secrets)), and the default
+config source, which the first update clones:
 
 ```bash
-install -d /var/lib/nwi-server
-systemd-run --wait -p DynamicUser=yes -p StateDirectory=nwi-server/layers \
-  git clone https://github.com/ChrisTX/doi-config.git /var/lib/nwi-server/layers/config
+printf 'URL=%s\n' https://github.com/ChrisTX/doi-config.git |
+  install -D -m 644 /dev/stdin /etc/nwi-server/configs/default.env
 systemctl enable --now nwi-server@coop-commando.service nwi-servers.target
 systemctl enable --now nwi-restart.timer nwi-update-check.timer
 ```
+
+### Config sources
+
+A server's configs, its `server.toml`, the configs of `game` and the mods,
+come from a config source: a repository like this one, e.g. a community's, at a
+branch or tag. `/etc/nwi-server/configs/<source>.env` names it, `URL=` the
+repository and `REF=` the branch or tag (the repository's own branch, pulled,
+without one); the updater keeps its clone in its state. A server takes the
+source `CONFIG_SOURCE` of its environment file, `default` without one, so
+servers of different communities can run on one machine, each with its own
+configs, plugins and mods:
+
+```ini
+# /etc/nwi-server/configs/theirs.env
+URL=https://example.org/theirs/server-configs.git
+REF=live
+# /etc/nwi-server/their-server.env
+CONFIG_SOURCE=theirs
+```
+
+The workshop items stay one download per game for all sources, and each server
+mounts the items of its own list.
 
 ### Secrets
 

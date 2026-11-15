@@ -4,8 +4,9 @@
 #
 #   <runtime>          the workshop items of the game's servers and the game's install, which the
 #                      servers of the game share, with a writable layer
-#   <runtime>/<game>   servers/<config> (its links resolved), the compiled plugins, the mods made for the game from mods/<game> (tools/make_mods.py), game/
-#                      of the configs, SourceMod and Metamod:Source (SOURCEMOD_DIR, METAMOD_DIR), the
+#   <runtime>/<game>   of its config source: servers/<config> (its links resolved), the compiled
+#                      plugins, the mods made for the game from mods/<game> (tools/make_mods.py),
+#                      game/; then SourceMod and Metamod:Source (SOURCEMOD_DIR, METAMOD_DIR), the
 #                      game's folder of its install (doi, insurgency), with a writable layer
 #
 # The server's game is its config's (server.toml), or GAME of its environment file, see tools/games.py.
@@ -26,7 +27,8 @@
 #   mount_server.sh --unmount NAME  unmount them
 #
 # SERVER_CONFIG_NAME: the config of servers/ to use, by default the server's name if there's one
-# NWI_CONFIG: the configs, the servers' clone of this repository by default (see tools/games.py)
+# CONFIG_SOURCE: the server's config source, whose configs, plugins and mods it gets (see
+# tools/games.py), "default" by default
 # SOURCEMOD_DIR, METAMOD_DIR: SourceMod's and Metamod:Source's files, laid out like the game's folder
 # (/usr/lib/sourcemod and /usr/lib/metamod, of the sourcemod and metamod-source packages)
 # GAME: the server's game without a config, doi by default
@@ -77,7 +79,8 @@ tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 # The folders on disk, which systemd links to from /var/lib for the dynamic users
 state=$(realpath /var/lib/nwi-server/layers)
 server=$(realpath "/var/lib/nwi-server/servers/$name")
-repo=$(python3 "$tools/games.py" config)
+source=${CONFIG_SOURCE:-default}
+repo=$(python3 "$tools/games.py" config "$source")
 runtime=/run/nwi-server/$name
 work=/run/nwi-server/.work/$name
 uid=$(systemctl show -P UID "$unit")
@@ -143,8 +146,8 @@ if [[ -n $config ]]; then
 	idmapped "$nobody" "$work/config" "$work/lower/config"
 	lower+=("$work/lower/config")
 fi
-idmapped "$nobody" "$state/plugins" "$work/lower/plugins"
-idmapped "$nobody" "$games/mods" "$work/lower/mods"
+idmapped "$nobody" "$state/plugins/$source" "$work/lower/plugins"
+idmapped "$nobody" "$games/mods/$source" "$work/lower/mods"
 idmapped "$nobody" "$repo/game" "$work/lower/configs"
 idmapped "$nobody" "${SOURCEMOD_DIR:-/usr/lib/sourcemod}" "$work/lower/sourcemod"
 idmapped "$nobody" "${METAMOD_DIR:-/usr/lib/metamod}" "$work/lower/metamod"
@@ -159,8 +162,9 @@ if [[ -d $games/workshop ]]; then
 fi
 
 # The lower layers as options of their own (lowerdir+, Linux 6.8): the kernel takes no more than 256
-# characters for all of them in one lowerdir. Without xino: with the writable layer on tmpfs, overlayfs
-# would give the files inode numbers beyond 32 bits, on which the 32-bit server's stat() fails.
+# characters for all of them in one lowerdir. Without xino, which a 64-bit kernel may turn on by itself
+# (OVERLAY_FS_XINO_AUTO), e.g. with the writable layer on tmpfs: its inode numbers beyond 32 bits make
+# the 32-bit server's stat() fail.
 lower_layers() {
 	local layer
 	for layer in "$@"; do

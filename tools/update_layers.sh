@@ -1,9 +1,10 @@
 #!/bin/bash
-# Updates the layers the servers share in the state folder STATE (/var/lib/nwi-server): this
-# repository's clone and the compiled plugins, and of each game of the servers (tools/games.py) its
-# install, its servers' workshop items and the mods made for it, in STATE/<game>/game,
-# STATE/<game>/workshop and STATE/<game>/mods. The layers mustn't change while servers run on them, so
-# an update while they run goes into a copy:
+# Updates the layers the servers share in the state folder STATE (/var/lib/nwi-server/layers): the
+# clones of the servers' config sources and the plugins compiled of each, and of each game of the
+# servers (tools/games.py) its install, its servers' workshop items and the mods made for it of each
+# source, in STATE/configs/<source>, STATE/plugins/<source>, STATE/<game>/game, STATE/<game>/workshop
+# and STATE/<game>/mods/<source>. The layers mustn't change while servers run on them, so an update
+# while they run goes into a copy:
 #
 #   update_layers.sh --stage STATE  update a copy of the layers in STATE/next, while the servers run:
 #                                   a reflinked copy (btrfs, XFS), which shares the data of the files
@@ -13,10 +14,11 @@
 #                                   keeping the layers it replaces in STATE/previous, or without one,
 #                                   update the layers in place
 #
-# The tools are those this script is with, the configs those of the clone, STATE/config, which is
-# pulled first (NWI_CONFIG of the tools, see tools/games.py). With --image first, for the container
-# image (deploy/container), the layers are only the games': the configs and the plugins are the
-# image's, the repository this script is in.
+# A config source's clone is made of its repository (URL of /etc/nwi-server/configs/<source>.env) if
+# it's missing, and brought to its branch or tag (REF), or pulled without one. The tools are those this
+# script is with. With --image first, for the container image (deploy/container), the layers are only
+# the games', of one source, the configs and the plugins of the image, the repository this script is
+# in.
 #
 # With --image, each server gets links to its game's layers, STATE/servers/<server>/{game,workshop,mods},
 # which the containers of deploy/quadlet mount, as a unit can't pick the folders by the server's game.
@@ -31,7 +33,7 @@ tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 
 # The layers all games share, as the units and tools/mount_server.sh name them in STATE; each game's
 # are in STATE/<game>
-shared=(config plugins)
+shared=(configs plugins)
 image=
 if [[ ${1:-} == --image ]]; then
 	shared=()
@@ -39,58 +41,117 @@ if [[ ${1:-} == --image ]]; then
 	shift
 fi
 
-# The layers of Day of Infamy were in STATE itself, before there were others
+# Earlier layouts: the layers of Day of Infamy in STATE itself, before there were other games; one clone
+# of the configs, STATE/config, and the plugins and the mods made of it, before there were sources.
+# Plugins and mods are made anew anyway.
 migrate() {
-	local dir=$1 layer
-	[[ -d $dir/game && ! -e $dir/doi ]] || return 0
-	mkdir "$dir/doi"
-	for layer in game workshop mods; do
-		if [[ -e $dir/$layer ]]; then
-			mv "$dir/$layer" "$dir/doi/"
+	local dir=$1 layer mods
+	if [[ -d $dir/game && ! -e $dir/doi ]]; then
+		mkdir "$dir/doi"
+		for layer in game workshop mods; do
+			if [[ -e $dir/$layer ]]; then
+				mv "$dir/$layer" "$dir/doi/"
+			fi
+		done
+	fi
+	if [[ -d $dir/config && ! -e $dir/configs ]]; then
+		mkdir "$dir/configs"
+		mv "$dir/config" "$dir/configs/default"
+	fi
+	if [[ -d $dir/plugins/addons ]]; then
+		rm -rf "$dir/plugins"
+	fi
+	for mods in "$dir"/*/mods; do
+		if [[ -d $mods/cfg || -d $mods/custom ]]; then
+			rm -rf "$mods"
 		fi
 	done
 }
 
-# The update of the layers in DIR, with the configs of the clone in DIR once it's pulled, or those of
+# A config source's clone in DIR/configs: made of its repository if it's missing, brought to its branch
+# or tag, or pulled without one
+sync_source() {
+	local clone=$1/configs/$2 settings url ref
+	local -a lines
+	settings=$(python3 "$tools/games.py" source "$2")
+	mapfile -t lines <<<"$settings"
+	url=${lines[0]:-} ref=${lines[1]:-}
+	if [[ ! -d $clone/.git ]]; then
+		if [[ -z $url ]]; then
+			echo "Error: the config source $2 has neither a clone, $clone, nor a repository (URL)" >&2
+			return 1
+		fi
+		mkdir -p "$1/configs"
+		git clone --quiet "$url" "$clone"
+	elif [[ -n $url ]]; then
+		git -C "$clone" remote set-url origin "$url"
+	fi
+	if [[ -z $ref ]]; then
+		git -C "$clone" pull --quiet --ff-only
+		return
+	fi
+	git -C "$clone" fetch --quiet --tags --prune origin
+	if git -C "$clone" rev-parse --verify --quiet "refs/remotes/origin/$ref" >/dev/null; then
+		git -C "$clone" checkout --quiet --detach "origin/$ref"
+	else
+		git -C "$clone" checkout --quiet --detach "refs/tags/$ref"
+	fi
+}
+
+# The update of the layers in DIR, with the configs of the clones in DIR once they're synced, or those of
 # the image. With FROM, the layers of a game that DIR doesn't have yet are reflinked from there first.
 update() {
-	local dir=$1 from=${2:-} used game
-	local -a games
-	export NWI_CONFIG=${image:-$1/config}
-	if [[ -z $image ]]; then
-		git -C "$NWI_CONFIG" pull --ff-only
-		"$tools/update_game.sh" --plugins "$dir/plugins"
+	local dir=$1 from=${2:-} listing game source configs
+	local -a sources games game_sources
+	if [[ -n $image ]]; then
+		export NWI_CONFIG=$image
+	else
+		export NWI_LAYERS=$dir
+		listing=$(python3 "$tools/games.py" sources)
+		mapfile -t sources <<<"$listing"
+		for source in "${sources[@]}"; do
+			sync_source "$dir" "$source"
+			NWI_CONFIG=$dir/configs/$source "$tools/update_game.sh" --plugins "$dir/plugins/$source"
+		done
 	fi
-	used=$(python3 "$tools/games.py" used)
-	mapfile -t games <<<"$used"
+	listing=$(python3 "$tools/games.py" used)
+	mapfile -t games <<<"$listing"
 	for game in "${games[@]}"; do
 		if [[ -n $from && -e $from/$game && ! -e $dir/$game ]]; then
 			cp -a --reflink=always "$from/$game" "$dir/"
 		fi
 		mkdir -p "$dir/$game"
-		"$tools/update_game.sh" --game "$game" "$dir/$game/game" \
-			--workshop "$game" "$dir/$game/workshop" --check-gamedata "$dir/$game/game"
-		# The mods of mods/<game>, an empty layer for a game without. First the map scripts of the game and
-		# the workshop items, which the mods are made from: the log lists those whose braces are repaired,
-		# or can't be, which a mod's fix table repairs. Broken ones don't fail the update, as the servers
-		# run without the maps.
-		if [[ -d $NWI_CONFIG/mods/$game ]]; then
-			python3 "$tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" --check ||
-				echo "Warning: map scripts of $game that can't be repaired, see above" >&2
-			python3 "$tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" \
-				"$dir/$game/mods" "$NWI_CONFIG/mods/$game"
-		else
-			rm -rf "$dir/$game/mods"
-			mkdir "$dir/$game/mods"
-		fi
+		"$tools/update_game.sh" --game "$game" "$dir/$game/game" --workshop "$game" "$dir/$game/workshop"
+		listing=$(python3 "$tools/games.py" sources "$game")
+		mapfile -t game_sources <<<"$listing"
+		rm -rf "$dir/$game/mods"
+		mkdir "$dir/$game/mods"
+		for source in "${game_sources[@]}"; do
+			[[ -n $source ]] || continue
+			configs=$(python3 "$tools/games.py" config "$source")
+			# The source's plugins' gamedata against the game
+			NWI_CONFIG=$configs "$tools/update_game.sh" --check-gamedata "$dir/$game/game"
+			# The source's mods of mods/<game>, an empty layer without. First the map scripts of the game
+			# and the workshop items, which the mods are made from: the log lists those whose braces are
+			# repaired, or can't be, which a mod's fix table repairs. Broken ones don't fail the update,
+			# as the servers run without the maps.
+			if [[ -d $configs/mods/$game ]]; then
+				python3 "$tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" --check ||
+					echo "Warning: map scripts of $game that can't be repaired, see above" >&2
+				python3 "$tools/make_mods.py" --game "$dir/$game/game" --workshop "$dir/$game/workshop" \
+					"$dir/$game/mods/$source" "$configs/mods/$game"
+			else
+				mkdir "$dir/$game/mods/$source"
+			fi
+		done
 	done
 }
 
 # The servers' links to their games' layers
 link_servers() {
-	local state=$1 used names game name layer
+	local state=$1 used names game name
 	local -a games servers
-	export NWI_CONFIG=${image:-$1/config}
+	export NWI_CONFIG=$image
 	used=$(python3 "$tools/games.py" used)
 	mapfile -t games <<<"$used"
 	for game in "${games[@]}"; do
@@ -99,9 +160,10 @@ link_servers() {
 		for name in "${servers[@]}"; do
 			[[ -n $name ]] || continue
 			mkdir -p "$state/servers/$name"
-			for layer in game workshop mods; do
-				ln -sfn "../../$game/$layer" "$state/servers/$name/$layer"
-			done
+			ln -sfn "../../$game/game" "$state/servers/$name/game"
+			ln -sfn "../../$game/workshop" "$state/servers/$name/workshop"
+			# The image's one source
+			ln -sfn "../../$game/mods/default" "$state/servers/$name/mods"
 		done
 	done
 }

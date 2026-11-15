@@ -6,22 +6,30 @@ files: the depots from the app (DepotDownloader picks them), the workshop's app 
 (the Web API's consumer_app_id), the game's folder from the install, the folder with gameinfo.txt.
 A game's name is the name of its folder.
 
-The configs, servers/ and game/ of this repository, are those of NWI_CONFIG: a clone of it, by default
-the checkout the tools are in, or /var/lib/nwi-server/layers/config, the servers' clone, for the
-installed tools (make install).
+The configs, servers/ and game/ of a repository like this one, come from config sources, e.g. a
+community's: each a clone in the updater's state, NWI_LAYERS/configs/<source> (NWI_LAYERS is
+/var/lib/nwi-server/layers by default), of the repository and its branch or tag of
+NWI_SOURCES_DIR/<source>.env (/etc/nwi-server/configs), URL=… and REF=…. A server's source is
+CONFIG_SOURCE of its environment file, "default" without one. With NWI_CONFIG, or for the tools of a
+checkout, there's one source for all servers: that folder, or the checkout the tools are in.
 
 The servers, whose games are installed and whose workshop items are downloaded, are found, in this
 order: the configs of servers/ in NWI_SERVER_CONFIGS, separated by spaces (e.g. a test instance's);
 the environment files of NWI_SERVERS_DIR (/etc/nwi-server by default), <server>.env each, if there
-is one; every config of servers/ otherwise. A server's game is its server.toml's (game), or GAME of
+is one; every config of the default source's servers/ otherwise. A server's game is its server.toml's (game), or GAME of
 its environment file without one, Day of Infamy by default; its workshop items those of its
 server.toml's list (workshop).
 
 Usage:
-    games.py config            print the folder of the configs (NWI_CONFIG)
+    games.py config [SOURCE]   print the folder of the configs of SOURCE, the default one without
+    games.py sources [GAME]    print the config sources of the servers (of GAME), one per line;
+                               without GAME from their environment files only, so before cloning
+    games.py source SOURCE     print the repository (URL) and branch or tag (REF) of SOURCE, one
+                               per line, empty where its file has none
     games.py app GAME          print the dedicated server's app of the game, e.g. 462310 of doi
     games.py folder INSTALL    print the name of the game's folder of an install, e.g. doi
     games.py server NAME       print the game of the server NAME
+    games.py source-of NAME    print the config source of the server NAME
     games.py used              print the games of the servers, one per line
     games.py servers GAME      print the names of the game's servers, one per line
     games.py items GAME        print the workshop items of the game's servers, one per line as
@@ -45,16 +53,30 @@ SERVER_APPS = {
 }
 DEFAULT = "doi"
 TOOLS = Path(__file__).resolve().parent
-CLONE = Path("/var/lib/nwi-server/layers/config")
+DEFAULT_SOURCE = "default"
+SOURCE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
-def config_folder() -> Path:
-    """The folder of the configs, see the module's documentation."""
+def single_config() -> Path | None:
+    """The one folder of configs for all sources, if there is one: NWI_CONFIG, or the checkout the tools
+    are in."""
     if os.environ.get("NWI_CONFIG"):
         return Path(os.environ["NWI_CONFIG"])
-    return TOOLS.parent if (TOOLS.parent / "servers").is_dir() else CLONE
+    return TOOLS.parent if (TOOLS.parent / "servers").is_dir() else None
 
 
+def config_folder(source: str = DEFAULT_SOURCE) -> Path:
+    """The folder of a config source's configs, see the module's documentation."""
+    if not SOURCE_NAME.fullmatch(source):
+        raise ValueError(f"not a config source's name: {source}")
+    single = single_config()
+    if single is not None:
+        return single
+    layers = Path(os.environ.get("NWI_LAYERS", "/var/lib/nwi-server/layers"))
+    return layers / "configs" / source
+
+
+# The default source's configs, for the tools that work on one, e.g. server_config.py check
 CONFIG = config_folder()
 DETAILS_URL = (
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
@@ -63,9 +85,11 @@ DETAILS_URL = (
 
 @dataclass
 class Server:
-    """A server: its name, its config of servers/ (if it has one), its game, its workshop list."""
+    """A server: its name, its config source, its config of servers/ (if it has one), its game, its
+    workshop list."""
 
     name: str
+    source: str
     config: str | None
     game: str
     workshop: Path | None
@@ -92,25 +116,59 @@ def server(name: str, env: dict[str, str]) -> Server:
     # Imported here: server_config imports this module
     from server_config import load
 
+    # One source with one folder of configs for all, e.g. a container image's
+    source = (
+        DEFAULT_SOURCE
+        if single_config()
+        else env.get("CONFIG_SOURCE") or DEFAULT_SOURCE
+    )
+    configs = config_folder(source)
     config = env.get("SERVER_CONFIG_NAME") or env.get("SERVER_NAME") or name
-    toml = CONFIG / "servers" / config / "server.toml"
+    toml = configs / "servers" / config / "server.toml"
     if not toml.is_file():
         if "SERVER_CONFIG_NAME" in env:
-            raise ValueError(f"{name}: the config {config} is unknown")
+            raise ValueError(f"{name}: the config {config} of {source} is unknown")
         game = env.get("GAME", DEFAULT)
         if game not in SERVER_APPS:
             raise ValueError(
                 f"{name}: GAME is one of {', '.join(SERVER_APPS)}, not {game}"
             )
-        return Server(name, None, game, None)
+        return Server(name, source, None, game, None)
     settings = load(toml)
     workshop = settings.get("workshop")
     return Server(
         name,
+        source,
         config,
         settings.get("game", DEFAULT),
-        CONFIG / "game/cfg" / workshop if workshop else None,
+        configs / "game/cfg" / workshop if workshop else None,
     )
+
+
+def source_settings(source: str) -> tuple[str, str]:
+    """The repository and the branch or tag of a config source, from its file; empty without."""
+    folder = Path(os.environ.get("NWI_SOURCES_DIR", "/etc/nwi-server/configs"))
+    path = folder / f"{source}.env"
+    settings = read_env(path) if path.is_file() else {}
+    return settings.get("URL", ""), settings.get("REF", "")
+
+
+def server_envs() -> dict[str, dict[str, str]]:
+    """The servers' environment files' variables by the servers' names."""
+    folder = Path(os.environ.get("NWI_SERVERS_DIR", "/etc/nwi-server"))
+    envs = sorted(folder.glob("*.env")) if folder.is_dir() else []
+    return {env.stem: read_env(env) for env in envs}
+
+
+def env_sources() -> list[str]:
+    """The config sources the servers' environment files name, the default one without any: read
+    without the clones, so before they're made."""
+    if os.environ.get("NWI_SERVER_CONFIGS") is not None or single_config() is not None:
+        return [DEFAULT_SOURCE]
+    names = {
+        env.get("CONFIG_SOURCE") or DEFAULT_SOURCE for env in server_envs().values()
+    }
+    return sorted(names) or [DEFAULT_SOURCE]
 
 
 def servers() -> list[Server]:
@@ -120,10 +178,9 @@ def servers() -> list[Server]:
         return [
             server(config, {"SERVER_CONFIG_NAME": config}) for config in configs.split()
         ]
-    folder = Path(os.environ.get("NWI_SERVERS_DIR", "/etc/nwi-server"))
-    envs = sorted(folder.glob("*.env")) if folder.is_dir() else []
+    envs = server_envs()
     if envs:
-        return [server(env.stem, read_env(env)) for env in envs]
+        return [server(name, env) for name, env in envs.items()]
     return [
         server(toml.parent.name, {"SERVER_CONFIG_NAME": toml.parent.name})
         for toml in sorted((CONFIG / "servers").glob("*/server.toml"))
@@ -213,30 +270,47 @@ def known(game: str) -> str:
 
 
 def main() -> int:
+    # The least and the most operands of each command
     operands = {
-        "config": 0,
-        "app": 1,
-        "folder": 1,
-        "server": 1,
-        "used": 0,
-        "servers": 1,
-        "items": 1,
+        "config": (0, 1),
+        "sources": (0, 1),
+        "source": (1, 1),
+        "app": (1, 1),
+        "folder": (1, 1),
+        "server": (1, 1),
+        "source-of": (1, 1),
+        "used": (0, 0),
+        "servers": (1, 1),
+        "items": (1, 1),
     }
-    if len(sys.argv) < 2 or operands.get(sys.argv[1]) != len(sys.argv) - 2:
+    command = sys.argv[1] if len(sys.argv) > 1 else ""
+    least, most = operands.get(command, (-1, -1))
+    if not least <= len(sys.argv) - 2 <= most:
         print(__doc__.split("Usage:")[1], file=sys.stderr)
         return 2
-    command, operand = sys.argv[1], (sys.argv[2:] or [""])[0]
+    operand = (sys.argv[2:] or [""])[0]
     try:
         if command == "config":
-            print(CONFIG)
+            print(config_folder(operand or DEFAULT_SOURCE))
+        elif command == "sources":
+            if operand:
+                game = known(operand)
+                names = sorted(
+                    {found.source for found in servers() if found.game == game}
+                )
+            else:
+                names = env_sources()
+            print("\n".join(names), end="\n" if names else "")
+        elif command == "source":
+            config_folder(operand)
+            print("\n".join(source_settings(operand)))
         elif command == "app":
             print(SERVER_APPS[known(operand)])
         elif command == "folder":
             print(game_folder(Path(operand)).name)
-        elif command == "server":
-            folder = Path(os.environ.get("NWI_SERVERS_DIR", "/etc/nwi-server"))
-            env = folder / f"{operand}.env"
-            print(server(operand, read_env(env) if env.is_file() else {}).game)
+        elif command in ("server", "source-of"):
+            found = server(operand, server_envs().get(operand, {}))
+            print(found.game if command == "server" else found.source)
         elif command == "used":
             print("\n".join(used_games(servers())))
         elif command == "servers":

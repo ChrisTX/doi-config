@@ -21,6 +21,7 @@ Usage: check_updates.py STATE
 """
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -144,6 +145,8 @@ def main() -> int:
         "state", type=Path, metavar="STATE", help="the state folder of the layers"
     )
     arguments = parser.parse_args()
+    # The config sources' clones of the state, as servers() reads the servers' settings there
+    os.environ["NWI_LAYERS"] = str(arguments.state)
     try:
         found = servers()
         updates = []
