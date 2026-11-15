@@ -1,5 +1,5 @@
 [Unit]
-Description=Stage an update of the Day of Infamy game install and doi-config
+Description=Stage an update of the games of the Day of Infamy or Insurgency servers and doi-config
 After=network-online.target
 Wants=network-online.target
 

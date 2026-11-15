@@ -9,11 +9,13 @@ set -euo pipefail
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
 cd "$1" || exit
+# The game's folder, doi or insurgency (tools/games.py)
+game=$(python3 "$repo/tools/games.py" folder .)
 
 # The server's server.cfg and subscribed_file_ids.txt, made from its server.toml
 # (tools/server_config.py), before rcon.cfg is added to it below. Without a server.toml, e.g. a
 # server of no config of servers/, its own cfg/server.cfg comes from the secrets.
-if [[ -f doi/server.toml ]]; then
+if [[ -f $game/server.toml ]]; then
 	python3 "$repo/tools/server_config.py" prepare .
 fi
 
@@ -24,7 +26,7 @@ move_plugin() {
 	fi
 }
 
-pushd doi/addons/sourcemod/plugins || exit
+pushd "$game/addons/sourcemod/plugins" || exit
 # Enable SQL admin plugins
 move_plugin disabled/admin-sql-threaded.smx .
 move_plugin disabled/sql-admin-manager.smx .
@@ -44,7 +46,7 @@ popd || exit
 # admin-flatfile.smx reads with or without a database, e.g. on a test server of no database. SourceMod
 # takes STEAM_0:…, STEAM_1:…, [U:1:…] and SteamID64 there. deploy/container/test-instance.sh sets it in the
 # test instance's environment file; the live servers' don't have it.
-admins=doi/addons/sourcemod/configs/admins_simple.ini
+admins=$game/addons/sourcemod/configs/admins_simple.ini
 read -ra test_admins <<<"${TEST_ADMIN:-}"
 for admin in "${test_admins[@]}"; do
 	if [[ ! $admin =~ ^(STEAM_[0-5]:[01]:[0-9]+|\[U:1:[0-9]+\]|[0-9]{17})$ ]]; then
@@ -58,7 +60,7 @@ for admin in "${test_admins[@]}"; do
 done
 
 sourcebans_replacer() {
-	sed -i -E "s/(\"$1\"\s+)\"[^\"]*\"/\1\"$2\"/" doi/addons/sourcemod/configs/sourcebans/sourcebans.cfg
+	sed -i -E "s/(\"$1\"\s+)\"[^\"]*\"/\1\"$2\"/" "$game/addons/sourcemod/configs/sourcebans/sourcebans.cfg"
 }
 
 sourcebans_replacer "BackupConfigs" "0"
@@ -77,8 +79,8 @@ fi
 
 # Without a server.toml, users need to provide their own server.cfg
 if [[ -n ${RCON_PASSWORD:-} ]]; then
-	echo "rcon_password \"$RCON_PASSWORD\"" >doi/cfg/rcon.cfg
-	if ! grep -q "exec rcon.cfg" doi/cfg/server.cfg; then
-		echo "exec rcon.cfg" >>doi/cfg/server.cfg
+	echo "rcon_password \"$RCON_PASSWORD\"" >"$game/cfg/rcon.cfg"
+	if ! grep -q "exec rcon.cfg" "$game/cfg/server.cfg"; then
+		echo "exec rcon.cfg" >>"$game/cfg/server.cfg"
 	fi
 fi

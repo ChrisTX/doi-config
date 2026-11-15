@@ -1,5 +1,5 @@
 [Unit]
-Description=Update and restart the Day of Infamy servers every day at 06:00
+Description=Update and restart the Day of Infamy or Insurgency servers every day at 06:00
 
 [Timer]
 OnCalendar=*-*-* 06:00:00

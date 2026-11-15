@@ -58,6 +58,13 @@ With `ruleset`, a server runs one of its playlist's rulesets, e.g. a campaign
 of Coop Commando, `ruleset = "american_campaign"`, which keeps its maps and
 teams (see [Playlists](#playlists)).
 
+With `game = "insurgency"`, a server runs Insurgency instead of Day of Infamy,
+like the test server `servers/ins-test`. The tools only keep the apps of the
+games' dedicated servers (`tools/games.py`) and find the rest: the depots,
+the game's folder (`doi` or `insurgency`, the one with `gameinfo.txt`) and the
+workshop's app of the items. The configs of `game/cfg/doi-config` are Day of
+Infamy's.
+
 At each start, `tools/prepare_server.sh` makes the server's `cfg/server.cfg` of
 it with `tools/server_config.py`, which describes the keys: the names of the
 server and SourceTV, and the configs it runs (see [Configs](#configs)). It also
@@ -75,22 +82,25 @@ A server without a `server.toml`, of no config of `servers`, needs its own
 ### Running with systemd
 
 The servers run as system services of the `doi` user, one instance per server,
-which share one install of the game. Each server is put together with overlayfs
-from read-only layers, top first:
+which share one install of each game. The games, and the workshop items, are
+those of the servers: each `/etc/doi-server/<server>.env` is a server, its game
+its config's or `GAME` of its environment file without one (`tools/games.py`).
+Each server is put together with overlayfs from read-only layers, top first:
 
-- `/etc/doi-server/secrets`, laid out like the `doi` folder, e.g. the database
+- `/etc/doi-server/secrets`, laid out like the game's folder, e.g. the database
   credentials of SourceMod and SourceBans++ in
   `addons/sourcemod/configs/databases.cfg`
 - the server's folder in `servers`, if there's one
 - this repository's plugins, compiled by `doi-update.service`
-- the mods of `mods` and the playlists' configs, made by `doi-update.service`
+- the mods of `mods/<game>` and the playlists' configs, made by
+  `doi-update.service`
 - `game` of this repository
 - `/usr/lib/sourcemod` and `/usr/lib/metamod`: SourceMod, Metamod:Source and
   the plugins from their packages (`sourcemod`, `metamod-source`,
   `sourcemod-sourcebans-pp`, `sourcemod-sourcebans-pp-discord-forward`,
   `sourcemod-advertisements`, `sourcemod-multicolors`, `sourcemod-smjansson`,
   `sourcemod-steamworks`)
-- the workshop items of all servers
+- the workshop items of the game's servers
 - the game
 
 Their writable layer starts empty whenever the layers are mounted, so changes
@@ -102,15 +112,17 @@ bind-mounted from the server's state folder instead (see
 The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
 
 - `doi-update.service` updates the layers (`tools/update_layers.sh`): it pulls
-  this repository in `/var/lib/doi-server/doi-config` and runs
-  `tools/update_game.sh`, which installs or updates the game in
-  `/var/lib/doi-server/game` with SteamCMD, checks it against the plugins'
-  gamedata (see [Playlists](#playlists)), compiles this repository's
-  plugins and makes the mods (see [Mods](#mods)) in `/var/lib/doi-server/mods`.
-  It runs before the servers start. It also downloads the workshop items of all
-  `workshop-ids-*.txt` files into `/var/lib/doi-server/workshop`, once for all
-  servers. SteamCMD gets their current versions, which the game itself never
-  does once it has an item, and items no list names any more are removed.
+  this repository in `/var/lib/doi-server/doi-config`, compiles its plugins and
+  runs `tools/update_game.sh` for each game of the servers, which installs or
+  updates the game in `/var/lib/doi-server/<game>/game` with SteamCMD, checks
+  it against the plugins' gamedata (see [Playlists](#playlists)) and makes the
+  game's mods (see [Mods](#mods)) in `/var/lib/doi-server/<game>/mods`. It runs
+  before the servers start. It also downloads the workshop items of the game's
+  servers' lists into `/var/lib/doi-server/<game>/workshop`, once for all of
+  them. SteamCMD gets their current versions, which the game itself never does
+  once it has an item, and items no list names any more are removed. The
+  layers of a state folder from before Insurgency, in `/var/lib/doi-server`
+  itself, are moved into `doi` once.
 - `doi-mount@<server>.service` mounts the layers (`tools/mount_server.sh`)
   after `doi-update.service`, and unmounts them after the server stops. It's
   stopped and restarted with the server, systemd's restarts of the server
@@ -126,7 +138,7 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   `SERVER_PASSWORD`), the rest of its settings from its `server.toml`. The server
   uses the folder of the same name in `servers`, or the one `SERVER_CONFIG_NAME`
   names; without one, the secrets layer needs a `cfg/server.cfg` as described
-  above.
+  above, and `GAME` says its game, `doi` by default.
 - `tools/srcds_watchdog.py` runs the server and queries it with A2S. The
   service is ready once the server first answers, and systemd's watchdog
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
@@ -142,7 +154,7 @@ The units are in `deploy/systemd`, the `doi` user in `deploy/sysusers.d`:
   `/var/lib/doi-server/previous`, and the servers start again: they're only
   down for the restart. Without reflinks, `doi-update.service` updates in place
   while the servers are stopped.
-- `doi-update-check.timer` checks the game and the workshop items for updates
+- `doi-update-check.timer` checks the games and the workshop items for updates
   every three hours (`tools/check_updates.py`), and on an update restarts the
   servers like `doi-restart.timer`. The game's depots are compared, not its
   build, as the Steam client library's depot changes on its own, and the
@@ -186,7 +198,8 @@ podman build --format docker --build-context repo=/var/lib/aurutils-repo \
 aurutils uses. The image's commands (`deploy/container/entrypoint.sh`) are the
 server, `update [--stage]` and `check`: the updater and the check of
 `tools/update_layers.sh` and `tools/check_updates.py` on the state folder,
-mounted at `/srv/state`.
+mounted at `/srv/state`, for the servers whose environment files are mounted at
+`/etc/doi-server`.
 
 `deploy/quadlet` has the units for rootless Podman, the containers'
 counterparts of `deploy/systemd`, with the state folder
@@ -197,8 +210,10 @@ counterparts of `deploy/systemd`, with the state folder
 - `doi-server@<server>.container` runs a server: its settings in
   `~/.config/doi-server/<server>.env`, as for `doi-server@.service`, its secrets
   in `~/.config/doi-server/secrets` (which may be empty), on the host's
-  network. The game and the workshop items are mounted with an overlay of the
-  container's own (`:O`), the mods read-only. It's ready once the image's
+  network. Its game's install and workshop items are mounted with an overlay of
+  the container's own (`:O`), its mods read-only, through the links the updater
+  keeps in `~/.local/state/doi-server/servers/<server>`, as a unit can't pick
+  the folders by the server's game. It's ready once the image's
   health check, A2S like the systemd units' watchdog, passes, and restarted
   when the server stops answering. What it keeps goes into volumes.
 - `doi-build.service` pulls a clone of this repository and builds the image
@@ -240,7 +255,9 @@ precedence:
 mkdir -p ~/.config/doi-config
 echo 'TEST_ADMIN=[U:1:246]' >>~/.config/doi-config/test-instance.env
 deploy/container/test-instance.sh build
-# The game and the workshop items into the state folder: about 20 GB at first
+# The games and the workshop items of all configs into the state folder: about
+# 20 GB for Day of Infamy at first, and 10 GB for Insurgency's test server;
+# with configs, e.g. update coop-commando, only theirs
 deploy/container/test-instance.sh update
 deploy/container/test-instance.sh up coop-commando
 deploy/container/test-instance.sh rcon sm plugins list

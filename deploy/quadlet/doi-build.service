@@ -4,7 +4,7 @@
 # (systemctl --user edit doi-build.service). The build needs the local pacman repository of
 # deploy/container/test-instance.sh build.
 [Unit]
-Description=Build the Day of Infamy server's image
+Description=Build the image of the Day of Infamy or Insurgency servers
 Wants=network-online.target
 After=network-online.target
 

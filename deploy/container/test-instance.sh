@@ -6,9 +6,11 @@
 #   build [--testing] build the image (podman build, see README.md) from the local pacman repository;
 #                     with --testing with Arch Linux's testing repositories, for packages built against
 #                     them, as on a machine that uses them
-#   update [--stage]  update the game, the workshop items and the mods of the state folder with the
+#   update [--stage] [CONFIG...]
+#                     update the games, the workshop items and the mods of the configs of servers/ (all
+#                     by default, which includes Insurgency's test server) in the state folder with the
 #                     image's updater (entrypoint.sh update), which the server mounts; the first
-#                     downloads the game and the items
+#                     downloads the games and the items
 #   up [--db-only] [CONFIG]
 #                     start the test instance of a config of servers/ (coop-commando by default), anew;
 #                     with --db-only only its database, for the systemd units on this machine
@@ -188,8 +190,10 @@ read_admins() {
 
 # The tables of SourceBans++ (from the web panel's package, its placeholders filled in), SourceMod's
 # admins and client preferences (from the image), the test server and the admin
+# $1: the server's game, doi or insurgency
 write_database() {
-	local package
+	local package game=$1 name=Insurgency
+	[[ $game != doi ]] || name='Day of Infamy'
 	find_repo
 	package=$(find "$repo_root" -maxdepth 1 -name 'sourcebans-pp-[0-9]*.pkg.tar.zst' | sort -V | tail -1)
 	if [[ -z $package ]]; then
@@ -208,11 +212,13 @@ write_database() {
 	local -a cat=(podman run --rm --entrypoint cat "$image")
 	[[ -z $db_only ]] || cat=(cat)
 	"${cat[@]}" "$scripts/create_admins.sql" "$scripts/clientprefs-mysql.sql" >"$dir/init/02-sourcemod.sql"
-	cat >"$dir/init/03-test.sql" <<-'EOF'
-		-- The test server, which SourceBans++ finds by its address (SOURCEBANS_SERVER_IP) and port
-		INSERT INTO sb_mods (mid, name, icon, modfolder, steam_universe, enabled) VALUES
-		(100, 'Day of Infamy', 'web.png', 'doi', 0, 1);
-		INSERT INTO sb_servers (sid, ip, port, rcon, modid, enabled) VALUES (1, '127.0.0.1', 27015, '', 100, 1);
+	cat >"$dir/init/03-test.sql" <<-EOF
+		-- The test server, which SourceBans++ finds by its address (SOURCEBANS_SERVER_IP) and port, of its
+		-- game's mod, which the panel has for Insurgency but not for Day of Infamy
+		INSERT IGNORE INTO sb_mods (mid, name, icon, modfolder, steam_universe, enabled) VALUES
+		(100, '$name', 'web.png', '$game', 0, 1);
+		INSERT INTO sb_servers (sid, ip, port, rcon, modid, enabled)
+		SELECT 1, '127.0.0.1', 27015, '', mid, 1 FROM sb_mods WHERE modfolder = '$game';
 	EOF
 	# Root on the test server for SourceMod and SourceBans++, without a web panel login: the password
 	# isn't a hash. SourceBans++'s admin names are unique.
@@ -248,12 +254,28 @@ write_secrets() {
 }
 
 cmd_update() {
+	local -a stage=() configs=() env=()
+	if [[ ${1:-} == --stage ]]; then
+		stage=(--stage)
+		shift
+	fi
+	configs=("$@")
+	local config
+	for config in "${configs[@]}"; do
+		check_config "$config"
+	done
 	if ! podman image exists "$image"; then
 		echo "Error: no image $image, build it first: $0 build" >&2
 		exit 1
 	fi
+	# The configs' games and items (tools/games.py), without the servers' environment files: all
+	# configs' without configs
+	if ((${#configs[@]})); then
+		env=(-e DOI_SERVER_CONFIGS="${configs[*]}")
+	fi
 	mkdir -p "$state"
-	podman run --rm --userns "$userns" --health-cmd none -v "$state:/srv/state" "$image" update "$@"
+	podman run --rm --userns "$userns" --health-cmd none "${env[@]}" -v "$state:/srv/state" "$image" \
+		update "${stage[@]}"
 }
 
 cmd_up() {
@@ -261,15 +283,16 @@ cmd_up() {
 		db_only=1
 		shift
 	fi
-	local config=${1:-coop-commando} db_password volume
+	local config=${1:-coop-commando} db_password volume game
 	check_config "$config"
+	game=$(python3 "$repo/tools/server_config.py" game "$repo/servers/$config/server.toml")
 	read_admins
 	if [[ -z $db_only ]] && ! podman image exists "$server_image"; then
 		echo "Error: no image $server_image, build it first (see README.md)" >&2
 		exit 1
 	fi
-	if [[ -z $db_only && ! -x $state/game/srcds_linux ]]; then
-		echo "Error: no game in $state, download it first: $0 update" >&2
+	if [[ -z $db_only && ! -x $state/$game/game/srcds_linux ]]; then
+		echo "Error: no $game in $state, download it first: $0 update" >&2
 		exit 1
 	fi
 	if podman pod exists "$pod"; then
@@ -292,7 +315,7 @@ cmd_up() {
 			printf 'TEST_ADMIN=%s\n' "${admins[*]}"
 		fi
 	} >"$dir/server.env"
-	write_database
+	write_database "$game"
 	write_secrets "$db_password"
 
 	# A private address of the pod's own: by default, rootless Podman's pasta gives the pod the host's
@@ -344,8 +367,9 @@ cmd_up() {
 	fi
 	podman run -d --pod "$pod" --name "$pod-server" --env-file "$dir/server.env" -e SERVER_NAME="$config" \
 		"${extra_env[@]}" \
-		-v "$state/game:/srv/doi:O" -v "$state/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O" \
-		-v "$state/mods:/srv/mods:ro" \
+		-v "$state/$game/game:/srv/doi:O" \
+		-v "$state/$game/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O" \
+		-v "$state/$game/mods:/srv/mods:ro" \
 		-v "$dir/secrets:/run/secrets/doi-server:ro" "${geoip[@]}" "${volumes[@]}" \
 		--health-on-failure restart "$server_image" >/dev/null
 	echo "Waiting for the server"

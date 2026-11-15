@@ -2,7 +2,7 @@
 # an update that doi-stage.service staged in place, or updates in place, e.g. at boot, the image's
 # counterpart of doi-update.service (tools/update_layers.sh --image)
 [Unit]
-Description=Update the Day of Infamy game install, workshop items and mods, in a container
+Description=Update the games, workshop items and mods of the Day of Infamy or Insurgency servers, in a container
 Wants=network-online.target
 After=network-online.target doi-build.service
 # The servers run on the state folder, which mustn't change while they run
@@ -13,6 +13,8 @@ Image=localhost/doi-server
 Exec=update
 UserNS=keep-id:uid=1000,gid=1000
 Volume=%S/doi-server:/srv/state
+# The servers' environment files, which say which games and workshop items to update (tools/games.py)
+Volume=%E/doi-server:/etc/doi-server:ro
 HealthCmd=none
 
 [Service]

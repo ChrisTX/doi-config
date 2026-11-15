@@ -1,5 +1,5 @@
 [Unit]
-Description=Day of Infamy servers
+Description=Day of Infamy or Insurgency servers
 Wants=network-online.target
 After=network-online.target
 

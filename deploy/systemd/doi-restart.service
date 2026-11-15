@@ -1,5 +1,5 @@
 [Unit]
-Description=Update and restart the Day of Infamy servers
+Description=Update and restart the Day of Infamy or Insurgency servers
 
 [Service]
 Type=oneshot

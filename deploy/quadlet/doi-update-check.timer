@@ -1,5 +1,5 @@
 [Unit]
-Description=Check the Day of Infamy game install and workshop items for updates every three hours
+Description=Check the games and workshop items of the Day of Infamy or Insurgency servers for updates every three hours
 
 [Timer]
 # At half past, between the daily restart's hours

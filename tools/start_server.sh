@@ -3,7 +3,7 @@
 # container's entrypoint, which share the command line this way.
 #
 #   start_server.sh ROOT   start the server of ROOT (srcds_linux there), with the settings of its
-#                          ROOT/doi/server.toml (tools/server_config.py: the slots, LAN or not, the
+#                          ROOT/<game>/server.toml (tools/server_config.py: the slots, LAN or not, the
 #                          workshop, the first map, the theater and more options) and its environment
 #                          file's
 #
@@ -17,6 +17,8 @@ set -euo pipefail
 
 repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
 root=$1
+# The game's folder, doi or insurgency (tools/games.py)
+game=$(python3 "$repo/tools/games.py" folder "$root")
 
 # The options of server.toml, one per line
 options=$(python3 "$repo/tools/server_config.py" args "$root")
@@ -49,6 +51,6 @@ if ((${#libraries[@]})); then
 	)")
 fi
 
-exec python3 "$repo/tools/srcds_watchdog.py" -- env "${preload[@]}" "$root/srcds_linux" -game doi -usercon \
+exec python3 "$repo/tools/srcds_watchdog.py" -- env "${preload[@]}" "$root/srcds_linux" -game "$game" -usercon \
 	-port "${SERVER_PORT:-27015}" +tv_port "${TV_PORT:-27020}" +clientport "${CLIENT_PORT:-27005}" \
 	+r_hunkalloclightmaps 0 +sv_password "${SERVER_PASSWORD:-}" "${settings[@]}"

@@ -1,9 +1,11 @@
 # A server in a container, the image's counterpart of doi-server@.service, as a user unit (Quadlet):
 # ~/.config/containers/systemd/. Its settings are ~/.config/doi-server/<server>.env, as for
 # doi-server@.service, its secrets ~/.config/doi-server/secrets (may be empty), the game, the workshop
-# items and the mods those of the state folder, ~/.local/state/doi-server, which doi-update.service fills.
+# items and the mods those of its game in the state folder, ~/.local/state/doi-server, which
+# doi-update.service fills, through the server's links to them there (servers/<server>/, see
+# tools/update_layers.sh): a unit can't pick the folders by the server's game.
 [Unit]
-Description=Day of Infamy server (%i), in a container
+Description=Day of Infamy or Insurgency server (%i), in a container
 Wants=network-online.target doi-update.service
 After=network-online.target doi-update.service
 PartOf=doi-servers.target
@@ -20,9 +22,9 @@ Network=host
 UserNS=keep-id:uid=1000,gid=1000
 # The game and the workshop items with an overlay of the container's own, which starts empty on every
 # start, the mods read-only
-Volume=%S/doi-server/game:/srv/doi:O
-Volume=%S/doi-server/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O
-Volume=%S/doi-server/mods:/srv/mods:ro
+Volume=%S/doi-server/servers/%i/game:/srv/doi:O
+Volume=%S/doi-server/servers/%i/workshop/steamapps/workshop:/srv/doi/steamapps/workshop:O
+Volume=%S/doi-server/servers/%i/mods:/srv/mods:ro
 Volume=%E/doi-server/secrets:/run/secrets/doi-server:ro
 # What the server writes and keeps
 Volume=doi-server-%i-dumps:/srv/doi-data/dumps

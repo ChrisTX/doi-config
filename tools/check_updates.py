@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Check whether the game or the workshop items have updates, without downloading them.
+"""Check whether the games or the workshop items have updates, without downloading them.
 
-The game: each depot of the installed dedicated server (steamapps/appmanifest_<app>.acf, the app of
-the install's game, see tools/games.py) against the public branch's manifest from SteamCMD's app info. The depots, not the build ID, as the shared depot
+The games and items of the servers (tools/games.py), in the state folder STATE as
+tools/update_layers.sh updates them: STATE/<game>/game and STATE/<game>/workshop. A game that isn't
+installed counts as an update.
+
+A game: each depot of the installed dedicated server (steamapps/appmanifest_<app>.acf) against the
+public branch's manifest from SteamCMD's app info. The depots, not the build ID, as the shared depot
 1006, the Steam client library (steamclient.so), changes without a new build of the game.
 
-The workshop items: each item of the workshop-ids-*.txt files against the Steam Web API's current
+The workshop items: each item of the game's servers' lists against the Steam Web API's current
 manifest of the item (GetPublishedFileDetails, no key needed), which SteamCMD's manifests of the
 installed items (steamapps/workshop/appworkshop_<app>.acf) record too. An item of a list that isn't
 installed counts as an update.
@@ -13,27 +17,19 @@ installed counts as an update.
 Exit status: 0 if there are updates, which it lists, 1 if there are none, 255 if it can't tell, e.g.
 without a connection. For systemd's ExecCondition=, which skips the unit on 1 and fails it on 255.
 
-Usage: check_updates.py --game DIR --workshop DIR
+Usage: check_updates.py STATE
 """
 
 import argparse
-import json
 import re
 import subprocess
 import sys
-import urllib.parse
-import urllib.request
 from pathlib import Path
 
 from srctools.keyvalues import Keyvalues
 from srctools.tokenizer import Tokenizer
 
-from games import SERVER_APPS, game_folder
-
-DETAILS_URL = (
-    "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
-)
-LISTS = Path(__file__).resolve().parent.parent / "game/cfg/doi-config"
+from games import SERVER_APPS, item_details, servers, used_games, workshop_items
 
 UPDATES = 0
 NO_UPDATES = 1
@@ -65,10 +61,12 @@ def block(tree: "str | Tree", *keys: str) -> Tree:
     return tree if isinstance(tree, dict) else {}
 
 
-def game_updates(game: Path) -> list[str]:
+def game_updates(game: str, install: Path) -> list[str]:
     """The installed depots whose manifest isn't the public branch's any more."""
-    app = SERVER_APPS[game_folder(game).name]
-    manifest = game / f"steamapps/appmanifest_{app}.acf"
+    app = SERVER_APPS[game]
+    manifest = install / f"steamapps/appmanifest_{app}.acf"
+    if not manifest.is_file():
+        return [f"{game}: not installed"]
     installed = block(parse_vdf(manifest), "AppState", "InstalledDepots")
     # A fresh app info: SteamCMD caches it otherwise
     output = subprocess.run(
@@ -103,34 +101,20 @@ def game_updates(game: Path) -> list[str]:
         if current is None:
             raise ValueError(f"the app info has no public manifest of depot {depot}")
         if not isinstance(info, dict) or info.get("manifest") != current:
-            updates.append(f"depot {depot}: manifest {current}")
+            updates.append(f"{game}: depot {depot}: manifest {current}")
     return updates
 
 
-def workshop_updates(workshop: Path) -> list[str]:
-    """The items of the lists whose installed manifest isn't the current one, or that aren't installed."""
-    items = sorted(
-        {
-            match[1]
-            for path in LISTS.glob("workshop-ids-*.txt")
-            for match in re.finditer(r"^(\d+)", path.read_text(), re.MULTILINE)
-        }
-    )
+def workshop_updates(workshop: Path, items: list[int]) -> list[str]:
+    """The items whose installed manifest isn't the current one, or that aren't installed."""
     if not items:
         return []
     # The items of the workshop's app, whichever it is: the items' IDs are unique across them
     installed: Tree = {}
     for manifest in sorted(workshop.glob("steamapps/workshop/appworkshop_*.acf")):
         installed |= block(parse_vdf(manifest), "AppWorkshop", "WorkshopItemsInstalled")
-    fields = {"itemcount": len(items)}
-    fields.update({f"publishedfileids[{i}]": item for i, item in enumerate(items)})
-    request = urllib.request.Request(
-        DETAILS_URL, data=urllib.parse.urlencode(fields).encode()
-    )
-    with urllib.request.urlopen(request, timeout=60) as response:
-        details = json.load(response)["response"]["publishedfiledetails"]
     updates = []
-    for detail in details:
+    for detail in item_details(items):
         item = detail["publishedfileid"]
         # An item that was removed from the workshop (a result other than 1) can't be updated
         if detail.get("result") != 1:
@@ -154,20 +138,21 @@ def workshop_updates(workshop: Path) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Check the game and the workshop items for updates."
+        description="Check the servers' games and workshop items for updates."
     )
     parser.add_argument(
-        "--game", type=Path, required=True, help="the dedicated server's install"
-    )
-    parser.add_argument(
-        "--workshop",
-        type=Path,
-        required=True,
-        help="SteamCMD's folder of the workshop items",
+        "state", type=Path, metavar="STATE", help="the state folder of the layers"
     )
     arguments = parser.parse_args()
     try:
-        updates = game_updates(arguments.game) + workshop_updates(arguments.workshop)
+        found = servers()
+        updates = []
+        for game in used_games(found):
+            folder = arguments.state / game
+            updates += game_updates(game, folder / "game")
+            updates += workshop_updates(
+                folder / "workshop", workshop_items(found, game)
+            )
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
         print(f"check_updates.py: can't check for updates: {error}", file=sys.stderr)
         return UNKNOWN

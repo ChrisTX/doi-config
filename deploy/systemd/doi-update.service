@@ -1,5 +1,5 @@
 [Unit]
-Description=Update the Day of Infamy game install and doi-config
+Description=Update the games of the Day of Infamy or Insurgency servers and doi-config
 After=network-online.target
 Wants=network-online.target
 # The servers are the overlays of the game install, which mustn't change while they run: they start

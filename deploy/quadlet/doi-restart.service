@@ -2,7 +2,7 @@
 # starts them again, like doi-restart.service of the systemd units: the servers are only down for the
 # restart. A failed build or stage leaves the image as it was or the update to doi-update.service.
 [Unit]
-Description=Update and restart the Day of Infamy servers, in containers
+Description=Update and restart the Day of Infamy or Insurgency servers, in containers
 
 [Service]
 Type=oneshot

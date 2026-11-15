@@ -1,5 +1,5 @@
 [Unit]
-Description=Layers of the Day of Infamy server (%i)
+Description=Layers of the Day of Infamy or Insurgency server (%i)
 # The layers include the game install and this repository, which mustn't change while they're mounted
 After=doi-update.service
 Wants=doi-update.service

@@ -1,5 +1,5 @@
 [Unit]
-Description=Day of Infamy server (%i)
+Description=Day of Infamy or Insurgency server (%i)
 After=network-online.target doi-update.service doi-mount@%i.service
 Wants=network-online.target doi-update.service
 # The server's layers (doi-mount@.service, after doi-update.service): the server only runs with them, and
