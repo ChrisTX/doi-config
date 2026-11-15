@@ -72,24 +72,22 @@ copies the server's list of workshop items to `subscribed_file_ids.txt` in the
 `doi` folder, the list the game downloads and mounts by default. The launcher,
 `tools/start_server.sh`, takes the server's slots, whether it's a LAN server,
 the first map, the theater and its own options of the command line from it, and
-starts it with the workshop if it has a list. Its RCON password is
-`RCON_PASSWORD` of its environment file, which `prepare_server.sh` writes to
-`cfg/rcon.cfg`.
+starts it with the workshop if it has a list. Its passwords and other secrets
+are credentials (see [Secrets](#secrets)).
 
 A server without a `server.toml`, of no config of `servers`, needs its own
-`cfg/server.cfg`, e.g. in the secrets.
+`cfg/server.cfg`.
 
 ### Running with systemd
 
-The servers run as system services of the `nwi-server` user, one instance per server,
-which share one install of each game. The games, and the workshop items, are
-those of the servers: each `/etc/nwi-server/<server>.env` is a server, its game
-its config's or `GAME` of its environment file without one (`tools/games.py`).
-Each server is put together with overlayfs from read-only layers, top first:
+The servers run as system services, one instance per server, which share one
+install of each game. The games, and the workshop items, are those of the
+servers: each `/etc/nwi-server/<server>.env` is a server, its game its config's
+or `GAME` of its environment file without one (`tools/games.py`). Each server
+and the updater run as users of their own (`DynamicUser=`): a server can't
+change another's files, nor the layers they share, which the updater makes. Each
+server is put together with overlayfs from read-only layers, top first:
 
-- `/etc/nwi-server/secrets`, laid out like the game's folder, e.g. the database
-  credentials of SourceMod and SourceBans++ in
-  `addons/sourcemod/configs/databases.cfg`
 - the server's folder in `servers`, if there's one
 - this repository's plugins, compiled by `nwi-update.service`
 - the mods of `mods/<game>` and the playlists' configs, made by
@@ -105,46 +103,43 @@ Each server is put together with overlayfs from read-only layers, top first:
 
 Their writable layer starts empty whenever the layers are mounted, so changes
 to the layers always show. What the server writes and keeps, like its logs, is
-bind-mounted from the server's state folder instead (see
-`tools/mount_server.sh`). The layers are mounted while the server runs, in
-`/run/nwi-server/<server>`.
+bind-mounted from the server's state folder, `/var/lib/nwi-server/servers/<server>`,
+instead. The layers are mounted while the server runs, in
+`/run/nwi-server/<server>`, mapped to the server's user (see
+`tools/mount_server.sh`).
 
-The units are in `deploy/systemd`, the `nwi-server` user in `deploy/sysusers.d`. They
-run the tools installed with them (`make install`, or the package of
+The units are in `deploy/systemd`, the group `nwi-rcon` in `deploy/sysusers.d`.
+They run the tools installed with them (`make install`, or the package of
 `deploy/arch/PKGBUILD`), in `/usr/lib/nwi-server-kit`, which read the configs
-from the servers' clone of this repository in `/var/lib/nwi-server/config`
+from the servers' clone of this repository in
+`/var/lib/nwi-server/layers/config`
 (`NWI_CONFIG`, see `tools/games.py`). SourceMod and Metamod:Source are those of
 `SOURCEMOD_DIR` and `METAMOD_DIR`, `/usr/lib/sourcemod` and `/usr/lib/metamod`
 by default.
 
-- `nwi-update.service` updates the layers (`tools/update_layers.sh`): it pulls
-  this repository in `/var/lib/nwi-server/config`, compiles its plugins and
-  runs `tools/update_game.sh` for each game of the servers, which installs or
-  updates the game in `/var/lib/nwi-server/<game>/game` with SteamCMD, checks
-  it against the plugins' gamedata (see [Playlists](#playlists)) and makes the
-  game's mods (see [Mods](#mods)) in `/var/lib/nwi-server/<game>/mods`. It runs
-  before the servers start. It also downloads the workshop items of the game's
-  servers' lists into `/var/lib/nwi-server/<game>/workshop`, once for all of
-  them. SteamCMD gets their current versions, which the game itself never does
-  once it has an item, and items no list names any more are removed. The
-  layers of a state folder from before Insurgency, in `/var/lib/nwi-server`
-  itself, are moved into `doi` once.
-- `nwi-mount@<server>.service` mounts the layers (`tools/mount_server.sh`)
-  after `nwi-update.service`, and unmounts them after the server stops. It's
-  stopped and restarted with the server, systemd's restarts of the server
-  included, and the server only runs with it.
-- `nwi-server@<server>.service` configures the server
-  (`tools/prepare_server.sh`: the plugins SourceBans++ needs, its website from
-  `SOURCEBANS_WEBSITE`, `RCON_PASSWORD` in `rcon.cfg`) and runs it. SourceBans++
-  finds the server in the panel by its address and port: the address the server
-  reports, or `SOURCEBANS_SERVER_IP` if that's a private one, as in a container.
+- `nwi-update.service` updates the layers (`tools/update_layers.sh`), its state
+  `/var/lib/nwi-server/layers`: it pulls this repository in `config`, compiles
+  its plugins and runs `tools/update_game.sh` for each game of the servers,
+  which installs or updates the game in `<game>/game` with SteamCMD, checks it
+  against the plugins' gamedata (see [Playlists](#playlists)) and makes the
+  game's mods (see [Mods](#mods)) in `<game>/mods`. It runs before the servers
+  start. It also downloads the workshop items of the game's servers' lists into
+  `<game>/workshop`, once for all of them. SteamCMD gets their current versions,
+  which the game itself never does once it has an item, and items no list names
+  any more are removed. The layers of a state folder from before Insurgency, in
+  the state itself, are moved into `doi` once.
+- `nwi-server@<server>.service` mounts the layers at every start
+  (`tools/mount_server.sh`), configures the server (`tools/prepare_server.sh`:
+  its secrets, the plugins SourceBans++ needs, its website from
+  `SOURCEBANS_WEBSITE`) and runs it. SourceBans++ finds the server in the panel
+  by its address and port: the address the server reports, or
+  `SOURCEBANS_SERVER_IP` if that's a private one, as in a container.
   `SOURCEBANS_SERVER_ID` sets the panel's ID of the server instead. Its ports
-  and password come from
-  `/etc/nwi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`, `CLIENT_PORT`,
-  `SERVER_PASSWORD`), the rest of its settings from its `server.toml`. The server
-  uses the folder of the same name in `servers`, or the one `SERVER_CONFIG_NAME`
-  names; without one, the secrets layer needs a `cfg/server.cfg` as described
-  above, and `GAME` says its game, `doi` by default.
+  come from `/etc/nwi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`,
+  `CLIENT_PORT`), which has no secrets, the rest of its settings from its
+  `server.toml`. The server uses the folder of the same name in `servers`, or
+  the one `SERVER_CONFIG_NAME` names; without one, `GAME` says its game, `doi`
+  by default.
 - `tools/srcds_watchdog.py` runs the server and queries it with A2S. The
   service is ready once the server first answers, and systemd's watchdog
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
@@ -152,12 +147,12 @@ by default.
 - `nwi-servers.target` starts the enabled servers.
 - `nwi-restart.timer` updates and restarts the servers every day at 06:00. The
   layers mustn't change while servers use them, so `nwi-stage.service` updates
-  a copy of them in `/var/lib/nwi-server/next` while the servers run. The copy
+  a copy of them in `/var/lib/nwi-server/layers/next` while the servers run. The copy
   is reflinked, on btrfs or XFS: it shares the files' data with the layers, so
   it takes only the space of what the update changes, and the servers' files
   stay as they are. Then the servers are stopped, `nwi-update.service` puts the
   copy in place, keeping the layers it replaced in
-  `/var/lib/nwi-server/previous`, and the servers start again: they're only
+  `/var/lib/nwi-server/layers/previous`, and the servers start again: they're only
   down for the restart. Without reflinks, `nwi-update.service` updates in place
   while the servers are stopped.
 - `nwi-update-check.timer` checks the games and the workshop items for updates
@@ -178,15 +173,52 @@ sudo pacman -S --needed --asdeps sourcemod-sourcebans-pp \
   sourcemod-multicolors
 ```
 
-Then, as root:
+Then, as root, with the server's settings in `/etc/nwi-server/coop-commando.env`
+and its secrets as credentials (see [Secrets](#secrets)), and this repository
+cloned once into the updater's state, as its user:
 
 ```bash
-install -d -o nwi-server -g nwi-server -m 750 /var/lib/nwi-server
-sudo -u nwi-server git clone https://github.com/ChrisTX/doi-config.git /var/lib/nwi-server/config
-# The server's settings in /etc/nwi-server/coop-commando.env, its secrets in /etc/nwi-server/secrets
+install -d /var/lib/nwi-server
+systemd-run --wait -p DynamicUser=yes -p StateDirectory=nwi-server/layers \
+  git clone https://github.com/ChrisTX/doi-config.git /var/lib/nwi-server/layers/config
 systemctl enable --now nwi-server@coop-commando.service nwi-servers.target
 systemctl enable --now nwi-restart.timer nwi-update-check.timer
 ```
+
+### Secrets
+
+A server's secrets are systemd credentials, encrypted in
+`/etc/credstore.encrypted`, bound to the machine's TPM if it has one, which
+systemd only decrypts for the server's unit. `nwi-server.<name>` is for every
+server, `nwi-server@<server>.<name>` for one, which takes precedence:
+
+- `sourcemod-databases`: SourceMod's `databases.cfg`, the databases of
+  SourceMod and SourceBans++
+- `rcon-password`: the RCON password, without which each start makes a new
+  random one
+- `server-password`: the password to join, if the server has one
+- `secret-cvars`: more secret settings, as lines of a config, e.g. the webhooks
+  of SourceBans++'s Discord forward (`sbpp_discord_banhook "…"`)
+
+```bash
+systemd-creds encrypt --with-key=tpm2 --name=nwi-server.sourcemod-databases \
+  databases.cfg /etc/credstore.encrypted/nwi-server.sourcemod-databases
+```
+
+`prepare_server.sh` puts them into the server's folder, readable by the server
+only; the passwords go into a config, not the command line, which every user
+could see. Each server's RCON password is in `/run/nwi-server/rcon/<server>`,
+which the members of the group `nwi-rcon` can read. `nwi-rcon` (`tools/rcon.py`)
+uses it:
+
+```bash
+nwi-rcon --server coop-commando status
+nwi-rcon --ssh admin@example.org --server coop-commando sm plugins list
+```
+
+With `--ssh`, `nwi-rcon` runs on the server's machine, and the password never
+leaves it. RCON is TCP on the game's port, while the game itself is UDP, so a
+firewall that only lets UDP in keeps RCON to the machine.
 
 ### Running in a container
 
@@ -285,14 +317,15 @@ aurutils: `aur repo --status`, or without aurutils the one repository of
 pacman.conf with a `file://` server. `AUR_REPO` and `AUR_DBROOT` name its name
 and folder, as for aurutils. `build --testing` builds the image with Arch
 Linux's testing repositories, for packages built against them on a machine that
-uses them. `tools/rcon.py` is the RCON client, with the password in
-`RCON_PASSWORD`.
+uses them. `tools/rcon.py` is the RCON client (`nwi-rcon` when installed), with
+the password in `RCON_PASSWORD`.
 
 The systemd units can be tested on this machine as well, set up as in [Running
 with systemd](#running-with-systemd), with only the test instance's database:
 `up --db-only` starts it at `127.0.0.1:3306` (`TEST_DB_PORT` for another port)
-and prints the commands that copy the server's environment file and secrets to
-`/etc/nwi-server`. `down` removes the database again.
+and prints the commands that copy the server's environment file to
+`/etc/nwi-server` and its database's credential to `/etc/credstore`, unencrypted
+for the test. `down` removes the database again.
 
 The admins get into the database and, through the server's environment file,
 into SourceMod's `admins_simple.ini` (`tools/prepare_server.sh`). So

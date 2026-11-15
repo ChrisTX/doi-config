@@ -338,11 +338,14 @@ cmd_up() {
 	done
 	if [[ -n $db_only ]]; then
 		echo "The database of the test instance of $config is up at 127.0.0.1:$db_port." \
-			"For nwi-server@$config.service, its settings and the server's secrets, as root:"
-		printf '\n  install -D -m 640 -g nwi-server %q /etc/nwi-server/%q\n' "$dir/server.env" "$config.env"
-		printf '  install -d -m 750 -g nwi-server /etc/nwi-server/secrets\n'
-		printf '  cp -r %q /etc/nwi-server/secrets/\n' "$dir/secrets/."
-		printf '  chgrp -R nwi-server /etc/nwi-server/secrets\n  chmod -R u=rwX,g=rX,o= /etc/nwi-server/secrets\n'
+			"For nwi-server@$config.service, its settings and its database as a credential, which" \
+			"stays plain for the test (systemd-creds encrypt for a real server), as root; its RCON" \
+			"password is a new one at every start (nwi-rcon --server $config):"
+		# The settings without the passwords, which the container's environment has
+		grep -v -e '^RCON_PASSWORD=' -e '^SERVER_PASSWORD=' "$dir/server.env" >"$dir/server-systemd.env"
+		printf '\n  install -D -m 644 %q /etc/nwi-server/%q\n' "$dir/server-systemd.env" "$config.env"
+		printf '  install -D -m 600 %q /etc/credstore/%q\n' \
+			"$dir/secrets/addons/sourcemod/configs/databases.cfg" "nwi-server@$config.sourcemod-databases"
 		return
 	fi
 

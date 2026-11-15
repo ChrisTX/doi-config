@@ -5,15 +5,19 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-User=nwi-server
-StateDirectory=nwi-server
-StateDirectoryMode=0750
-# SteamCMD keeps its files in the home folder
-Environment=HOME=%S/nwi-server
+# A user of its own, which the servers can't write as. The layers are its state, which it shares
+# with nwi-stage.service and nwi-update-check.service; the servers mount them mapped to their users
+# (tools/mount_server.sh).
+DynamicUser=yes
+StateDirectory=nwi-server/layers
+# SteamCMD keeps its files in the home folder, and runs them from there: systemd mounts the state
+# of a dynamic user without exec otherwise
+Environment=HOME=%S/nwi-server/layers
+ExecPaths=%S/nwi-server/layers/.steam
 # Skips the rest unless there are updates (exit status 1 skips, 255, when it can't tell, fails): the
 # games' depots, the Steam client library's included, and the workshop items of the servers. Workshop
 # items must be the versions the players download, as theater files that differ break the game.
-ExecCondition=/usr/bin/python3 /usr/lib/nwi-server-kit/check_updates.py %S/nwi-server
+ExecCondition=/usr/bin/python3 /usr/lib/nwi-server-kit/check_updates.py %S/nwi-server/layers
 ExecStart=+/usr/bin/systemctl start --no-block nwi-restart.service
 PrivateTmp=yes
 PrivateDevices=yes

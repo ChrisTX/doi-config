@@ -7,7 +7,7 @@ files: the depots from the app (DepotDownloader picks them), the workshop's app 
 A game's name is the name of its folder.
 
 The configs, servers/ and game/ of this repository, are those of NWI_CONFIG: a clone of it, by default
-the checkout the tools are in, or /var/lib/nwi-server/config, the servers' clone, for the
+the checkout the tools are in, or /var/lib/nwi-server/layers/config, the servers' clone, for the
 installed tools (make install).
 
 The servers, whose games are installed and whose workshop items are downloaded, are found, in this
@@ -45,7 +45,7 @@ SERVER_APPS = {
 }
 DEFAULT = "doi"
 TOOLS = Path(__file__).resolve().parent
-CLONE = Path("/var/lib/nwi-server/config")
+CLONE = Path("/var/lib/nwi-server/layers/config")
 
 
 def config_folder() -> Path:

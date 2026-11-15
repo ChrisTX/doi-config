@@ -4,7 +4,7 @@
 # servers' clone in /var/lib/nwi-server/config has them (README.md).
 
 pkgname=nwi-server-kit-git
-pkgver=r323.a621adb
+pkgver=r0
 pkgrel=1
 pkgdesc='Tools and systemd units of Day of Infamy and Insurgency servers'
 arch=(any)

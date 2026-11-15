@@ -1,10 +1,8 @@
 [Unit]
 Description=Day of Infamy or Insurgency server (%i)
-After=network-online.target nwi-update.service nwi-mount@%i.service
+# The layers of nwi-update.service, which mustn't change while they're mounted
+After=network-online.target nwi-update.service
 Wants=network-online.target nwi-update.service
-# The server's layers (nwi-mount@.service, after nwi-update.service): the server only runs with them, and
-# stops when they're unmounted
-BindsTo=nwi-mount@%i.service
 # Stopped and restarted with the servers' target, see nwi-restart.service
 PartOf=nwi-servers.target
 # srcds_watchdog.py's restarts of a server that stopped answering: at most 6 an hour
@@ -19,15 +17,31 @@ WatchdogSec=90
 # The time the hung server has to dump its core after the watchdog's SIGABRT, before it's killed. A
 # stopped process (SIGSTOP) only dies then, as it doesn't receive the SIGABRT.
 TimeoutAbortSec=30
-User=nwi-server
+# A user of its own, for each server: a server can't change another's files or the layers they share.
+# Named by the instance: systemd would name it after the template, one user for all servers.
+DynamicUser=yes
+User=nwi-server-%i
+# Its settings, without secrets, which are credentials
 EnvironmentFile=/etc/nwi-server/%i.env
-StateDirectory=nwi-server
-StateDirectoryMode=0750
-# The server's layers, which nwi-mount@.service mounts there, not a RuntimeDirectory=: systemd would
-# remove it with the server's files when the server stops, before the layers are unmounted
-ReadWritePaths=/run/nwi-server/%i
-WorkingDirectory=/run/nwi-server/%i
+# What it keeps, e.g. its logs (tools/mount_server.sh)
+StateDirectory=nwi-server/servers/%i
+# Its secrets, from the credential store (systemd-creds, /etc/credstore.encrypted): the server's own,
+# nwi-server@<server>.<name>, before those of all servers, nwi-server.<name>, as server.<name>
+# (tools/prepare_server.sh)
+ImportCredential=nwi-server@%i.*:server.
+ImportCredential=nwi-server.*:server.
+# The server's layers, which the first ExecStartPre= mounts there, not a RuntimeDirectory=: systemd
+# would remove it with the server's files when the server stops, before the layers are unmounted.
+# prepare_server.sh writes its RCON password to /run/nwi-server/rcon. Both may be missing ("-") for the
+# first ExecStartPre=, which makes them: systemd sets up the unit's namespace for it too.
+ReadWritePaths=-/run/nwi-server/%i -/run/nwi-server/rcon
+WorkingDirectory=-/run/nwi-server/%i
 Environment=LD_LIBRARY_PATH=/run/nwi-server/%i:/run/nwi-server/%i/bin
+# The layers, mounted anew at every start, mapped to the server's user: as root ("+"), in the system's
+# mount namespace (nsenter), where the updater's state is, which a unit of a dynamic user doesn't see,
+# and whose mounts the server sees. Unmounted when it stops, also when mounting failed.
+ExecStartPre=+/usr/bin/nsenter --mount=/proc/1/ns/mnt -- /usr/lib/nwi-server-kit/mount_server.sh %i %n
+ExecStopPost=+/usr/bin/nsenter --mount=/proc/1/ns/mnt -- /usr/lib/nwi-server-kit/mount_server.sh --unmount %i
 # Configured as root ("!"), as the layers of the packages belong to root
 ExecStartPre=!/usr/lib/nwi-server-kit/prepare_server.sh /run/nwi-server/%i %i
 # The command line of the server's server.toml and environment file, run by srcds_watchdog.py

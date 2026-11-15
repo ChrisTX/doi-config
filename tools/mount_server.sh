@@ -1,21 +1,28 @@
 #!/bin/bash
 # Assembles a server from read-only layers with overlayfs in /run/nwi-server/<name>, as root, for
-# nwi-mount@.service; nwi-server@.service runs the server there:
+# nwi-server@.service (ExecStartPre=+), which runs the server there:
 #
 #   <runtime>          the workshop items of the game's servers and the game's install, which the
 #                      servers of the game share, with a writable layer
-#   <runtime>/<game>   /etc/nwi-server/secrets, servers/<config> (its links resolved), the compiled
-#                      plugins, the mods made for the game from mods/<game> (tools/make_mods.py), game/
+#   <runtime>/<game>   servers/<config> (its links resolved), the compiled plugins, the mods made for the game from mods/<game> (tools/make_mods.py), game/
 #                      of the configs, SourceMod and Metamod:Source (SOURCEMOD_DIR, METAMOD_DIR), the
 #                      game's folder of its install (doi, insurgency), with a writable layer
 #
 # The server's game is its config's (server.toml), or GAME of its environment file, see tools/games.py.
 #
-# The writable layers start empty whenever the layers are mounted, so updates of the lower layers always
-# show. What the server writes and has to keep is bind-mounted from the server's state folder instead.
+# The server and the updater that makes the layers run as users of their own (DynamicUser=), whose
+# state systemd keeps as the user nobody's on disk and maps to the unit's user. So the layers are
+# mounted with an ID mapping of nobody to the server's user, which sees the updater's files
+# (/var/lib/nwi-server/layers) as its own; overlayfs takes only layers of one mapping, so the packages'
+# and the config's are mapped alike, which leaves their files root's, read-only to the server. So is
+# the server's own state (/var/lib/nwi-server/servers/<name>), whose paths it keeps are bind-mounted
+# into the server. Its writable layers are folders of its own in /run/nwi-server/.work/<name>, not on
+# the mapped state: overlayfs writes there as root, whom the mapping doesn't have. They start empty
+# whenever the layers are mounted, so updates of the lower layers always show. The secrets are the
+# unit's credentials (tools/prepare_server.sh).
 #
-#   mount_server.sh NAME USER       mount the layers of the server NAME (the instance of nwi-server@),
-#                                   which runs as USER, anew
+#   mount_server.sh NAME UNIT       mount the layers of the server NAME, whose unit UNIT (its
+#                                   nwi-server@NAME.service) runs it, anew
 #   mount_server.sh --unmount NAME  unmount them
 #
 # SERVER_CONFIG_NAME: the config of servers/ to use, by default the server's name if there's one
@@ -24,29 +31,60 @@
 # (/usr/lib/sourcemod and /usr/lib/metamod, of the sourcemod and metamod-source packages)
 # GAME: the server's game without a config, doi by default
 set -euo pipefail
+# Out of the server's folder, systemd's WorkingDirectory=, which would keep it busy
+cd /
 
-# The overlays and the bind mounts of the state paths in them, left over or mounted
+# The owner on disk of the dynamic users' state, which systemd maps to the units' users
+nobody=65534
+
+# The mounts of a server, its overlays, their ID-mapped layers and the bind mounts of its state, left
+# over or mounted, the deepest first, and its writable layers
 unmount() {
-	if mountpoint -q "$1"; then
-		umount -R "$1"
-	fi
-	if [[ -d $1 ]]; then
-		rmdir "$1"
+	local name=$1 target
+	local -a targets=() deepest
+	while read -r target; do
+		if [[ $target == "/run/nwi-server/$name" || $target == "/run/nwi-server/$name/"* ||
+			$target == "/run/nwi-server/.work/$name/"* ]]; then
+			targets+=("$target")
+		fi
+	done < <(findmnt -rn -o TARGET)
+	mapfile -t deepest < <(printf '%s\n' "${targets[@]}" | sort -r)
+	for target in "${deepest[@]}"; do
+		[[ -n $target ]] || continue
+		# Busy for a moment after the server stopped, while systemd takes down its mount namespace,
+		# which has the mounts too; detached at last, as every start mounts them anew
+		for _ in 1 2 3 4 5; do
+			umount "$target" 2>/dev/null && continue 2
+			sleep 1
+		done
+		umount --lazy "$target"
+	done
+	rm -rf "/run/nwi-server/.work/$name"
+	rm -f "/run/nwi-server/rcon/$name"
+	if [[ -d /run/nwi-server/$name ]]; then
+		rmdir "/run/nwi-server/$name"
 	fi
 }
 
 if [[ ${1:-} == --unmount ]]; then
-	unmount "/run/nwi-server/$2"
+	unmount "$2"
 	exit
 fi
 
 name=$1
-user=$2
+unit=$2
 tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
-state=/var/lib/nwi-server
+# The folders on disk, which systemd links to from /var/lib for the dynamic users
+state=$(realpath /var/lib/nwi-server/layers)
+server=$(realpath "/var/lib/nwi-server/servers/$name")
 repo=$(python3 "$tools/games.py" config)
 runtime=/run/nwi-server/$name
-server=$state/servers/$name
+work=/run/nwi-server/.work/$name
+uid=$(systemctl show -P UID "$unit")
+if [[ ! $uid =~ ^[1-9][0-9]*$ ]]; then
+	echo "Error: $unit has no user of its own (DynamicUser=): ${uid:-none}" >&2
+	exit 1
+fi
 
 config=${SERVER_CONFIG_NAME:-}
 if [[ -z $config && -d $repo/servers/$name ]]; then
@@ -78,40 +116,64 @@ state_paths=(
 	"$game/addons/sourcemod/data/"
 )
 
-unmount "$runtime"
+unmount "$name"
 install -d -m 755 /run/nwi-server "$runtime"
-rm -rf "$server/upper" "$server/work"
-mkdir -p "$server"/{upper,work}/{root,game} "$server/state"
-chown "$user:" "$server" "$server"/{upper,work}/{root,game} "$server/state"
+install -d -m 700 /run/nwi-server/.work "$work"
+# The RCON passwords, which prepare_server.sh writes, for the admins of the group nwi-rcon
+install -d -m 750 -g nwi-rcon /run/nwi-server/rcon
+install -d -o "$uid" -g "$uid" "$work"/{upper,work} "$work"/{upper,work}/{root,game}
+
+# FOLDER as the server's at TARGET, with the files of the owner FROM mapped to its user, and root's
+# as root's: overlayfs can't copy up a file whose owner the mapping doesn't have, e.g. when
+# prepare_server.sh moves a plugin of the packages
+idmapped() {
+	[[ -e $3 ]] || mkdir -p "$3"
+	mount --bind -o "X-mount.idmap=b:0:0:1 b:$1:$uid:1" "$2" "$3"
+}
 
 # The server's config, copied with its symbolic links resolved: a link to another server's file, like
 # private-mp's motd.txt, points out of the server's folder, which the overlay wouldn't have
-rm -rf "$server/config"
 if [[ -n $config ]]; then
-	cp -rL "$repo/servers/$config" "$server/config"
+	cp -rL "$repo/servers/$config" "$work/config"
 fi
 
-# Top layer first
+# Top layer first, all mapped alike
 lower=()
-[[ -d /etc/nwi-server/secrets ]] && lower+=(/etc/nwi-server/secrets)
-[[ -n $config ]] && lower+=("$server/config")
-lower+=("$state/plugins" "$games/mods" "$repo/game" "${SOURCEMOD_DIR:-/usr/lib/sourcemod}"
-	"${METAMOD_DIR:-/usr/lib/metamod}" "$games/game/$game")
+if [[ -n $config ]]; then
+	idmapped "$nobody" "$work/config" "$work/lower/config"
+	lower+=("$work/lower/config")
+fi
+idmapped "$nobody" "$state/plugins" "$work/lower/plugins"
+idmapped "$nobody" "$games/mods" "$work/lower/mods"
+idmapped "$nobody" "$repo/game" "$work/lower/configs"
+idmapped "$nobody" "${SOURCEMOD_DIR:-/usr/lib/sourcemod}" "$work/lower/sourcemod"
+idmapped "$nobody" "${METAMOD_DIR:-/usr/lib/metamod}" "$work/lower/metamod"
+idmapped "$nobody" "$games/game" "$work/lower/game"
+lower+=("$work/lower/plugins" "$work/lower/mods" "$work/lower/configs" "$work/lower/sourcemod"
+	"$work/lower/metamod" "$work/lower/game/$game")
 
-root_lower=("$games/game")
-[[ -d $games/workshop ]] && root_lower=("$games/workshop" "${root_lower[@]}")
+root_lower=("$work/lower/game")
+if [[ -d $games/workshop ]]; then
+	idmapped "$nobody" "$games/workshop" "$work/lower/workshop"
+	root_lower=("$work/lower/workshop" "${root_lower[@]}")
+fi
 
-mount -t overlay overlay \
-	-o "lowerdir=$(
-		IFS=:
-		echo "${root_lower[*]}"
-	),upperdir=$server/upper/root,workdir=$server/work/root" "$runtime"
-mount -t overlay overlay \
-	-o "lowerdir=$(
-		IFS=:
-		echo "${lower[*]}"
-	),upperdir=$server/upper/game,workdir=$server/work/game" "$runtime/$game"
+# The lower layers as options of their own (lowerdir+, Linux 6.8): the kernel takes no more than 256
+# characters for all of them in one lowerdir. Without xino: with the writable layer on tmpfs, overlayfs
+# would give the files inode numbers beyond 32 bits, on which the 32-bit server's stat() fails.
+lower_layers() {
+	local layer
+	for layer in "$@"; do
+		printf 'lowerdir+=%s,' "$layer"
+	done
+}
 
+mount -t overlay overlay -o "$(lower_layers "${root_lower[@]}")upperdir=$work/upper/root,workdir=$work/work/root,xino=off" \
+	"$runtime"
+mount -t overlay overlay -o "$(lower_layers "${lower[@]}")upperdir=$work/upper/game,workdir=$work/work/game,xino=off" \
+	"$runtime/$game"
+
+# The paths the server keeps, in its state, as systemd's dynamic users have it: the user nobody's
 for path in "${state_paths[@]}"; do
 	if [[ $path == */ ]]; then
 		mkdir -p "$server/state/$path" "$runtime/$path"
@@ -120,6 +182,8 @@ for path in "${state_paths[@]}"; do
 		mkdir -p "$(dirname "$server/state/$path")" "$(dirname "$runtime/$path")"
 		touch "$server/state/$path" "$runtime/$path"
 	fi
-	chown "$user:" "$server/state/$path"
-	mount --bind "$server/state/$path" "$runtime/$path"
+done
+chown -R "$nobody:$nobody" "$server/state"
+for path in "${state_paths[@]}"; do
+	idmapped "$nobody" "$server/state/$path" "$runtime/$path"
 done

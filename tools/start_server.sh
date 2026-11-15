@@ -7,8 +7,8 @@
 #                          workshop, the first map, the theater and more options) and its environment
 #                          file's
 #
-# SERVER_PORT, TV_PORT, CLIENT_PORT, SERVER_PASSWORD: the server's ports and password, from its
-# environment file (/etc/nwi-server/<server>.env)
+# SERVER_PORT, TV_PORT, CLIENT_PORT: the server's ports, from its environment file
+# (/etc/nwi-server/<server>.env); its password is in its config (prepare_server.sh)
 # SANITISER: undefined, address or address,undefined, for a server with test builds of SourceMod and
 # Metamod:Source with these sanitisers (./aur-packages build --sanitize of the AUR packages, see
 # README.md): their 32-bit runtime of compiler-rt is preloaded into srcds too, and they report to the
@@ -53,4 +53,4 @@ fi
 
 exec python3 "$tools/srcds_watchdog.py" -- env "${preload[@]}" "$root/srcds_linux" -game "$game" -usercon \
 	-port "${SERVER_PORT:-27015}" +tv_port "${TV_PORT:-27020}" +clientport "${CLIENT_PORT:-27005}" \
-	+r_hunkalloclightmaps 0 +sv_password "${SERVER_PASSWORD:-}" "${settings[@]}"
+	+r_hunkalloclightmaps 0 "${settings[@]}"
