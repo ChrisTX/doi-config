@@ -1,11 +1,12 @@
-# The Python tools of tools/ and their dependencies, for a virtual environment: uv sync makes .venv
-# with the versions of uv.lock, see CONTRIBUTING.md. The tools are scripts, not a package to install.
-# On the servers and in the container, the Arch Linux packages provide the dependencies (README.md).
+# nwi-server-kit, the Python package of the servers' tools (src/nwi_server_kit) with its command
+# nwi-server, and the dependencies of it and the scripts of tools/. uv sync makes .venv with the
+# versions of uv.lock and the package installed from the checkout (see CONTRIBUTING.md); the servers'
+# package (deploy/arch/PKGBUILD) installs it with the Arch Linux packages of the dependencies.
 
 [project]
-name = "doi-config"
+name = "nwi-server-kit"
 version = "0"
-description = "Tools of the Kim Jong Un Day of Infamy servers"
+description = "Tools of Day of Infamy and Insurgency servers on systemd"
 requires-python = ">=3.12"
 license = "MIT"
 # The Arch Linux packages of the same libraries in parentheses
@@ -14,10 +15,16 @@ dependencies = [
   "srctools>=2.7",  # the game's KeyValues, Steam's VDF and the VPKs (python-srctools)
 ]
 
-[tool.ruff]
-# The tools' own modules, e.g. games.py, which they import from tools/
-src = ["tools"]
+[project.scripts]
+nwi-server = "nwi_server_kit.cli:main"
 
-[tool.uv]
-# Only the dependencies, nothing of this repository to build or install
-package = false
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nwi_server_kit"]
+
+[tool.ruff]
+# The package, and the scripts' own modules, e.g. rcon.py, which they import from tools/
+src = ["src", "tools"]

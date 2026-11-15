@@ -24,7 +24,7 @@ depends=(
   steamdepotdownloader
   util-linux
 )
-makedepends=(git make)
+makedepends=(git make python-build python-installer python-hatchling)
 optdepends=(
   'podman: the container image and the Quadlet units (deploy/quadlet)'
   'sourcemod-advertisements: the advertisements of the configs'
@@ -40,6 +40,11 @@ sha256sums=(SKIP)
 pkgver() {
   cd nwi-server-kit || exit
   printf 'r%s.%s' "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+build() {
+  cd nwi-server-kit || exit
+  make
 }
 
 package() {

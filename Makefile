@@ -1,5 +1,6 @@
 # Installs the tools and the systemd units of the servers, for a package (deploy/arch/PKGBUILD) or by
-# hand: make install DESTDIR=… PREFIX=/usr. The configs aren't installed: the tools read them from the
+# hand: make install DESTDIR=… PREFIX=/usr, with the Python package nwi_server_kit and its command
+# nwi-server (pyproject.toml), which make builds first. The configs aren't installed: the tools read them from the
 # servers' clone of this repository, /var/lib/nwi-server/config (NWI_CONFIG, see tools/games.py).
 # See README.md.
 
@@ -20,9 +21,12 @@ DOCS = README.md CONTRIBUTING.md docs/Clients.md docs/Cvars.md
 
 .PHONY: all install uninstall check
 
+# The package's wheel, built without isolation from the system's hatchling, as for Arch Linux packages
 all:
+	python -m build --wheel --no-isolation --outdir dist
 
 install:
+	python -m installer --destdir="$(DESTDIR)" --prefix="$(PREFIX)" dist/*.whl
 	install -Dm755 -t "$(DESTDIR)$(TOOLSDIR)" $(addprefix tools/,$(TOOLS))
 	# The admins' RCON client
 	install -dm755 "$(DESTDIR)$(BINDIR)"

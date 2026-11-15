@@ -12,9 +12,9 @@ wheels = [
 ]
 
 [[package]]
-name = "doi-config"
+name = "nwi-server-kit"
 version = "0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
   { name = "python-a2s" },
   { name = "srctools" },
