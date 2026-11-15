@@ -52,7 +52,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from .games import CONFIG, DEFAULT, SERVER_APPS, game_folder
+from .games import DEFAULT, SERVER_APPS, config_folder, game_folder
 
 # The keys and their types
 KEYS = {
@@ -181,7 +181,7 @@ def args(root: Path) -> None:
 
 def check(paths: list[Path]) -> int:
     status = 0
-    cfg = CONFIG / "game" / "cfg"
+    cfg = config_folder() / "game" / "cfg"
     for path in paths:
         try:
             settings = load(path)
@@ -200,11 +200,12 @@ def check(paths: list[Path]) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    if len(args) < 2 or args[0] not in ("prepare", "args", "game", "check"):
+    # Not "args", the function of the command args
+    arguments = sys.argv[1:] if argv is None else argv
+    if len(arguments) < 2 or arguments[0] not in ("prepare", "args", "game", "check"):
         print(__doc__.split("Usage:")[1], file=sys.stderr)
         return 2
-    command, operands = args[0], [Path(arg) for arg in args[1:]]
+    command, operands = arguments[0], [Path(arg) for arg in arguments[1:]]
     if command == "check":
         return check(operands)
     try:

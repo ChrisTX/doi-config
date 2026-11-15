@@ -18,7 +18,7 @@ sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
 
 clang's `clang-format` formats the C++ of the Ghidra tools, `tools/ghidra/sdk_types.cpp`. The Ghidra scripts in `tools/ghidra` are formatted with google-java-format, compiled against Ghidra's jars and linted with PMD.
 
-Instead of the Python packages, the Python tools' dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, which the hooks then use while it's active:
+The tools are a Python package, `src/nwi_server_kit`, with the command `nwi-server`. Instead of the Python packages, its dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, with the package installed from the checkout, which the hooks then use while it's active:
 
 ```bash
 uv sync

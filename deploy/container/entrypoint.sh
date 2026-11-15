@@ -2,19 +2,17 @@
 # The commands of the image, one for the server and for its updates, as the systemd units have them:
 #
 #   server (the default)  run the server
-#   update [--stage]      update the games, the workshop items and the mods in the state folder
-#                         /srv/state, like nwi-update.service (and nwi-stage.service with --stage, see
-#                         tools/update_layers.sh): its <game>/game, <game>/workshop and <game>/mods
-#                         folders, as the servers mount them, of the games of the servers'
-#                         environment files in /etc/nwi-server (tools/games.py)
-#   check                 check the state's games and workshop items for updates
-#                         (tools/check_updates.py): exit status 0 if there are, 1 if not, 255 if it
-#                         can't tell
+#   update                update the layers of the state folder /srv/state, like nwi-update.service
+#                         (nwi-server update --image): the versions of the games, the workshop items
+#                         and the mods of the servers of the environment files in /etc/nwi-server, and
+#                         the servers' links to them, STATE/servers/<server>, which they mount
+#   check                 check the state's games and workshop items for updates (nwi-server
+#                         check-updates): exit status 0 if there are, 1 if not, 255 if it can't tell
 #
 # The server's mounts, its game's folders of the state: game at /srv/game and workshop/steamapps/workshop
 # at /srv/game/steamapps/workshop, both with Podman's overlay (:O), so that the server's writes stay in
-# its container, and read-only: mods at /srv/mods, the depots at /srv/depots and the game's list of
-# them at /srv/depots.list. Its start copies the image's files of the game's
+# its container, and read-only: mods at /srv/mods, the state at /srv/layers and the list of the game's
+# other depots' versions in it at /srv/depots.list. Its start copies the image's files of the game's
 # folder (/opt/nwi-layer: SourceMod, Metamod:Source, the plugins and game/ of this repository), the
 # mods (the map scripts in custom/, the playlists' configs in cfg/), the server's config of this
 # repository and the secrets into the game's folder (doi, insurgency), then runs prepare_server.sh and
@@ -35,14 +33,14 @@ state=/srv/state
 case ${1:-server} in
 	update)
 		shift
-		exec "$repo/tools/update_layers.sh" --image "$@" "$state"
+		exec python3 -m nwi_server_kit update --image "$state"
 		;;
 	check)
-		exec python3 "$repo/tools/check_updates.py" "$state"
+		exec python3 -m nwi_server_kit check-updates "$state"
 		;;
 	server) ;;
 	*)
-		echo "Usage: $0 [server | update [--stage] | check]" >&2
+		echo "Usage: $0 [server | update | check]" >&2
 		exit 2
 		;;
 esac
@@ -52,15 +50,15 @@ if [[ ! -x $root/srcds_linux ]]; then
 	exit 1
 fi
 # The game's other depots, e.g. the Steam client library (1006), linked into it: the container has the
-# game's own depot at /srv/game, its others in /srv/depots and their list, the game's own last, in
-# /srv/depots.list (tools/update_game.sh)
+# game's own depot at /srv/game, the versions of its others in /srv/layers, as /srv/depots.list has them
+# (nwi-server update --image)
 if [[ -f /srv/depots.list ]]; then
 	mapfile -t depots </srv/depots.list
-	for line in "${depots[@]:0:${#depots[@]}-1}"; do
-		cp -asf "/srv/depots/${line%% *}/." "$root/"
+	for depot in "${depots[@]}"; do
+		[[ -z $depot ]] || cp -asf "/srv/layers/$depot/." "$root/"
 	done
 fi
-# The game's folder, doi or insurgency (tools/games.py)
+# The game's folder, doi or insurgency (nwi_server_kit.games)
 game=$(python3 "$repo/tools/games.py" folder "$root")
 cp -a /opt/nwi-layer/. "$root/$game/"
 if [[ -d /srv/mods ]]; then

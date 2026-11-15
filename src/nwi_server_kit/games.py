@@ -6,9 +6,9 @@ files: the depots from the app (DepotDownloader picks them), the workshop's app 
 A game's name is the name of its folder.
 
 The configs, servers/ and game/ of a repository like this one, come from config sources, e.g. a
-community's: each a clone in the updater's state, NWI_LAYERS/configs/<source> (NWI_LAYERS is
-/var/lib/nwi-server/layers by default), of the repository and its branch or tag of
-NWI_SOURCES_DIR/<source>.env (/etc/nwi-server/configs), URL=… and REF=…. A server's source is
+community's: the repository and its branch or tag of NWI_SOURCES_DIR/<source>.env
+(/etc/nwi-server/configs), URL=… and REF=…, whose newest version the updater keeps in its state,
+NWI_LAYERS/config-<source>.v (NWI_LAYERS is /var/lib/nwi-server/layers by default, see layers.py). A server's source is
 CONFIG_SOURCE of its environment file, "default" without one. With NWI_CONFIG, or for the tools of a
 checkout, there's one source for all servers: that folder, or the checkout the tools are in.
 
@@ -51,6 +51,8 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import layers
+
 # The games by the names of their folders, with the apps of their dedicated servers
 SERVER_APPS = {
     "doi": 462310,
@@ -78,12 +80,13 @@ def config_folder(source: str = DEFAULT_SOURCE) -> Path:
     single = single_config()
     if single is not None:
         return single
-    layers = Path(os.environ.get("NWI_LAYERS", "/var/lib/nwi-server/layers"))
-    return layers / "configs" / source
+    state = Path(os.environ.get("NWI_LAYERS", "/var/lib/nwi-server/layers"))
+    newest = layers.latest(layers.folder(state, f"config-{source}"))
+    if newest is None:
+        raise ValueError(f"the config source {source} has no version yet, update first")
+    return newest
 
 
-# The default source's configs, for the tools that work on one, e.g. server_config.py check
-CONFIG = config_folder()
 DETAILS_URL = (
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
 )
@@ -189,7 +192,7 @@ def servers() -> list[Server]:
         return [server(name, env) for name, env in envs.items()]
     return [
         server(toml.parent.name, {"SERVER_CONFIG_NAME": toml.parent.name})
-        for toml in sorted((CONFIG / "servers").glob("*/server.toml"))
+        for toml in sorted((config_folder() / "servers").glob("*/server.toml"))
     ]
 
 

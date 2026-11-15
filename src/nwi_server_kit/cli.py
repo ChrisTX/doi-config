@@ -3,16 +3,38 @@
 Usage: nwi-server COMMAND ARGUMENTS..., the commands:
     games            what the tools know of the games and find out about the servers (games.py)
     server-config    a server's settings, server.toml (server_config.py)
+    make-mods        make the mods of mods/<game>/*.toml (make_mods.py)
+    check-gamedata   check the plugins' gamedata against a game install (check_gamedata.py)
+    update           update the layers of the servers (update.py)
+    compile-plugins  compile the plugins of configs (update.py)
+    check-updates    check the games and workshop items for updates (check_updates.py)
+    mount            mount a server's layers (mount.py)
+    unmount          unmount a server's layers (mount.py)
 """
 
 import sys
 from collections.abc import Callable
 
-from . import games, server_config
+from . import (
+    check_gamedata,
+    check_updates,
+    games,
+    make_mods,
+    mount,
+    server_config,
+    update,
+)
 
 COMMANDS: dict[str, Callable[[list[str]], int]] = {
     "games": games.main,
     "server-config": server_config.main,
+    "make-mods": make_mods.main,
+    "check-gamedata": check_gamedata.main,
+    "update": update.main,
+    "compile-plugins": update.compile_main,
+    "check-updates": check_updates.main,
+    "mount": mount.main,
+    "unmount": mount.unmount_main,
 }
 
 

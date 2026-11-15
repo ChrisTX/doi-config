@@ -26,8 +26,10 @@ placed on top of a server as they are:
   (`addons/sourcemod/configs/advertisements.txt`). A server that shares a file
   with another links to it, like `private-mp` to `mp-battles`; the links are
   resolved when the server is set up, as the server only gets its own folder.
-- `tools` has the scripts that set up and monitor a server, `deploy` the systemd
-  units and the servers' user.
+- `src/nwi_server_kit` is the Python package of the servers' tools, with the
+  command `nwi-server` (`nwi-server` without arguments lists its commands),
+  `tools` the other scripts that set up and monitor a server, `deploy` the
+  systemd units, the container and the package.
 
 ## Usage
 
@@ -60,13 +62,13 @@ teams (see [Playlists](#playlists)).
 
 With `game = "insurgency"`, a server runs Insurgency instead of Day of Infamy,
 like the test server `servers/ins-test`. The tools only keep the apps of the
-games' dedicated servers (`tools/games.py`) and find the rest: the depots,
+games' dedicated servers (`nwi-server games`) and find the rest: the depots,
 the game's folder (`doi` or `insurgency`, the one with `gameinfo.txt`) and the
 workshop's app of the items. The configs of `game/cfg/doi-config` are Day of
 Infamy's.
 
 At each start, `tools/prepare_server.sh` makes the server's `cfg/server.cfg` of
-it with `tools/server_config.py`, which describes the keys: the names of the
+it with `nwi-server server-config`, which describes the keys: the names of the
 server and SourceTV, and the configs it runs (see [Configs](#configs)). It also
 copies the server's list of workshop items to `subscribed_file_ids.txt` in the
 `doi` folder, the list the game downloads and mounts by default. The launcher,
@@ -83,7 +85,7 @@ A server without a `server.toml`, of no config of `servers`, needs its own
 The servers run as system services, one instance per server, which share one
 install of each game. The games, and the workshop items, are those of the
 servers: each `/etc/nwi-server/<server>.env` is a server, its game its config's
-or `GAME` of its environment file without one (`tools/games.py`). Each server
+or `GAME` of its environment file without one (`nwi-server games`). Each server
 and the updater run as users of their own (`DynamicUser=`): a server can't
 change another's files, nor the layers they share, which the updater makes. Each
 server is put together with overlayfs from read-only layers, top first:
@@ -98,15 +100,17 @@ server is put together with overlayfs from read-only layers, top first:
   `sourcemod-sourcebans-pp`, `sourcemod-sourcebans-pp-discord-forward`,
   `sourcemod-advertisements`, `sourcemod-multicolors`, `sourcemod-smjansson`,
   `sourcemod-steamworks`)
-- the workshop items of the game's servers
-- the game
+- the record of the server's workshop items, which the game reads, the items,
+  each a layer of its own, and the game's depots
 
-Their writable layer starts empty whenever the layers are mounted, so changes
-to the layers always show. What the server writes and keeps, like its logs, is
+The layers are versions, each a folder that doesn't change once it's made, of
+which a server mounts the newest when it starts (`nwi-server mount`). Their
+writable layer starts empty whenever they're mounted, so new versions always
+show. What the server writes and keeps, like its logs, is
 bind-mounted from the server's state folder, `/var/lib/nwi-server/servers/<server>`,
 instead. The layers are mounted while the server runs, in
 `/run/nwi-server/<server>`, mapped to the server's user (see
-`tools/mount_server.sh`).
+`src/nwi_server_kit/mount.py`).
 
 The units are in `deploy/systemd`, the group `nwi-rcon` in `deploy/sysusers.d`.
 They run the tools installed with them (`make install`, or the package of
@@ -115,25 +119,27 @@ of the servers' config sources (see [Config sources](#config-sources)).
 SourceMod and Metamod:Source are those of `SOURCEMOD_DIR` and `METAMOD_DIR`,
 `/usr/lib/sourcemod` and `/usr/lib/metamod` by default.
 
-- `nwi-update.service` updates the layers (`tools/update_layers.sh`), its state
-  `/var/lib/nwi-server/layers`: it brings the clone of each config source in
-  `configs/<source>` up to date, compiles its plugins into `plugins/<source>`
-  and runs `tools/update_game.sh` for each game of the servers, which installs
-  or updates the game's depots with DepotDownloader, each in `depots/<depot>`,
-  which the games share, like the Steam client library's (`<game>/game` links to
-  the game's own), checks it against each source's gamedata (see
-  [Playlists](#playlists)) and makes each source's mods of the game (see
-  [Mods](#mods)) in `<game>/mods/<source>`. It runs before the servers start. It
-  also downloads the workshop items of the game's servers' lists into
-  `<game>/workshop`, once for all of them, as SteamCMD would lay them out, with
-  their record (`appworkshop_<app>.acf`), without which the game downloads them
-  itself. DepotDownloader gets their current versions, which the game itself
-  never does once it has an item, and items no list names any more are removed.
-  An install of SteamCMD's becomes the game's depot, whose files are checked, so
-  only what differs is downloaded. The layers of a state folder from before Insurgency, in
-  the state itself, are moved into `doi` once.
-- `nwi-server@<server>.service` mounts the layers at every start
-  (`tools/mount_server.sh`), configures the server (`tools/prepare_server.sh`:
+- `nwi-update.service` updates the layers (`nwi-server update`), in its state
+  `/var/lib/nwi-server/layers`, as versions of what it downloads and builds
+  (see `src/nwi_server_kit/update.py`): the configs of each config source
+  (`config-<source>.v`) and their compiled plugins (`plugins-<source>.v`), each
+  depot of the games of the servers (`depot-<depot>.v`), which the games share,
+  like the Steam client library's, and of each game its servers' workshop items
+  (`<game>/item-<item>.v`) and the mods of each source (`<game>/mods-<source>.v`,
+  see [Mods](#mods)). It downloads with DepotDownloader into `downloads`, the
+  workshop items' current versions, which the game itself never gets once it
+  has an item, and checks each game against each source's gamedata (see
+  [Playlists](#playlists)). A version is a reflinked copy (btrfs, XFS), which
+  shares its files' data with the download and the other versions, so it takes
+  only the space of what differs, and a server never sees it change. It keeps
+  the newest three versions of each layer (`NWI_KEEP_VERSIONS`) and those a
+  server uses, and removes the layers no server needs any more, e.g. of an item
+  no list names. It runs before the servers start, and while they run: they get
+  the new versions when they start again. The downloads of earlier layouts,
+  e.g. an install of SteamCMD's, are kept, and checked file by file, so only
+  what differs is downloaded.
+- `nwi-server@<server>.service` mounts the layers' newest versions at every
+  start (`nwi-server mount`), configures the server (`tools/prepare_server.sh`:
   its secrets, the plugins SourceBans++ needs, its website from
   `SOURCEBANS_WEBSITE`) and runs it. SourceBans++ finds the server in the panel
   by its address and port: the address the server reports, or
@@ -149,18 +155,11 @@ SourceMod and Metamod:Source are those of `SOURCEMOD_DIR` and `METAMOD_DIR`,
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
   The hung server has 30 seconds to dump its core first.
 - `nwi-servers.target` starts the enabled servers.
-- `nwi-restart.timer` updates and restarts the servers every day at 06:00. The
-  layers mustn't change while servers use them, so `nwi-stage.service` updates
-  a copy of them in `/var/lib/nwi-server/layers/next` while the servers run. The copy
-  is reflinked, on btrfs or XFS: it shares the files' data with the layers, so
-  it takes only the space of what the update changes, and the servers' files
-  stay as they are. Then the servers are stopped, `nwi-update.service` puts the
-  copy in place, keeping the layers it replaced in
-  `/var/lib/nwi-server/layers/previous`, and the servers start again: they're only
-  down for the restart. Without reflinks, `nwi-update.service` updates in place
-  while the servers are stopped.
+- `nwi-restart.timer` updates and restarts the servers every day at 06:00: the
+  update while they run, so that they're only down for the restart, which gives
+  them the new versions.
 - `nwi-update-check.timer` checks the games and the workshop items for updates
-  every three hours (`tools/check_updates.py`), and on an update restarts the
+  every three hours (`nwi-server check-updates`), and on an update restarts the
   servers like `nwi-restart.timer`. The game's depots are compared, not its
   build, as the Steam client library's depot changes on its own, and the
   workshop items must be the versions the players download: theater files that
@@ -266,29 +265,29 @@ podman build --format docker --build-context repo=/var/lib/aurutils-repo \
 
 `deploy/container/test-instance.sh build` does the same with the repository
 aurutils uses. The image's commands (`deploy/container/entrypoint.sh`) are the
-server, `update [--stage]` and `check`: the updater and the check of
-`tools/update_layers.sh` and `tools/check_updates.py` on the state folder,
-mounted at `/srv/state`, for the servers whose environment files are mounted at
-`/etc/nwi-server`.
+server, `update` and `check`: `nwi-server update --image` and
+`nwi-server check-updates` on the state folder, mounted at `/srv/state`, for the
+servers whose environment files are mounted at `/etc/nwi-server`. The image's
+configs and plugins are its own.
 
 `deploy/quadlet` has the units for rootless Podman, the containers'
 counterparts of `deploy/systemd`, with the state folder
 `~/.local/state/nwi-server` and the settings in `~/.config/nwi-server`:
 
-- `nwi-update.container` and `nwi-stage.container` update the state folder in
-  place or stage the update in a reflinked copy, as their systemd counterparts.
+- `nwi-update.container` updates the state folder, as its systemd counterpart.
 - `nwi-server@<server>.container` runs a server: its settings in
   `~/.config/nwi-server/<server>.env`, as for `nwi-server@.service`, its secrets
   in `~/.config/nwi-server/secrets` (which may be empty), on the host's
-  network. Its game's install and workshop items are mounted with an overlay of
-  the container's own (`:O`), its mods read-only, through the links the updater
-  keeps in `~/.local/state/nwi-server/servers/<server>`, as a unit can't pick
-  the folders by the server's game. It's ready once the image's
+  network. The versions of its game's depot and workshop items are mounted with
+  an overlay of the container's own (`:O`), its mods read-only, through the links
+  the updater keeps in `~/.local/state/nwi-server/servers/<server>`, as a unit
+  can't pick the folders by the server's game; the updater makes the workshop
+  items one folder for the containers, `<game>/workshop.v`. It's ready once the image's
   health check, A2S like the systemd units' watchdog, passes, and restarted
   when the server stops answering. What it keeps goes into volumes.
 - `nwi-build.service` pulls a clone of this repository and builds the image
-  anew; `nwi-restart.service` builds, stages, stops the servers, puts the
-  update in place and starts them again, with the new image, every day with
+  anew; `nwi-restart.service` builds, updates while the servers run and
+  restarts them, with the new image, every day with
   `nwi-restart.timer`; `nwi-update-check.timer` checks for updates every three
   hours, as for the systemd units.
 
@@ -429,7 +428,7 @@ Arch Linux packages that provide them:
 The server's binaries only link glibc and libstdc++. The Steam client library
 (`steamclient.so`) loads SDL3 while the server runs. SDL2 isn't needed: of the
 server's libraries, only `libtier0_srv.so` names it, and servers without it run
-and don't try to load it. `update_game.sh` removes the outdated copies of
+and don't try to load it. The update removes the outdated copies of
 libgcc, libstdc++, libogg and libvorbis that come with the game, so the system's
 libraries are used instead.
 
@@ -469,7 +468,7 @@ playlist forces, as far as we take them over, then ours, those all servers
 share (`basic_settings.cfg`), and its `configs_after`, like those of the coop or
 PvP servers (`basic_coop.cfg`, `basic_pvp.cfg`). The game forces a playlist's settings, but the server
 library's patch stops it, so `mods/doi/playlists.toml` says which of them the
-servers take over; `tools/make_mods.py` makes the playlist's config of them
+servers take over; `nwi-server make-mods` makes the playlist's config of them
 from the installed game, `cfg/doi-config/playlists/<playlist>.cfg`.
 
 At every map start the game runs its own config of the game mode,
@@ -480,7 +479,7 @@ replacing an earlier one's settings:
 1. `basic_mode_<coop|pvp>.cfg`: all coop or PvP game modes
 2. `basic_mode_<coop|pvp>-<mode>.cfg`: the game mode, in every playlist
 3. `playlists/<playlist>-<mode>.cfg`: the settings the playlist forces in the
-   game mode, made by `tools/make_mods.py`
+   game mode, made by `nwi-server make-mods`
 4. `mode_<playlist>.cfg`: all game modes of the playlist, e.g.
    `mode_coop_commando.cfg`
 5. `mode_<playlist>-<mode>.cfg`: the game mode in the playlist
@@ -565,7 +564,7 @@ cooperative offensive, to maps that only have offensive. A map's script
 points, spawn zones and entities. The scripts come from the game's VPKs or from
 a map's workshop item, so they aren't part of this repository: each
 `mods/<game>/<mod>.toml` says which blocks of which maps to copy and how to adjust the
-copies, and `tools/make_mods.py` makes the mod folder `custom/<mod>` from the
+copies, and `nwi-server make-mods` makes the mod folder `custom/<mod>` from the
 installed game and workshop items. The mods follow the game's updates, and a
 change that a rule no longer fits, e.g. a control point it removes, stops the
 update with an error.
@@ -599,8 +598,8 @@ runs it after each update, so its log shows broken scripts of new workshop
 maps.
 
 ```bash
-tools/make_mods.py --game GAME --workshop WORKSHOP OUTPUT mods
-tools/make_mods.py --game GAME --workshop WORKSHOP --check
+nwi-server make-mods --game GAME --workshop WORKSHOP OUTPUT mods/doi
+nwi-server make-mods --game GAME --workshop WORKSHOP --check
 ```
 
 `GAME` is the game's install, with `doi` in it, `WORKSHOP` the folder of the
@@ -612,11 +611,11 @@ for the server's `doi` folder.
 The `nwi_playlist_unlock` plugin lifts the playlists' restrictions, in Day of
 Infamy and Insurgency: the server takes each playlist from a replacement in
 `cfg/doi-config/playlists/<playlist>.playlist` where there is one, which
-`tools/make_mods.py` makes by the `[[replace]]` tables of `mods/<game>/*.toml`. Ours
+`nwi-server make-mods` makes by the `[[replace]]` tables of `mods/<game>/*.toml`. Ours
 (`mods/doi/playlists.toml`) drop `allowed_maps`, the forced settings and the
 required slots from every playlist, in its own keys and its rulesets: any map
 and game mode may run, the playlists force no settings (their configs, also
-from `tools/make_mods.py`, take over those we keep), and any number of slots is
+from `nwi-server make-mods`, take over those we keep), and any number of slots is
 fine. In Day of Infamy, the server also registers for the game's stats with
 workshop content.
 
@@ -634,9 +633,9 @@ forced settings and maps were the same with either, and without both, the game
 enforced them. Not tested yet: the registration for the stats. Linux only so
 far, as the gamedata has no signatures for Windows yet.
 
-After each game update, `tools/update_game.sh --check-gamedata` checks that the
-game still has the functions of the plugins' gamedata, by their symbols
-(`tools/check_gamedata.py`), so an update that moved them fails there rather
+After each game update, the update checks that the game still has the
+functions of the plugins' gamedata, by their symbols (`nwi-server
+check-gamedata`), so an update that moved them fails there rather
 than leaving the servers with the playlists' restrictions.
 
 ### GeoIP2 databases
@@ -661,7 +660,7 @@ either way.
 AFK Manager, vendored in `game/addons/sourcemod` together with its include,
 translations and configuration, is licensed under the GPL-3.0-only with
 SourceMod's linking exception, like its earlier versions. The mods' map scripts
-aren't part of this repository: `tools/make_mods.py` makes them from the game's
+aren't part of this repository: `nwi-server make-mods` makes them from the game's
 own when a server is set up, so they remain New World Interactive's.
 
 `REUSE.toml`, the file headers and the `LICENSES` folder say this in the

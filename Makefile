@@ -1,7 +1,7 @@
 # Installs the tools and the systemd units of the servers, for a package (deploy/arch/PKGBUILD) or by
 # hand: make install DESTDIR=… PREFIX=/usr, with the Python package nwi_server_kit and its command
 # nwi-server (pyproject.toml), which make builds first. The configs aren't installed: the tools read them from the
-# servers' clone of this repository, /var/lib/nwi-server/config (NWI_CONFIG, see tools/games.py).
+# servers' config sources, which the updater keeps (nwi_server_kit.games).
 # See README.md.
 
 PREFIX ?= /usr
@@ -12,9 +12,8 @@ DATADIR ?= $(PREFIX)/share
 TOOLSDIR = $(LIBDIR)/nwi-server-kit
 
 # The tools of the servers and of their admins; the checks of this repository's files stay in it
-TOOLS = check_gamedata.py check_updates.py dump_cvars.py games.py make_mods.py mount_server.sh \
-	prepare_server.sh rcon.py server_config.py soak_watch.py srcds_watchdog.py start_server.sh \
-	update_game.sh update_layers.sh
+TOOLS = dump_cvars.py games.py prepare_server.sh rcon.py server_config.py soak_watch.py \
+	srcds_watchdog.py start_server.sh
 UNITS = $(wildcard deploy/systemd/*)
 QUADLET = $(wildcard deploy/quadlet/*)
 DOCS = README.md CONTRIBUTING.md docs/Clients.md docs/Cvars.md

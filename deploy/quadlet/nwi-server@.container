@@ -3,7 +3,7 @@
 # nwi-server@.service, its secrets ~/.config/nwi-server/secrets (may be empty), the game, the workshop
 # items and the mods those of its game in the state folder, ~/.local/state/nwi-server, which
 # nwi-update.service fills, through the server's links to them there (servers/<server>/, see
-# tools/update_layers.sh): a unit can't pick the folders by the server's game.
+# nwi-server update --image): a unit can't pick the folders by the server's game.
 [Unit]
 Description=Day of Infamy or Insurgency server (%i), in a container
 Wants=network-online.target nwi-update.service
@@ -26,7 +26,7 @@ Volume=%S/nwi-server/servers/%i/game:/srv/game:O
 Volume=%S/nwi-server/servers/%i/workshop/steamapps/workshop:/srv/game/steamapps/workshop:O
 Volume=%S/nwi-server/servers/%i/mods:/srv/mods:ro
 # The game's other depots, e.g. the Steam client library, which the entrypoint links in
-Volume=%S/nwi-server/depots:/srv/depots:ro
+Volume=%S/nwi-server:/srv/layers:ro
 Volume=%S/nwi-server/servers/%i/depots:/srv/depots.list:ro
 Volume=%E/nwi-server/secrets:/run/secrets/nwi-server:ro
 # What the server writes and keeps

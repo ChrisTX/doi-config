@@ -57,7 +57,9 @@ RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key
 # This repository and its plugins, on top of SourceMod in /opt/nwi-layer
 USER 1000:1000
 COPY --chown=nwi-server:nwi-server . /opt/nwi-server-kit
-RUN /opt/nwi-server-kit/tools/update_game.sh --plugins /tmp/plugins \
+# The package of the tools, from the repository (python -m nwi_server_kit)
+ENV PYTHONPATH=/opt/nwi-server-kit/src
+RUN python3 -m nwi_server_kit compile-plugins /opt/nwi-server-kit /tmp/plugins \
   && cp -a /tmp/plugins/. /opt/nwi-server-kit/game/. /opt/nwi-layer/ \
   && rm -rf /tmp/plugins
 

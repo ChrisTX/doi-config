@@ -6,7 +6,7 @@
 #   build [--testing] build the image (podman build, see README.md) from the local pacman repository;
 #                     with --testing with Arch Linux's testing repositories, for packages built against
 #                     them, as on a machine that uses them
-#   update [--stage] [CONFIG...]
+#   update [CONFIG...]
 #                     update the games, the workshop items and the mods of the configs of servers/ (all
 #                     by default, which includes Insurgency's test server) in the state folder with the
 #                     image's updater (entrypoint.sh update), which the server mounts; the first
@@ -254,11 +254,7 @@ write_secrets() {
 }
 
 cmd_update() {
-	local -a stage=() configs=() env=()
-	if [[ ${1:-} == --stage ]]; then
-		stage=(--stage)
-		shift
-	fi
+	local -a configs=() env=()
 	configs=("$@")
 	local config
 	for config in "${configs[@]}"; do
@@ -275,7 +271,7 @@ cmd_update() {
 	fi
 	mkdir -p "$state"
 	podman run --rm --userns "$userns" --health-cmd none "${env[@]}" -v "$state:/srv/state" "$image" \
-		update "${stage[@]}"
+		update
 }
 
 cmd_up() {
@@ -291,7 +287,7 @@ cmd_up() {
 		echo "Error: no image $server_image, build it first (see README.md)" >&2
 		exit 1
 	fi
-	if [[ -z $db_only && ! -x $state/$game/game/srcds_linux ]]; then
+	if [[ -z $db_only && ! -x $state/servers/$config/game/srcds_linux ]]; then
 		echo "Error: no $game in $state, download it first: $0 update" >&2
 		exit 1
 	fi
@@ -370,10 +366,10 @@ cmd_up() {
 	fi
 	podman run -d --pod "$pod" --name "$pod-server" --env-file "$dir/server.env" -e SERVER_NAME="$config" \
 		"${extra_env[@]}" \
-		-v "$state/$game/game:/srv/game:O" \
-		-v "$state/$game/workshop/steamapps/workshop:/srv/game/steamapps/workshop:O" \
-		-v "$state/$game/mods/default:/srv/mods:ro" \
-		-v "$state/depots:/srv/depots:ro" -v "$state/$game/depots:/srv/depots.list:ro" \
+		-v "$state/servers/$config/game:/srv/game:O" \
+		-v "$state/servers/$config/workshop/steamapps/workshop:/srv/game/steamapps/workshop:O" \
+		-v "$state/servers/$config/mods:/srv/mods:ro" \
+		-v "$state:/srv/layers:ro" -v "$state/servers/$config/depots:/srv/depots.list:ro" \
 		-v "$dir/secrets:/run/secrets/nwi-server:ro" "${geoip[@]}" "${volumes[@]}" \
 		--health-on-failure restart "$server_image" >/dev/null
 	echo "Waiting for the server"
