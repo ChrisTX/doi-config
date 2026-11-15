@@ -5,3 +5,5 @@ __pycache__/
 # Local files of Claude Code
 .claude/settings.local.json
 .claude/worktrees/
+# The Python tools' virtual environment (uv sync)
+.venv/

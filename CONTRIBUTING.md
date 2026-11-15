@@ -18,6 +18,15 @@ sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
 
 clang's `clang-format` formats the C++ of the Ghidra tools, `tools/ghidra/sdk_types.cpp`. The Ghidra scripts in `tools/ghidra` are formatted with google-java-format, compiled against Ghidra's jars and linted with PMD.
 
+Instead of the Python packages, the Python tools' dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, which the hooks then use while it's active:
+
+```bash
+uv sync
+source .venv/bin/activate
+```
+
+After changing the dependencies in `pyproject.toml`, `uv lock` updates `uv.lock`; `uv lock --upgrade` takes their newest versions. Keep them at the versions of the Arch Linux packages the servers run.
+
 Then install the git hooks, which run the checks on the staged files before each commit and check the spelling of the commit message:
 
 ```bash
@@ -30,7 +39,7 @@ prek install
 prek run --all-files
 ```
 
-GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run and downloads the releases of hadolint, google-java-format, PMD and srctools, see `.github/workflows/check.yml`.
+GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run, downloads the releases of hadolint, google-java-format and PMD, and makes the virtual environment of `uv.lock`, see `.github/workflows/check.yml`.
 
 ## Checks
 

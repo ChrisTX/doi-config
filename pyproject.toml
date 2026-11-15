@@ -1,0 +1,19 @@
+# The Python tools of tools/ and their dependencies, for a virtual environment: uv sync makes .venv
+# with the versions of uv.lock, see CONTRIBUTING.md. The tools are scripts, not a package to install.
+# On the servers and in the container, the Arch Linux packages provide the dependencies (README.md).
+
+[project]
+name = "doi-config"
+version = "0"
+description = "Tools of the Kim Jong Un Day of Infamy servers"
+requires-python = ">=3.12"
+license = "MIT"
+# The Arch Linux packages of the same libraries in parentheses
+dependencies = [
+  "python-a2s>=1.4",  # srcds_watchdog.py's queries of the servers (python-a2s)
+  "srctools>=2.7",  # the game's KeyValues, Steam's VDF and the VPKs (python-srctools)
+]
+
+[tool.uv]
+# Only the dependencies, nothing of this repository to build or install
+package = false
