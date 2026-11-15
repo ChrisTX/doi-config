@@ -89,7 +89,7 @@ Usage: make_mods.py --game DIR --workshop DIR OUTPUT MODS...
        make_mods.py --game DIR --workshop DIR --check
 
 --game is the game's install, with its game's folder, e.g. doi/, in it (tools/games.py), --workshop
-SteamCMD's folder of the workshop items (steamapps/workshop/content/<app>/<item> in it). MODS are the mods' .toml files, or folders of them.
+the folder of the workshop items (steamapps/workshop/content/<app>/<item> in it). MODS are the mods' .toml files, or folders of them.
 OUTPUT is replaced.
 """
 
@@ -339,7 +339,7 @@ def map_scripts(folder: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
 
 
 def item_folder(workshop: Path, item: int) -> Path:
-    """The folder of a workshop item in SteamCMD's folder of the workshop items."""
+    """The folder of a workshop item in the folder of the workshop items."""
     folder = find_item(workshop, item)
     if folder is None:
         raise ModError(f"the workshop item {item} isn't installed")
@@ -834,7 +834,7 @@ def main() -> int:
         "--workshop",
         type=Path,
         required=True,
-        help="SteamCMD's folder of the workshop items",
+        help="the folder of the workshop items",
     )
     parser.add_argument(
         "--check",

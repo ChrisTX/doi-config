@@ -1,9 +1,10 @@
 #!/bin/bash
 # Updates the layers the servers share in the state folder STATE (/var/lib/nwi-server/layers): the
-# clones of the servers' config sources and the plugins compiled of each, and of each game of the
-# servers (tools/games.py) its install, its servers' workshop items and the mods made for it of each
-# source, in STATE/configs/<source>, STATE/plugins/<source>, STATE/<game>/game, STATE/<game>/workshop
-# and STATE/<game>/mods/<source>. The layers mustn't change while servers run on them, so an update
+# clones of the servers' config sources and the plugins compiled of each, the depots of the games of
+# the servers (tools/games.py), which they share, and of each game its servers' workshop items and the
+# mods made for it of each source, in STATE/configs/<source>, STATE/plugins/<source>,
+# STATE/depots/<depot>, STATE/<game>/workshop and STATE/<game>/mods/<source>; STATE/<game>/depots lists
+# a game's depots, and STATE/<game>/game links to its own (tools/update_game.sh). The layers mustn't change while servers run on them, so an update
 # while they run goes into a copy:
 #
 #   update_layers.sh --stage STATE  update a copy of the layers in STATE/next, while the servers run:
@@ -20,8 +21,9 @@
 # the games', of one source, the configs and the plugins of the image, the repository this script is
 # in.
 #
-# With --image, each server gets links to its game's layers, STATE/servers/<server>/{game,workshop,mods},
-# which the containers of deploy/quadlet mount, as a unit can't pick the folders by the server's game.
+# With --image, each server gets links to its game's layers and list of depots,
+# STATE/servers/<server>/{game,workshop,mods,depots}, which the containers of deploy/quadlet mount, as a
+# unit can't pick the folders by the server's game.
 # The systemd units' tools/mount_server.sh picks them itself, and STATE/servers is root's there.
 #
 # nwi-restart.service stages, stops the servers, runs nwi-update.service, which runs this without
@@ -33,10 +35,10 @@ tools=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 
 # The layers all games share, as the units and tools/mount_server.sh name them in STATE; each game's
 # are in STATE/<game>
-shared=(configs plugins)
+shared=(configs plugins depots)
 image=
 if [[ ${1:-} == --image ]]; then
-	shared=()
+	shared=(depots)
 	image=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
 	shift
 fi
@@ -121,7 +123,7 @@ update() {
 			cp -a --reflink=always "$from/$game" "$dir/"
 		fi
 		mkdir -p "$dir/$game"
-		"$tools/update_game.sh" --game "$game" "$dir/$game/game" --workshop "$game" "$dir/$game/workshop"
+		"$tools/update_game.sh" --game "$game" "$dir" --workshop "$game" "$dir/$game/workshop"
 		listing=$(python3 "$tools/games.py" sources "$game")
 		mapfile -t game_sources <<<"$listing"
 		rm -rf "$dir/$game/mods"
@@ -162,6 +164,7 @@ link_servers() {
 			mkdir -p "$state/servers/$name"
 			ln -sfn "../../$game/game" "$state/servers/$name/game"
 			ln -sfn "../../$game/workshop" "$state/servers/$name/workshop"
+			ln -sfn "../../$game/depots" "$state/servers/$name/depots"
 			# The image's one source
 			ln -sfn "../../$game/mods/default" "$state/servers/$name/mods"
 		done

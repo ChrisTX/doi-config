@@ -2,16 +2,17 @@
 """Check whether the games or the workshop items have updates, without downloading them.
 
 The games and items of the servers (tools/games.py), in the state folder STATE as
-tools/update_layers.sh updates them: STATE/<game>/game and STATE/<game>/workshop. A game that isn't
+tools/update_layers.sh updates them: STATE/<game>/depots and STATE/<game>/workshop. A game that isn't
 installed counts as an update.
 
-A game: each depot of the installed dedicated server (steamapps/appmanifest_<app>.acf) against the
-public branch's manifest from SteamCMD's app info. The depots, not the build ID, as the shared depot
-1006, the Steam client library (steamclient.so), changes without a new build of the game.
+A game: each depot of its dedicated server for Linux, as its record has it (STATE/<game>/depots,
+tools/update_game.sh), against the public branch's manifest as DepotDownloader lists it. The depots,
+not the build ID, as the shared depot 1006, the Steam client library (steamclient.so), changes without
+a new build of the game.
 
 The workshop items: each item of the game's servers' lists against the Steam Web API's current
-manifest of the item (GetPublishedFileDetails, no key needed), which SteamCMD's manifests of the
-installed items (steamapps/workshop/appworkshop_<app>.acf) record too. An item of a list that isn't
+manifest of the item (GetPublishedFileDetails, no key needed), which the record of the installed
+items (steamapps/workshop/appworkshop_<app>.acf) has too. An item of a list that isn't
 installed counts as an update.
 
 Exit status: 0 if there are updates, which it lists, 1 if there are none, 255 if it can't tell, e.g.
@@ -22,13 +23,12 @@ Usage: check_updates.py STATE
 
 import argparse
 import os
-import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from srctools.keyvalues import Keyvalues
-from srctools.tokenizer import Tokenizer
 
 from games import SERVER_APPS, item_details, servers, used_games, workshop_items
 
@@ -62,48 +62,44 @@ def block(tree: "str | Tree", *keys: str) -> Tree:
     return tree if isinstance(tree, dict) else {}
 
 
-def game_updates(game: str, install: Path) -> list[str]:
-    """The installed depots whose manifest isn't the public branch's any more."""
-    app = SERVER_APPS[game]
-    manifest = install / f"steamapps/appmanifest_{app}.acf"
-    if not manifest.is_file():
+def game_updates(game: str, state: Path) -> list[str]:
+    """The game's depots whose manifest isn't the public branch's any more, or that it doesn't have."""
+    record = state / game / "depots"
+    if not record.is_file():
         return [f"{game}: not installed"]
-    installed = block(parse_vdf(manifest), "AppState", "InstalledDepots")
-    # A fresh app info: SteamCMD caches it otherwise
-    output = subprocess.run(
-        [
-            "steamcmd",
-            "+login",
-            "anonymous",
-            "+app_info_update",
-            "1",
-            "+app_info_print",
-            str(app),
-            "+quit",
-        ],
-        capture_output=True,
-        text=True,
-        errors="replace",
-        timeout=300,
-        check=False,
-    ).stdout
-    # The app info is SteamCMD's output from the app's ID on its own line to the block's end
-    start = re.search(rf'^"{app}"$', output, re.MULTILINE)
-    if start is None:
-        raise ValueError("SteamCMD printed no app info")
-    # Only the app's block: SteamCMD prints more after it
-    tokenizer = Tokenizer(output[start.start() :], "SteamCMD's app info")
-    depots = block(as_tree(Keyvalues.parse(tokenizer, single_block=True)), "depots")
-    if not depots:
-        raise ValueError("SteamCMD's app info has no depots")
-    updates = []
-    for depot, info in installed.items():
-        current = block(depots, depot, "manifests", "public").get("gid")
-        if current is None:
-            raise ValueError(f"the app info has no public manifest of depot {depot}")
-        if not isinstance(info, dict) or info.get("manifest") != current:
-            updates.append(f"{game}: depot {depot}: manifest {current}")
-    return updates
+    installed = dict(line.split() for line in record.read_text().splitlines() if line)
+    # The public branch's depots for Linux, as DepotDownloader lists them: manifest_<depot>_<manifest>.txt
+    with tempfile.TemporaryDirectory() as listing:
+        result = subprocess.run(
+            [
+                "depotdownloader",
+                "-app",
+                str(SERVER_APPS[game]),
+                "-os",
+                "linux",
+                "-manifest-only",
+                "-dir",
+                listing,
+            ],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=300,
+            check=False,
+        )
+        current = dict(
+            path.stem.removeprefix("manifest_").split("_", 1)
+            for path in Path(listing).glob("manifest_*_*.txt")
+        )
+    if result.returncode != 0 or not current:
+        raise ValueError(
+            f"DepotDownloader listed no depots of {game}: {result.stdout[-500:]}"
+        )
+    return [
+        f"{game}: depot {depot}: manifest {manifest}"
+        for depot, manifest in sorted(current.items())
+        if installed.get(depot) != manifest
+    ]
 
 
 def workshop_updates(workshop: Path, items: list[int]) -> list[str]:
@@ -152,7 +148,7 @@ def main() -> int:
         updates = []
         for game in used_games(found):
             folder = arguments.state / game
-            updates += game_updates(game, folder / "game")
+            updates += game_updates(game, arguments.state)
             updates += workshop_updates(
                 folder / "workshop", workshop_items(found, game)
             )

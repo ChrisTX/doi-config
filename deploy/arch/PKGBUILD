@@ -20,7 +20,8 @@ depends=(
   sourcemod
   # spcomp, which compiles the plugins of the clone at every update
   sourcemod-scripting
-  steamcmd
+  # Downloads the games and the workshop items
+  steamdepotdownloader
   util-linux
 )
 makedepends=(git make)

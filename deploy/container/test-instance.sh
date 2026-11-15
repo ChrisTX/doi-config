@@ -373,6 +373,7 @@ cmd_up() {
 		-v "$state/$game/game:/srv/game:O" \
 		-v "$state/$game/workshop/steamapps/workshop:/srv/game/steamapps/workshop:O" \
 		-v "$state/$game/mods/default:/srv/mods:ro" \
+		-v "$state/depots:/srv/depots:ro" -v "$state/$game/depots:/srv/depots.list:ro" \
 		-v "$dir/secrets:/run/secrets/nwi-server:ro" "${geoip[@]}" "${volumes[@]}" \
 		--health-on-failure restart "$server_image" >/dev/null
 	echo "Waiting for the server"

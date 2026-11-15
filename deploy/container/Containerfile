@@ -1,6 +1,6 @@
 # The Day of Infamy server, with SourceMod and the plugins from their packages and this configuration,
 # without the game and the workshop items: those are the state folder's, which the updater of the same
-# image fills with SteamCMD, as nwi-update.service does for the systemd units (see entrypoint.sh). The
+# image fills with DepotDownloader, as nwi-update.service does for the systemd units (see entrypoint.sh). The
 # image has nothing of the game's, which may not be passed on. See README.md for building and running.
 #
 # Build arguments:
@@ -27,18 +27,11 @@ RUN /usr/local/lib/nwi-server-kit/enable-repos.sh "$TESTING" \
   && pacman -Scc --noconfirm \
   && groupadd --gid 1000 nwi-server \
   && useradd --uid 1000 --gid 1000 --create-home --home-dir /home/nwi-server nwi-server \
-  && install -d -o nwi-server -g nwi-server /srv/game /srv/state /opt/steamcmd \
+  && install -d -o nwi-server -g nwi-server /srv/game /srv/state \
     /srv/nwi-data/dumps /srv/nwi-data/logs /srv/nwi-data/sourcemod/logs /srv/nwi-data/sourcemod/data
 
-# SteamCMD, which updates itself on its first run (and may exit with an error status after that)
-USER 1000:1000
-RUN curl -fsSL https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz | tar -xz -C /opt/steamcmd \
-  && { /opt/steamcmd/steamcmd.sh +quit || test -x /opt/steamcmd/linux32/steamcmd; }
-USER 0:0
-RUN printf '#!/bin/sh\nexec /opt/steamcmd/steamcmd.sh "$@"\n' >/usr/local/bin/steamcmd \
-  && chmod 755 /usr/local/bin/steamcmd
-
-# The packages from the repository, verified with its key. SourceMod's optional dependencies, those of
+# The packages from the repository, verified with its key: DepotDownloader (steamdepotdownloader), which
+# downloads the games, SourceMod and the plugins. SourceMod's optional dependencies, those of
 # its MySQL, PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source go into
 # /opt/nwi-layer, the image's files of the game's folder, which the server's entrypoint copies into
 # it on every start.
@@ -50,7 +43,8 @@ RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key
   && pacman-key --lsign-key "$(gpg --show-keys --with-colons /run/secrets/repo-key | awk -F: '/^fpr/ { print $10; exit }')" \
   && cp /etc/pacman.conf /etc/pacman.conf.orig \
   && printf '\n[%s]\nServer = file:///mnt/repo\n' "$REPO_NAME" >>/etc/pacman.conf \
-  && pacman -Syu --noconfirm --needed metamod-source sourcemod sourcemod-scripting python-a2s python-srctools \
+  && pacman -Syu --noconfirm --needed steamdepotdownloader metamod-source sourcemod sourcemod-scripting \
+    python-a2s python-srctools \
     sourcemod-sourcebans-pp sourcemod-sourcebans-pp-discord-forward sourcemod-advertisements \
     sourcemod-multicolors sourcemod-smjansson sourcemod-steamworks \
     lib32-mariadb-connector-c lib32-postgresql-libs lib32-libmaxminddb lib32-pcre2 lib32-curl \

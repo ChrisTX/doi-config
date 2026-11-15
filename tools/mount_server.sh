@@ -2,7 +2,7 @@
 # Assembles a server from read-only layers with overlayfs in /run/nwi-server/<name>, as root, for
 # nwi-server@.service (ExecStartPre=+), which runs the server there:
 #
-#   <runtime>          the workshop items of the game's servers and the game's install, which the
+#   <runtime>          the workshop items of the game's servers and the game's depots, which the
 #                      servers of the game share, with a writable layer
 #   <runtime>/<game>   of its config source: servers/<config> (its links resolved), the compiled
 #                      plugins, the mods made for the game from mods/<game> (tools/make_mods.py),
@@ -151,11 +151,19 @@ idmapped "$nobody" "$games/mods/$source" "$work/lower/mods"
 idmapped "$nobody" "$repo/game" "$work/lower/configs"
 idmapped "$nobody" "${SOURCEMOD_DIR:-/usr/lib/sourcemod}" "$work/lower/sourcemod"
 idmapped "$nobody" "${METAMOD_DIR:-/usr/lib/metamod}" "$work/lower/metamod"
-idmapped "$nobody" "$games/game" "$work/lower/game"
+idmapped "$nobody" "$(realpath "$games/game")" "$work/lower/game"
 lower+=("$work/lower/plugins" "$work/lower/mods" "$work/lower/configs" "$work/lower/sourcemod"
 	"$work/lower/metamod" "$work/lower/game/$game")
 
-root_lower=("$work/lower/game")
+# The game's depots, its own (the game's folder) last, as tools/update_game.sh records them: the others,
+# e.g. the Steam client library (1006), above it
+root_lower=()
+while read -r depot _; do
+	[[ -n $depot && $state/depots/$depot != "$(realpath "$games/game")" ]] || continue
+	idmapped "$nobody" "$state/depots/$depot" "$work/lower/depot-$depot"
+	root_lower+=("$work/lower/depot-$depot")
+done <"$games/depots"
+root_lower+=("$work/lower/game")
 if [[ -d $games/workshop ]]; then
 	idmapped "$nobody" "$games/workshop" "$work/lower/workshop"
 	root_lower=("$work/lower/workshop" "${root_lower[@]}")

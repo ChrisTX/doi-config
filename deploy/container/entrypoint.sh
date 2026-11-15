@@ -13,7 +13,8 @@
 #
 # The server's mounts, its game's folders of the state: game at /srv/game and workshop/steamapps/workshop
 # at /srv/game/steamapps/workshop, both with Podman's overlay (:O), so that the server's writes stay in
-# its container, and mods at /srv/mods, read-only. Its start copies the image's files of the game's
+# its container, and read-only: mods at /srv/mods, the depots at /srv/depots and the game's list of
+# them at /srv/depots.list. Its start copies the image's files of the game's
 # folder (/opt/nwi-layer: SourceMod, Metamod:Source, the plugins and game/ of this repository), the
 # mods (the map scripts in custom/, the playlists' configs in cfg/), the server's config of this
 # repository and the secrets into the game's folder (doi, insurgency), then runs prepare_server.sh and
@@ -49,6 +50,15 @@ esac
 if [[ ! -x $root/srcds_linux ]]; then
 	echo "Error: no game in $root, mount the state's game folder there, after an update" >&2
 	exit 1
+fi
+# The game's other depots, e.g. the Steam client library (1006), linked into it: the container has the
+# game's own depot at /srv/game, its others in /srv/depots and their list, the game's own last, in
+# /srv/depots.list (tools/update_game.sh)
+if [[ -f /srv/depots.list ]]; then
+	mapfile -t depots </srv/depots.list
+	for line in "${depots[@]:0:${#depots[@]}-1}"; do
+		cp -asf "/srv/depots/${line%% *}/." "$root/"
+	done
 fi
 # The game's folder, doi or insurgency (tools/games.py)
 game=$(python3 "$repo/tools/games.py" folder "$root")

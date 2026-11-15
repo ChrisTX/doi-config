@@ -119,13 +119,18 @@ SourceMod and Metamod:Source are those of `SOURCEMOD_DIR` and `METAMOD_DIR`,
   `/var/lib/nwi-server/layers`: it brings the clone of each config source in
   `configs/<source>` up to date, compiles its plugins into `plugins/<source>`
   and runs `tools/update_game.sh` for each game of the servers, which installs
-  or updates the game in `<game>/game` with SteamCMD, checks it against each
-  source's gamedata (see [Playlists](#playlists)) and makes each source's mods
-  of the game (see [Mods](#mods)) in `<game>/mods/<source>`. It runs before the servers
-  start. It also downloads the workshop items of the game's servers' lists into
-  `<game>/workshop`, once for all of them. SteamCMD gets their current versions,
-  which the game itself never does once it has an item, and items no list names
-  any more are removed. The layers of a state folder from before Insurgency, in
+  or updates the game's depots with DepotDownloader, each in `depots/<depot>`,
+  which the games share, like the Steam client library's (`<game>/game` links to
+  the game's own), checks it against each source's gamedata (see
+  [Playlists](#playlists)) and makes each source's mods of the game (see
+  [Mods](#mods)) in `<game>/mods/<source>`. It runs before the servers start. It
+  also downloads the workshop items of the game's servers' lists into
+  `<game>/workshop`, once for all of them, as SteamCMD would lay them out, with
+  their record (`appworkshop_<app>.acf`), without which the game downloads them
+  itself. DepotDownloader gets their current versions, which the game itself
+  never does once it has an item, and items no list names any more are removed.
+  An install of SteamCMD's becomes the game's depot, whose files are checked, so
+  only what differs is downloaded. The layers of a state folder from before Insurgency, in
   the state itself, are moved into `doi` once.
 - `nwi-server@<server>.service` mounts the layers at every start
   (`tools/mount_server.sh`), configures the server (`tools/prepare_server.sh`:
@@ -162,7 +167,7 @@ SourceMod and Metamod:Source are those of `SOURCEMOD_DIR` and `METAMOD_DIR`,
   differ break the game.
 
 Setting up a server: the package of the tools and units, built from this
-checkout's commits, which also installs `steamcmd`, `git`, `python-a2s`,
+checkout's commits, which also installs `steamdepotdownloader`, `git`, `python-a2s`,
 `python-srctools`, SourceMod and Metamod:Source, and the plugin packages above:
 
 ```bash
@@ -246,7 +251,7 @@ firewall that only lets UDP in keeps RCON to the machine.
 Metamod:Source and the plugins from their packages, this repository and its
 compiled plugins. The game and the workshop items aren't part
 of it, as they may not be passed on: they're in a state folder on the host,
-which the image's updater fills with SteamCMD, like `nwi-update.service` for
+which the image's updater fills with DepotDownloader, like `nwi-update.service` for
 the systemd units, and which the servers mount. The packages come from a local
 pacman repository, like the one of aurutils, verified with its signing key: the
 build context `repo` is its folder, `REPO_NAME` its name. With Podman, from the
@@ -598,8 +603,8 @@ tools/make_mods.py --game GAME --workshop WORKSHOP OUTPUT mods
 tools/make_mods.py --game GAME --workshop WORKSHOP --check
 ```
 
-`GAME` is the game's install, with `doi` in it, `WORKSHOP` SteamCMD's folder of
-the workshop items, and `OUTPUT`, which is replaced, gets the `custom` folder
+`GAME` is the game's install, with `doi` in it, `WORKSHOP` the folder of the
+workshop items, and `OUTPUT`, which is replaced, gets the `custom` folder
 for the server's `doi` folder.
 
 ### Playlists

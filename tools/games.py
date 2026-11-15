@@ -32,6 +32,11 @@ Usage:
     games.py source-of NAME    print the config source of the server NAME
     games.py used              print the games of the servers, one per line
     games.py servers GAME      print the names of the game's servers, one per line
+    games.py workshop-record DIR APP
+                               write the record of the workshop items of APP in DIR, as SteamCMD
+                               would: steamapps/workshop/appworkshop_<app>.acf, of the manifests
+                               DepotDownloader downloaded and the times of the Web API; the game
+                               downloads the items itself without it
     games.py items GAME        print the workshop items of the game's servers, one per line as
                                "<app> <item>", the app being the workshop's, from the Web API; an
                                error if they're not all of one app, e.g. an item of another game
@@ -41,6 +46,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
@@ -262,6 +268,72 @@ def item_folders(workshop: Path) -> list[Path]:
     )
 
 
+def downloaded_manifest(folder: Path, app: int) -> str | None:
+    """The manifest of a workshop item that DepotDownloader downloaded into the folder, the latest of
+    its record, .DepotDownloader/<app>_<manifest>.manifest."""
+    records = sorted(
+        folder.glob(f".DepotDownloader/{app}_*.manifest"),
+        key=lambda path: path.stat().st_mtime,
+    )
+    return records[-1].stem.split("_", 1)[1] if records else None
+
+
+def workshop_record(workshop: Path, app: int) -> None:
+    """Write appworkshop_<app>.acf of the items in workshop, see main()'s usage."""
+    content = workshop / "steamapps/workshop/content" / str(app)
+    folders = sorted(
+        path for path in content.glob("*") if path.is_dir() and path.name.isdigit()
+    )
+    times = {
+        int(detail["publishedfileid"]): int(detail.get("time_updated", 0))
+        for detail in item_details([int(folder.name) for folder in folders])
+        if detail.get("result") == 1
+    }
+    installed, details, total = [], [], 0
+    now = int(time.time())
+    for folder in folders:
+        manifest = downloaded_manifest(folder, app)
+        if manifest is None:
+            continue
+        item = int(folder.name)
+        size = sum(
+            path.stat().st_size
+            for path in folder.rglob("*")
+            if path.is_file()
+            and ".DepotDownloader" not in path.relative_to(folder).parts
+        )
+        total += size
+        updated = times.get(item, 0)
+        installed.append(
+            f'\t\t"{item}"\n\t\t{{\n\t\t\t"size"\t\t"{size}"\n'
+            f'\t\t\t"timeupdated"\t\t"{updated}"\n\t\t\t"manifest"\t\t"{manifest}"\n\t\t}}\n'
+        )
+        details.append(
+            f'\t\t"{item}"\n\t\t{{\n\t\t\t"manifest"\t\t"{manifest}"\n'
+            f'\t\t\t"timeupdated"\t\t"{updated}"\n\t\t\t"timetouched"\t\t"{now}"\n'
+            f'\t\t\t"latest_timeupdated"\t\t"{updated}"\n'
+            f'\t\t\t"latest_manifest"\t\t"{manifest}"\n\t\t}}\n'
+        )
+    header = [("appid", app), ("SizeOnDisk", total)] + [
+        (key, 0)
+        for key in (
+            "NeedsUpdate",
+            "NeedsDownload",
+            "TimeLastUpdated",
+            "TimeLastFullCheck",
+            "TimeLastAppRan",
+            "LastBuildID",
+        )
+    ]
+    text = '"AppWorkshop"\n{\n'
+    text += "".join(f'\t"{key}"\t\t"{value}"\n' for key, value in header)
+    text += '\t"WorkshopItemsInstalled"\n\t{\n' + "".join(installed) + "\t}\n"
+    text += '\t"WorkshopItemDetails"\n\t{\n' + "".join(details) + "\t}\n}\n"
+    record = workshop / f"steamapps/workshop/appworkshop_{app}.acf"
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text(text)
+
+
 def known(game: str) -> str:
     """The game, if it's one of the tools."""
     if game not in SERVER_APPS:
@@ -282,6 +354,7 @@ def main() -> int:
         "used": (0, 0),
         "servers": (1, 1),
         "items": (1, 1),
+        "workshop-record": (2, 2),
     }
     command = sys.argv[1] if len(sys.argv) > 1 else ""
     least, most = operands.get(command, (-1, -1))
@@ -311,6 +384,8 @@ def main() -> int:
         elif command in ("server", "source-of"):
             found = server(operand, server_envs().get(operand, {}))
             print(found.game if command == "server" else found.source)
+        elif command == "workshop-record":
+            workshop_record(Path(operand), int(sys.argv[3]))
         elif command == "used":
             print("\n".join(used_games(servers())))
         elif command == "servers":
