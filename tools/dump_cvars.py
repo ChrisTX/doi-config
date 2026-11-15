@@ -43,7 +43,7 @@ def main() -> int:
         print("RCON_PASSWORD isn't set", file=sys.stderr)
         return 2
     with rcon.connect(arguments.host, arguments.port, password) as sock:
-        if "DOI CVAR unlocker" in rcon.run(sock, "sm plugins list"):
+        if '"NWI cvar unlocker"' in rcon.run(sock, "sm plugins list"):
             print(
                 "dump_cvars.py: nwi_cvar_unlocker.smx is loaded: the bounds and flags it changes "
                 "are its own",
