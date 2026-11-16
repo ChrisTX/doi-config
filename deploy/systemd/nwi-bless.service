@@ -1,0 +1,12 @@
+[Unit]
+Description=Bless the new versions of the servers' layers that proved themselves
+# Renames the versions in the updater's state
+After=nwi-update.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nwi-server health bless
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectHome=yes

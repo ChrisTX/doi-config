@@ -106,8 +106,9 @@ def build_plugins(state: Path, source: str, configs: Path) -> Path:
     layer = layers.folder(state, f"plugins-{source}")
     version = f"{layers.version_of(configs)}.{compiler}"
     name = layer.name.removesuffix(".v")
-    if (layer / f"{name}_{version}").is_dir():
-        return layer / f"{name}_{version}"
+    existing = layers.current(layer / f"{name}_{version}")
+    if existing is not None:
+        return existing
     with tempfile.TemporaryDirectory(dir=state) as built:
         compile_plugins(configs, Path(built))
         return layers.snapshot(Path(built), layer, version)
@@ -251,11 +252,14 @@ def workshop_view(state: Path, game: str, app: int | None, items: list[int]) -> 
     return layers.keep_if_new(view, layers.folder(state / game, "workshop"))
 
 
-def item_versions(state: Path, game: str, items: list[int]) -> dict[int, Path]:
-    """The newest version of each of the items that has one."""
+def item_versions(
+    state: Path, game: str, items: list[int], pick: bool = False
+) -> dict[int, Path]:
+    """The newest version of each of the items that has one, or with PICK the one a server mounts."""
     found = {}
     for item in items:
-        newest = layers.latest(layers.folder(state / game, f"item-{item}"))
+        layer = layers.folder(state / game, f"item-{item}")
+        newest = layers.pick(layer) if pick else layers.latest(layer)
         if newest is not None:
             found[item] = newest
     return found

@@ -1,6 +1,7 @@
 """The mount of a server's layers (nwi-server mount NAME UNIT, nwi-server unmount NAME), as root, for
 nwi-server@.service (ExecStartPre=+, in the system's mount namespace), which runs the server in
-/run/nwi-server/<name>, overlays of the newest versions of the updater's layers (update.py):
+/run/nwi-server/<name>, overlays of versions of the updater's layers (update.py), of each the newest that's good or has tries
+left (layers.pick()):
 
     <runtime>          the record of the server's workshop items (appworkshop_<app>.acf, which the
                        game reads), the items, its game's other depots, e.g. the Steam client
@@ -21,10 +22,17 @@ read-only to the server, root kept as root for copying them up. So is the server
 (/var/lib/nwi-server/servers/<name>), whose paths it keeps are bind-mounted into the server. Its
 writable layers are folders of its own in /run/nwi-server/.work/<name>, not on the mapped state:
 overlayfs writes there as root, whom the mapping doesn't have. They start empty whenever the layers
-are mounted, so new versions of the lower layers always show. The versions a server uses are in
-/run/nwi-server/in-use/<name>, which the update keeps (layers.py).
+are mounted, so new versions of the lower layers always show.
+
+The versions a server uses are in /run/nwi-server/in-use/<name>, which the update keeps (layers.py),
+as JSON: all of them (versions), the core ones, which the server's busy time blesses, and of the
+workshop items with maps the maps (maps, of each map the item), which a map played to its end blesses
+(health.py). The server's watchdog writes how it goes to /run/nwi-server/health/<name>, made here as
+the server's. When the server stopped, nwi-server unmount, as systemd's ExecStopPost=, blames a
+failure on the versions on trial (health.py) before it unmounts the layers.
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -32,7 +40,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import games, layers
+from . import games, health, layers
 from .update import item_versions, write_record
 
 RUN = Path("/run/nwi-server")
@@ -72,6 +80,7 @@ def unmount(name: str) -> None:
         else:
             subprocess.run(["umount", "--lazy", target], check=True)
     shutil.rmtree(RUN / ".work" / name, ignore_errors=True)
+    shutil.rmtree(health.RUN / name, ignore_errors=True)
     (RUN / "rcon" / name).unlink(missing_ok=True)
     (RUN / "in-use" / name).unlink(missing_ok=True)
     if (RUN / name).is_dir():
@@ -110,10 +119,25 @@ def app_of(item: Path) -> int:
     return int(next((item / "steamapps/workshop/content").iterdir()).name)
 
 
+def maps_of(item: Path) -> list[str]:
+    """The maps of a workshop item's version, maps/<map>.bsp, laid out as
+    steamapps/workshop/content/<app>/<item>."""
+    return sorted(
+        path.stem for path in item.glob("steamapps/workshop/content/*/*/maps/*.bsp")
+    )
+
+
 def mount(name: str, unit: str) -> None:
     """Mount the server's layers, see the module's documentation."""
     # Out of the server's folder, systemd's WorkingDirectory=, which would keep it busy
     os.chdir("/")
+    state = (STATE / "layers").resolve()
+    # The versions it picks aren't renamed or removed until its record has them
+    with layers.lock(state):
+        _mount(name, unit, state)
+
+
+def _mount(name: str, unit: str, state: Path) -> None:
     uid_text = subprocess.run(
         ["systemctl", "show", "-P", "UID", unit],
         capture_output=True,
@@ -126,21 +150,20 @@ def mount(name: str, unit: str) -> None:
         )
     uid = int(uid_text)
     # The folders on disk, which systemd links to from /var/lib for the dynamic users
-    state = (STATE / "layers").resolve()
     os.environ["NWI_LAYERS"] = str(state)
-    server = games.server(name, dict(os.environ))
-    configs = games.config_folder(server.source)
+    server = games.server(name, dict(os.environ), pick=True)
+    configs = games.config_folder(server.source, pick=True)
     game = server.game
     kept = (STATE / "servers" / name).resolve()
     runtime, work = RUN / name, RUN / ".work" / name
 
     depots = (state / game / "depots").read_text().split()[0::2]
     depot_versions = [
-        layers.newest(layers.folder(state, f"depot-{depot}")) for depot in depots
+        layers.picked(layers.folder(state, f"depot-{depot}")) for depot in depots
     ]
-    items = item_versions(state, game, games.workshop_items([server], game))
-    plugins = layers.newest(layers.folder(state, f"plugins-{server.source}"))
-    mods = layers.newest(layers.folder(state / game, f"mods-{server.source}"))
+    items = item_versions(state, game, games.workshop_items([server], game), pick=True)
+    plugins = layers.picked(layers.folder(state, f"plugins-{server.source}"))
+    mods = layers.picked(layers.folder(state / game, f"mods-{server.source}"))
 
     # The paths, relative to the server's root, that are kept between starts. The game's caches and the
     # crash handler's logs are written anew on every start.
@@ -218,10 +241,32 @@ def mount(name: str, unit: str) -> None:
     for path in kept_paths:
         mapped(kept / "state" / path, runtime / path, NOBODY, uid)
 
-    # The versions the server uses, which the update doesn't remove
-    used = [*depot_versions, *items.values(), plugins, mods, configs]
+    # Where the server's watchdog writes how it goes (health.py)
+    health.RUN.mkdir(mode=0o755, parents=True, exist_ok=True)
+    (health.RUN / name).mkdir(mode=0o755)
+    os.chown(health.RUN / name, uid, uid)
+
+    # The versions the server uses, which the update doesn't remove, by their canonical paths
+    def canonical(path: Path) -> str:
+        return str(layers.canonical(path.resolve()))
+
+    maps = {
+        map_name: canonical(version)
+        for version in items.values()
+        for map_name in maps_of(version)
+    }
+    core = [*depot_versions, plugins, mods, configs]
+    core += [version for version in items.values() if not maps_of(version)]
+    used = {
+        "versions": [
+            canonical(path)
+            for path in [*depot_versions, *items.values(), plugins, mods, configs]
+        ],
+        "core": [canonical(path) for path in core],
+        "maps": maps,
+    }
     (RUN / "in-use").mkdir(mode=0o755, exist_ok=True)
-    (RUN / "in-use" / name).write_text("".join(f"{path.resolve()}\n" for path in used))
+    (RUN / "in-use" / name).write_text(json.dumps(used, indent=1) + "\n")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -244,5 +289,16 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def unmount_main(argv: list[str] | None = None) -> int:
+    """nwi-server unmount NAME; as ExecStopPost= of the server's unit (SERVICE_RESULT), it first blames
+    a failure on the versions on trial (health.py)."""
     args = sys.argv[1:] if argv is None else argv
+    if len(args) == 1 and "SERVICE_RESULT" in os.environ:
+        try:
+            health.stopped(args[0], os.environ["SERVICE_RESULT"])
+        # Whatever goes wrong, the layers are unmounted
+        except Exception as error:  # noqa: BLE001
+            print(
+                f"nwi-server unmount: the health of {args[0]}: {error!r}",
+                file=sys.stderr,
+            )
     return main(["--unmount", *args]) if len(args) == 1 else main([])

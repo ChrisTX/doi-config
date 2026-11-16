@@ -1,0 +1,8 @@
+[Unit]
+Description=Notify the admins that %i failed
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/nwi-server notify failed %i
+PrivateTmp=yes
+ProtectHome=yes

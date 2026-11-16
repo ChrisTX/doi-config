@@ -1,0 +1,8 @@
+[Unit]
+Description=Send the admins' notifications of the servers when there are any
+PartOf=nwi-servers.target
+
+[Path]
+DirectoryNotEmpty=/run/nwi-server/notify
+MakeDirectory=yes
+DirectoryMode=0700

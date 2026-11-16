@@ -1,0 +1,7 @@
+[Unit]
+Description=Bless the new versions of the servers' layers that proved themselves, every 5 minutes
+PartOf=nwi-servers.target
+
+[Timer]
+OnActiveSec=5min
+OnUnitActiveSec=5min

@@ -10,6 +10,8 @@ Usage: nwi-server COMMAND ARGUMENTS..., the commands:
     check-updates    check the games and workshop items for updates (check_updates.py)
     mount            mount a server's layers (mount.py)
     unmount          unmount a server's layers (mount.py)
+    health           the trial of new versions of the layers (health.py)
+    notify           the admins' notifications (notify.py)
 """
 
 import sys
@@ -19,8 +21,10 @@ from . import (
     check_gamedata,
     check_updates,
     games,
+    health,
     make_mods,
     mount,
+    notify,
     server_config,
     update,
 )
@@ -35,6 +39,8 @@ COMMANDS: dict[str, Callable[[list[str]], int]] = {
     "check-updates": check_updates.main,
     "mount": mount.main,
     "unmount": mount.unmount_main,
+    "health": health.main,
+    "notify": notify.main,
 }
 
 

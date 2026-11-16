@@ -1,0 +1,12 @@
+[Unit]
+Description=Send the admins' notifications of the servers
+After=network-online.target
+
+[Service]
+Type=oneshot
+# The Discord webhook, if there's one (systemd-creds, /etc/credstore.encrypted)
+ImportCredential=nwi-server.discord-webhook
+ExecStart=/usr/bin/nwi-server notify send
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes

@@ -2,6 +2,8 @@
 Description=Day of Infamy or Insurgency servers
 Wants=network-online.target
 After=network-online.target
+# The trial of new versions of the layers, and the admins' notifications (nwi-server health, notify)
+Wants=nwi-bless.timer nwi-notify.path
 
 [Install]
 WantedBy=multi-user.target

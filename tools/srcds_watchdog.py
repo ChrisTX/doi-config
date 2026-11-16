@@ -6,6 +6,12 @@ with A2S. Once the server first answers, it tells systemd that the service is re
 answer it pings systemd's watchdog. A server that stops answering for WatchdogSec= is restarted by
 systemd (Restart=), within the limits of StartLimitBurst=.
 
+With NWI_HEALTH, a folder, it writes how the server goes to NWI_HEALTH/status.json after every answer,
+for the trial of new versions of its layers (nwi_server_kit.health): its run (INVOCATION_ID), whether
+it answered yet, its map, the seconds it was busy, with at least NWI_BLESS_PLAYERS human players (4 by
+default; A2S counts the bots as players too), and the maps played to their end while busy, those it
+changed from to another.
+
 Without systemd, as in the container, it only runs the server. With --check, it queries the server once
 and exits with 0 if it answered, for a container's health check.
 
@@ -14,6 +20,7 @@ and exits with 0 if it answered, for a container's health check.
 """
 
 import argparse
+import json
 import os
 import signal
 import socket
@@ -35,6 +42,39 @@ def notify(message: str) -> None:
     with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sock:
         sock.connect(address)
         sock.sendall(message.encode())
+
+
+class Health:
+    """How the server goes, written to NWI_HEALTH/status.json, see the module's documentation."""
+
+    def __init__(self, folder: str) -> None:
+        self.path = os.path.join(folder, "status.json")
+        self.players = int(os.environ.get("NWI_BLESS_PLAYERS", "4"))
+        self.status: dict = {
+            "invocation": os.environ.get("INVOCATION_ID"),
+            "ready": False,
+            "map": None,
+            "busy_seconds": 0.0,
+            "completed": [],
+        }
+        # Whether the current map was busy at some point
+        self.map_busy = False
+
+    def answered(self, map_name: str, humans: int, seconds: float) -> None:
+        """Record an answer, SECONDS after the one before."""
+        busy = humans >= self.players
+        if self.status["map"] is not None and map_name != self.status["map"]:
+            if self.map_busy:
+                self.status["completed"].append(self.status["map"])
+            self.map_busy = False
+        self.map_busy = self.map_busy or busy
+        self.status.update(ready=True, map=map_name)
+        if busy:
+            self.status["busy_seconds"] += seconds
+        temporary = f"{self.path}.new"
+        with open(temporary, "w") as file:
+            json.dump(self.status, file)
+        os.replace(temporary, self.path)
 
 
 def own_address() -> str:
@@ -104,7 +144,9 @@ def main() -> int:
     for signum in (signal.SIGINT, signal.SIGTERM, signal.SIGABRT):
         signal.signal(signum, forward)
 
+    health = Health(os.environ["NWI_HEALTH"]) if os.environ.get("NWI_HEALTH") else None
     ready = False
+    last = time.monotonic()
     while server.poll() is None:
         try:
             info = a2s.info((args.host, args.port), timeout=args.timeout)
@@ -119,6 +161,18 @@ def main() -> int:
                 )
         else:
             status = f"{info.map_name}, {info.player_count}/{info.max_players} players"
+            now = time.monotonic()
+            if health is not None:
+                try:
+                    # A time without answers doesn't count, at most the time to the next query
+                    seconds = min(now - last, args.interval + args.timeout)
+                    health.answered(
+                        info.map_name, info.player_count - info.bot_count, seconds
+                    )
+                # The server runs on without its health written
+                except OSError as e:
+                    print(f"No status: {e!r}", file=sys.stderr, flush=True)
+            last = now
             if not ready:
                 notify(f"READY=1\nSTATUS={status}")
                 ready = True

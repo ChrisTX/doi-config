@@ -73,15 +73,17 @@ def single_config() -> Path | None:
     return CHECKOUT if (CHECKOUT / "servers").is_dir() else None
 
 
-def config_folder(source: str = DEFAULT_SOURCE) -> Path:
-    """The folder of a config source's configs, see the module's documentation."""
+def config_folder(source: str = DEFAULT_SOURCE, pick: bool = False) -> Path:
+    """The folder of a config source's configs, see the module's documentation: of the updater's
+    versions the newest, or with PICK the one a server mounts (layers.pick())."""
     if not SOURCE_NAME.fullmatch(source):
         raise ValueError(f"not a config source's name: {source}")
     single = single_config()
     if single is not None:
         return single
     state = Path(os.environ.get("NWI_LAYERS", "/var/lib/nwi-server/layers"))
-    newest = layers.latest(layers.folder(state, f"config-{source}"))
+    layer = layers.folder(state, f"config-{source}")
+    newest = layers.pick(layer) if pick else layers.latest(layer)
     if newest is None:
         raise ValueError(f"the config source {source} has no version yet, update first")
     return newest
@@ -120,8 +122,9 @@ def read_env(path: Path) -> dict[str, str]:
     return env
 
 
-def server(name: str, env: dict[str, str]) -> Server:
-    """The server of the name, with the variables of its environment file."""
+def server(name: str, env: dict[str, str], pick: bool = False) -> Server:
+    """The server of the name, with the variables of its environment file; with PICK, of the version
+    of its configs that it mounts."""
     # Imported here: server_config imports this module
     from .server_config import load
 
@@ -131,7 +134,7 @@ def server(name: str, env: dict[str, str]) -> Server:
         if single_config()
         else env.get("CONFIG_SOURCE") or DEFAULT_SOURCE
     )
-    configs = config_folder(source)
+    configs = config_folder(source, pick)
     config = env.get("SERVER_CONFIG_NAME") or env.get("SERVER_NAME") or name
     toml = configs / "servers" / config / "server.toml"
     if not toml.is_file():

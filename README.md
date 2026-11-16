@@ -138,8 +138,8 @@ SourceMod and Metamod:Source are those of `SOURCEMOD_DIR` and `METAMOD_DIR`,
   the new versions when they start again. The downloads of earlier layouts,
   e.g. an install of SteamCMD's, are kept, and checked file by file, so only
   what differs is downloaded.
-- `nwi-server@<server>.service` mounts the layers' newest versions at every
-  start (`nwi-server mount`), configures the server (`tools/prepare_server.sh`:
+- `nwi-server@<server>.service` mounts the layers' versions at every start
+  (`nwi-server mount`), of each the newest that's good or still on trial, configures the server (`tools/prepare_server.sh`:
   its secrets, the plugins SourceBans++ needs, its website from
   `SOURCEBANS_WEBSITE`) and runs it. SourceBans++ finds the server in the panel
   by its address and port: the address the server reports, or
@@ -154,7 +154,24 @@ SourceMod and Metamod:Source are those of `SOURCEMOD_DIR` and `METAMOD_DIR`,
   service is ready once the server first answers, and systemd's watchdog
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
   The hung server has 30 seconds to dump its core first.
-- `nwi-servers.target` starts the enabled servers.
+- `nwi-servers.target` starts the enabled servers, `nwi-bless.timer` and
+  `nwi-notify.path`.
+- A new version of a layer is on trial, with three tries. A failure of a server
+  costs a try of the versions it's blamed on, by where it happened: before the
+  server answered, all of them; on a map of a new workshop item, that item,
+  unless the server failed on other maps too, which blames the depots, configs,
+  plugins and mods instead; elsewhere, those. A version without tries left is
+  passed over for the one before. Versions prove themselves: a workshop item
+  once one of its maps was played to its end with at least 4 human players, the
+  rest after 2 hours with at least 4 human players (`NWI_BLESS_PLAYERS`,
+  `NWI_BLESS_MINUTES`). `nwi-bless.timer` blesses them every 5 minutes.
+  `nwi-server health` shows the versions on trial; `nwi-server health retry
+  VERSION` gives a version its tries again, `nwi-server health approve VERSION`
+  blesses it by hand.
+- The admins are notified of versions that used up their tries and of servers
+  that failed for good: by mail to root and the addresses of `NOTIFY_MAIL` in
+  `/etc/nwi-server/notify.env`, and to Discord with the webhook of the
+  credential `nwi-server.discord-webhook`, if there is one.
 - `nwi-restart.timer` updates and restarts the servers every day at 06:00: the
   update while they run, so that they're only down for the restart, which gives
   them the new versions.

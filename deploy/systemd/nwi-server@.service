@@ -8,6 +8,9 @@ PartOf=nwi-servers.target
 # srcds_watchdog.py's restarts of a server that stopped answering: at most 6 an hour
 StartLimitIntervalSec=1h
 StartLimitBurst=6
+# The admins hear of a server that isn't restarted any more (nwi-server notify): restarts skip the
+# failed state (RestartMode=direct), so it's only failed once StartLimitBurst= is used up
+OnFailure=nwi-notify-failure@%n.service
 
 [Service]
 # srcds_watchdog.py runs the server: ready once it first answers A2S queries, restarted by the watchdog
@@ -34,12 +37,16 @@ ImportCredential=nwi-server.*:server.
 # would remove it with the server's files when the server stops, before the layers are unmounted.
 # prepare_server.sh writes its RCON password to /run/nwi-server/rcon. Both may be missing ("-") for the
 # first ExecStartPre=, which makes them: systemd sets up the unit's namespace for it too.
-ReadWritePaths=-/run/nwi-server/%i -/run/nwi-server/rcon
+# srcds_watchdog.py writes how the server goes to /run/nwi-server/health/%i, for the trial of new
+# versions of the layers (nwi-server health).
+ReadWritePaths=-/run/nwi-server/%i -/run/nwi-server/rcon -/run/nwi-server/health/%i
 WorkingDirectory=-/run/nwi-server/%i
 Environment=LD_LIBRARY_PATH=/run/nwi-server/%i:/run/nwi-server/%i/bin
+Environment=NWI_HEALTH=/run/nwi-server/health/%i
 # The layers, mounted anew at every start, mapped to the server's user: as root ("+"), in the system's
 # mount namespace (nsenter), where the updater's state is, which a unit of a dynamic user doesn't see,
-# and whose mounts the server sees. Unmounted when it stops, also when mounting failed.
+# and whose mounts the server sees. Unmounted when it stops, also when mounting failed, after a failure
+# is blamed on the versions on trial (systemd's SERVICE_RESULT).
 ExecStartPre=+/usr/bin/nsenter --mount=/proc/1/ns/mnt -- /usr/bin/nwi-server mount %i %n
 ExecStopPost=+/usr/bin/nsenter --mount=/proc/1/ns/mnt -- /usr/bin/nwi-server unmount %i
 # Configured as root ("!"), as the layers of the packages belong to root
@@ -57,6 +64,7 @@ NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 Restart=always
+RestartMode=direct
 RestartSec=10
 TimeoutStartSec=infinity
 
