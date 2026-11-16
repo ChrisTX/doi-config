@@ -107,3 +107,20 @@ def test_workshop_record(tmp_path: Path) -> None:
     assert (
         record.find_key("WorkshopItemDetails").find_key("222")["timeupdated"] == updated
     )
+
+
+def test_remove_clones(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The clones of removed config sources go, those still set up or named stay."""
+    sources_dir = tmp_path / "configs"
+    sources_dir.mkdir()
+    (sources_dir / "kept.env").write_text("URL=https://example.org/kept.git\n")
+    monkeypatch.setenv("NWI_SOURCES_DIR", str(sources_dir))
+    clones = tmp_path / "state/downloads/configs"
+    for name in ("default", "kept", "named", "removed"):
+        (clones / name / ".git").mkdir(parents=True)
+    update.remove_clones(tmp_path / "state", ["named"])
+    assert sorted(path.name for path in clones.iterdir()) == [
+        "default",
+        "kept",
+        "named",
+    ]

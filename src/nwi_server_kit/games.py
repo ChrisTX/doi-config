@@ -157,10 +157,15 @@ def server(name: str, env: dict[str, str], pick: bool = False) -> Server:
     )
 
 
+def source_file(source: str) -> Path:
+    """A config source's settings file."""
+    folder = Path(os.environ.get("NWI_SOURCES_DIR", "/etc/nwi-server/configs"))
+    return folder / f"{source}.env"
+
+
 def source_settings(source: str) -> tuple[str, str]:
     """The repository and the branch or tag of a config source, from its file; empty without."""
-    folder = Path(os.environ.get("NWI_SOURCES_DIR", "/etc/nwi-server/configs"))
-    path = folder / f"{source}.env"
+    path = source_file(source)
     settings = read_env(path) if path.is_file() else {}
     return settings.get("URL", ""), settings.get("REF", "")
 

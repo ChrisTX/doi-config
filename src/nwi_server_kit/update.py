@@ -567,6 +567,25 @@ def update(state: Path, image: bool = False) -> None:
             if f"{kind}/{download.name}" not in downloaded:
                 shutil.rmtree(download)
                 print(f"Removed {download}, which no server needs", file=sys.stderr)
+    if not image:
+        remove_clones(state, sources)
+
+
+def remove_clones(state: Path, sources: list[str]) -> None:
+    """Remove the clones of config sources that were removed, their settings files gone, and that no
+    server names any more. The default source's clone stays: without a settings file, it may be the
+    only record of its repository."""
+    for clone in sorted((state / "downloads/configs").glob("*")):
+        source = clone.name
+        if (
+            source not in sources
+            and source != games.DEFAULT_SOURCE
+            and not games.source_file(source).is_file()
+        ):
+            shutil.rmtree(clone)
+            print(
+                f"Removed {clone}, of a config source that was removed", file=sys.stderr
+            )
 
 
 def main(argv: list[str] | None = None) -> int:
