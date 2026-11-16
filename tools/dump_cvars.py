@@ -5,7 +5,7 @@ Lists every cvar with its default, its bounds and its flags, and the commands, f
 cvarlist and the help of each cvar, over RCON. The descriptions are left out. Bounds and flags are
 the server's as they are: those nwi_cvar_unlocker.smx changes are its own, which check_configs.py
 takes from the plugin's source instead, so a dump from a server without the plugin is the exact
-one (a server's prepare_server.sh disables it with DISABLE_PLUGINS=nwi_cvar_unlocker).
+one (a server's nwi-server prepare disables it with DISABLE_PLUGINS=nwi_cvar_unlocker).
 
 The password comes from RCON_PASSWORD. The dump goes to the output, e.g. > tools/cvars.json.
 """
@@ -17,8 +17,8 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import rcon
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from nwi_server_kit import rcon
 
 # A line of cvarlist: the name, the value or "cmd", the flags and the description
 LINE = re.compile(r"^(?P<name>\S+)\s+:\s(?P<value>.*?)\s+:\s(?P<flags>.*?)\s+:\s")

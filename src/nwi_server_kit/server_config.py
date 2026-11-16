@@ -38,9 +38,9 @@ replacements are in place and the game's forced settings are never applied.
 
 Usage, with GAME the game's folder of the install ROOT (nwi_server_kit.games):
     nwi-server server-config prepare ROOT   write ROOT/GAME/cfg/server.cfg and ROOT/GAME/subscribed_file_ids.txt
-                                    from ROOT/GAME/server.toml (tools/prepare_server.sh)
+                                    from ROOT/GAME/server.toml (nwi-server prepare)
     nwi-server server-config args ROOT      print the command line's options of ROOT/GAME/server.toml, one per
-                                    line (tools/start_server.sh)
+                                    line (nwi-server start)
     nwi-server server-config game FILE      print the game of a server.toml
     nwi-server server-config check FILE...  check server.toml files: their keys, and that the configs and lists
                                     they name exist in game/cfg of the configs (NWI_CONFIG, see
@@ -159,7 +159,8 @@ def prepare(root: Path) -> None:
         shutil.copyfile(folder / "cfg" / settings["workshop"], workshop)
 
 
-def args(root: Path) -> None:
+def options(root: Path) -> list[str]:
+    """The server's options of its command line, of its server.toml."""
     _, settings = server_settings(root)
     options = ["+maxplayers", str(settings.get("maxplayers", 64))]
     options += ["+sv_lan", "1" if settings.get("lan", False) else "0"]
@@ -173,9 +174,11 @@ def args(root: Path) -> None:
     if "theater" in settings:
         options += ["+mp_theater_override", settings["theater"]]
     options += settings.get("launch_options", [])
-    for option in options:
-        if "\n" in option:
-            raise ValueError(f"an option can't have a line break: {option!r}")
+    return options
+
+
+def args(root: Path) -> None:
+    for option in options(root):
         print(option)
 
 

@@ -15,8 +15,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import rcon
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from nwi_server_kit import rcon
 
 # Lines of UBSan's and ASan's reports
 REPORT = re.compile(r"runtime error:|ERROR: AddressSanitizer|ERROR: LeakSanitizer")

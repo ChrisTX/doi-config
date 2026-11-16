@@ -12,12 +12,13 @@ license = "MIT"
 # The Arch Linux packages of the same libraries in parentheses
 dependencies = [
   "cryptography>=50.0.2",  # the VPKs' signatures (python-cryptography)
-  "python-a2s>=1.4",  # srcds_watchdog.py's queries of the servers (python-a2s)
+  "python-a2s>=1.4",  # the watchdog's queries of the servers (python-a2s)
   "srctools>=2.7",  # the game's KeyValues, Steam's VDF and the VPKs (python-srctools)
 ]
 
 [project.scripts]
 hl2sdk-ghidra = "hl2sdk_ghidra.cli:main"
+nwi-rcon = "nwi_server_kit.rcon:main"
 nwi-server = "nwi_server_kit.cli:main"
 
 # hl2sdk-ghidra's (src/hl2sdk_ghidra): Ghidra through PyGhidra, with JPype (python-jpype1, AUR), and
@@ -57,7 +58,7 @@ check_untyped_defs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 
-# Libraries without types: python-a2s (srcds_watchdog.py), and those of hl2sdk-ghidra
+# Libraries without types: python-a2s (watchdog.py), and those of hl2sdk-ghidra
 # (python-pyelftools, python-capstone, python-pefile)
 [[tool.mypy.overrides]]
 module = ["a2s", "a2s.*", "elftools.*", "capstone", "capstone.*", "pefile"]

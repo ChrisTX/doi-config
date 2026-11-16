@@ -66,9 +66,9 @@ RUN python3 -m nwi_server_kit compile-plugins /opt/nwi-server-kit /tmp/plugins \
 
 WORKDIR /srv/game
 ENV LD_LIBRARY_PATH=/srv/game:/srv/game/bin
-# SRCDS shuts down on SIGINT, which srcds_watchdog.py passes on
+# SRCDS shuts down on SIGINT, which the watchdog (nwi-server start) passes on
 STOPSIGNAL SIGINT
 # The server answers A2S queries, as the systemd units' watchdog checks; the port is SERVER_PORT
 HEALTHCHECK --start-period=10m --interval=30s --retries=3 \
-  CMD ["python3", "/opt/nwi-server-kit/tools/srcds_watchdog.py", "--check"]
+  CMD ["python3", "-m", "nwi_server_kit", "watchdog", "--check"]
 ENTRYPOINT ["/opt/nwi-server-kit/deploy/container/entrypoint.sh"]

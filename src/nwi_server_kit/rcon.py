@@ -1,13 +1,12 @@
-#!/usr/bin/env python3
-"""Run a command on a server over Source RCON and print its answer.
+"""Source RCON: running a command on a server, and nwi-rcon, which prints its answer.
 
 The password comes from RCON_PASSWORD, so it doesn't show up in the process list, or with --server
 from the server of nwi-server@.service on this machine: its password from /run/nwi-server/rcon/<server>,
-which the members of the group nwi-rcon can read (tools/prepare_server.sh), and its port, SERVER_PORT
+which the members of the group nwi-rcon can read (nwi-server prepare, launch.py), and its port, SERVER_PORT
 of /etc/nwi-server/<server>.env. With --ssh, the command runs on another machine instead, as nwi-rcon
 --server there: the password stays on it, and its RCON port needs no opening.
 
-Installed as nwi-rcon, e.g. nwi-rcon --server coop-commando status, or
+nwi-rcon, also nwi-server rcon, e.g. nwi-rcon --server coop-commando status, or
 nwi-rcon --ssh admin@example.org --server coop-commando sm plugins list.
 """
 
@@ -20,8 +19,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from games import read_env
+from .games import read_env
 
+# The servers' generated passwords, by their names (nwi-server prepare)
+RCON_DIR = Path("/run/nwi-server/rcon")
 SERVERDATA_AUTH = 3
 SERVERDATA_AUTH_RESPONSE = 2
 SERVERDATA_EXECCOMMAND = 2
@@ -90,10 +91,12 @@ def run(sock: socket.socket, command: str) -> str:
     return "".join(answer)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """Authenticate, run the command and print the answer."""
     parser = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        prog="nwi-rcon",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--host", default="127.0.0.1", help="the server's address (%(default)s)"
@@ -117,7 +120,7 @@ def main() -> int:
         metavar="COMMAND",
         help="the command and its arguments, joined by spaces",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.server is not None and ("/" in args.server or args.server.startswith(".")):
         parser.error(f"not a server's name: {args.server}")
     if args.ssh is not None:
@@ -132,7 +135,7 @@ def main() -> int:
     password: str | None
     if args.server is not None:
         try:
-            password = Path(f"/run/nwi-server/rcon/{args.server}").read_text().strip()
+            password = (RCON_DIR / args.server).read_text().strip()
             env = Path(f"/etc/nwi-server/{args.server}.env")
             settings = read_env(env) if env.is_file() else {}
         except OSError as error:
@@ -153,7 +156,3 @@ def main() -> int:
     with sock:
         print(run(sock, " ".join(args.command)), end="")
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())

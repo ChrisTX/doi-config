@@ -1,5 +1,5 @@
 # The Coop Commando server: what tools/server_config.py makes its server.cfg and workshop_id.txt of, and
-# the launcher's command line (tools/start_server.sh), see tools/server_config.py
+# the launcher's command line (nwi-server start), see tools/server_config.py
 hostname = "KIM JONG UN's BOOTCAMP | COOP COMMANDO"
 playlist = "nwi/coop_commando"
 startup_map = "bastogne stronghold"

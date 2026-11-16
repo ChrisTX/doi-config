@@ -93,7 +93,7 @@ def unmount(name: str) -> None:
 def mapped(source: Path, target: Path, owner: int, uid: int) -> Path:
     """SOURCE at TARGET as the server's, with the files of OWNER mapped to its user, and root's as
     root's: overlayfs can't copy up a file whose owner the mapping doesn't have, e.g. when
-    prepare_server.sh moves a plugin of the packages."""
+    nwi-server prepare moves a plugin of the packages."""
     if not target.exists():
         target.mkdir(parents=True)
     idmap = f"b:0:0:1 b:{owner}:{uid}:1"
@@ -264,7 +264,7 @@ def _mount(name: str, unit: str, state: Path) -> None:
     runtime.mkdir(parents=True, mode=0o755)
     (RUN / ".work").mkdir(mode=0o700, exist_ok=True)
     work.mkdir(mode=0o700)
-    # The RCON passwords, which prepare_server.sh writes, for the admins of the group nwi-rcon
+    # The RCON passwords, which nwi-server prepare writes, for the admins of the group nwi-rcon
     (RUN / "rcon").mkdir(mode=0o750, exist_ok=True)
     shutil.chown(RUN / "rcon", group="nwi-rcon")
     for folder in ("upper", "work"):

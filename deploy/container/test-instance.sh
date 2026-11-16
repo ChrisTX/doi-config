@@ -16,7 +16,7 @@
 #                     with --db-only only its database, for the systemd units on this machine; with
 #                     --developer the server's developer messages of LEVEL (+developer LEVEL, 1 or 2),
 #                     and with OPTION... more options of its command line, e.g. -- +sv_cheats 1, which
-#                     the systemd units get too (LAUNCH_OPTIONS of tools/start_server.sh)
+#                     the systemd units get too (LAUNCH_OPTIONS of nwi-server start)
 #   down              remove the test instance, its database and volumes
 #   rcon COMMAND...   run a command on the server over RCON
 #   logs              follow the server's log
@@ -32,7 +32,7 @@
 # bounds in tools/dump_cvars.py
 # TEST_ADMIN: SteamIDs that get root admin, separated by spaces, each as STEAM_0:…, STEAM_1:…, [U:1:…]
 # or SteamID64: in the database, and in admins_simple.ini through the server's environment file
-# (prepare_server.sh), so also on servers without the database
+# (nwi-server prepare), so also on servers without the database
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 # SANITISER: undefined, address or address,undefined: up starts the server from the sanitiser image
 # (localhost/nwi-server-sanitiser, deploy/container/sanitiser, see README.md), with its runtime preloaded
@@ -337,11 +337,11 @@ cmd_up() {
 		# A client port other than the game's 27005, which a client on this machine sends from
 		printf 'SERVER_PORT=27015\nTV_PORT=27020\nCLIENT_PORT=27025\nSERVER_PASSWORD=\n'
 		printf 'SOURCEBANS_SERVER_IP=127.0.0.1\nRCON_PASSWORD=%s\n' "$(password)"
-		# For admins_simple.ini (prepare_server.sh)
+		# For admins_simple.ini (nwi-server prepare)
 		if ((${#admins[@]})); then
 			printf 'TEST_ADMIN=%s\n' "${admins[*]}"
 		fi
-		# For start_server.sh
+		# For nwi-server start
 		if ((${#launch_options[@]})); then
 			printf 'LAUNCH_OPTIONS=%s\n' "${launch_options[*]}"
 		fi
@@ -390,12 +390,12 @@ cmd_up() {
 		geoip=(-v /var/lib/GeoIP:/var/lib/GeoIP:ro)
 	fi
 	# The state's game and workshop items with an overlay of the container's own, its mods read-only
-	# Plugins prepare_server.sh disables, e.g. for tools/dump_cvars.py
+	# Plugins nwi-server prepare disables, e.g. for tools/dump_cvars.py
 	local -a extra_env=()
 	if [[ -n ${DISABLE_PLUGINS:-} ]]; then
 		extra_env=(-e DISABLE_PLUGINS="$DISABLE_PLUGINS")
 	fi
-	# The sanitisers start_server.sh preloads the runtime of
+	# The sanitisers nwi-server start preloads the runtime of
 	if [[ -n ${SANITISER:-} ]]; then
 		extra_env+=(-e SANITISER="$SANITISER")
 	fi
@@ -408,7 +408,7 @@ cmd_up() {
 		-v "$dir/secrets:/run/secrets/nwi-server:ro" "${geoip[@]}" "${volumes[@]}" \
 		--health-on-failure restart "$server_image" >/dev/null
 	echo "Waiting for the server"
-	until podman exec "$pod-server" python3 /opt/nwi-server-kit/tools/srcds_watchdog.py --check --port 27015 \
+	until podman exec "$pod-server" python3 -m nwi_server_kit watchdog --check --port 27015 \
 		--timeout 2 >/dev/null 2>&1; do
 		if [[ $(podman inspect -f '{{.State.Running}}' "$pod-server") != true ]]; then
 			echo "Error: the server stopped, see $0 logs" >&2
@@ -433,7 +433,7 @@ cmd_down() {
 }
 
 cmd_rcon() {
-	RCON_PASSWORD=$(sed -n 's/^RCON_PASSWORD=//p' "$dir/server.env") "$repo/tools/rcon.py" "$@"
+	RCON_PASSWORD=$(sed -n 's/^RCON_PASSWORD=//p' "$dir/server.env") PYTHONPATH="$repo/src" python3 -m nwi_server_kit rcon "$@"
 }
 
 cmd_logs() {

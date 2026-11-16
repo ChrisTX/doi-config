@@ -15,8 +15,8 @@
 # other depots' versions in it at /srv/depots.list. Its start copies the image's files of the game's
 # folder (/opt/nwi-layer: SourceMod, Metamod:Source, the plugins and game/ of this repository), the
 # mods (the map scripts in custom/, the playlists' configs in cfg/), the server's config of this
-# repository and the secrets into the game's folder (doi, insurgency), then runs prepare_server.sh and
-# the server, run by srcds_watchdog.py, which passes the container's stop signal on.
+# repository and the secrets into the game's folder (doi, insurgency), then runs nwi-server prepare and
+# the server, run by the watchdog (nwi-server start), which passes the container's stop signal on.
 #
 # SERVER_NAME: the server's config in servers/, if it has one; without, the secrets need a cfg/server.cfg
 # /srv/nwi-data: what the server keeps between its containers, volumes or folders of the image's user:
@@ -59,7 +59,7 @@ if [[ -f /srv/depots.list ]]; then
 	done
 fi
 # The game's folder, doi or insurgency (nwi_server_kit.games)
-game=$(python3 "$repo/tools/games.py" folder "$root")
+game=$(python3 -m nwi_server_kit games folder "$root")
 cp -a /opt/nwi-layer/. "$root/$game/"
 if [[ -d /srv/mods ]]; then
 	cp -r /srv/mods/. "$root/$game/"
@@ -85,7 +85,7 @@ if [[ -d /run/secrets/nwi-server ]]; then
 	cp -r /run/secrets/nwi-server/. "$root/$game/"
 fi
 
-"$repo/tools/prepare_server.sh" "$root" "${SERVER_NAME:-}"
+python3 -m nwi_server_kit prepare "$root" "${SERVER_NAME:-}"
 
 # The command line of the server's server.toml and environment file
-exec "$repo/tools/start_server.sh" "$root"
+exec python3 -m nwi_server_kit start "$root"

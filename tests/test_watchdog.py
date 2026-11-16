@@ -1,27 +1,27 @@
-"""What the watchdog records of a server's health (tools/srcds_watchdog.py)."""
+"""What the watchdog records of a server's health (watchdog.py)."""
 
 import json
 from pathlib import Path
 
 import pytest
 
-import srcds_watchdog
+from nwi_server_kit import watchdog
 
 
 @pytest.fixture
-def health(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> srcds_watchdog.Health:
+def health(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> watchdog.Health:
     monkeypatch.setenv("INVOCATION_ID", "run1")
     monkeypatch.delenv("NWI_BLESS_PLAYERS", raising=False)
-    return srcds_watchdog.Health(str(tmp_path))
+    return watchdog.Health(str(tmp_path))
 
 
-def written(health: srcds_watchdog.Health) -> dict:
+def written(health: watchdog.Health) -> dict:
     with open(health.path) as file:
         return json.load(file)
 
 
 def test_maps_played_busy_to_their_end_are_completed(
-    health: srcds_watchdog.Health,
+    health: watchdog.Health,
 ) -> None:
     # (map, human players): a busy at some point, b and c empty, d busy, e the current one
     for map_name, humans in [
@@ -46,7 +46,7 @@ def test_busy_players_from_the_environment(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("NWI_BLESS_PLAYERS", "2")
-    health = srcds_watchdog.Health(str(tmp_path))
+    health = watchdog.Health(str(tmp_path))
     health.answered("a", 2, 10)
     health.answered("a", 1, 10)
     assert written(health)["busy_seconds"] == 10

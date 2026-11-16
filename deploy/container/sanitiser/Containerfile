@@ -1,6 +1,6 @@
 # The server image with test builds of SourceMod, Metamod:Source and the extensions with sanitisers,
 # on top of the usual one: their binaries replace the usual ones in /opt/nwi-layer, and compiler-rt
-# brings the sanitisers' runtime, which start_server.sh preloads when the container has SANITISER set
+# brings the sanitisers' runtime, which nwi-server start preloads when the container has SANITISER set
 # (undefined, address or address,undefined, as they were built). For tests only, see README.md.
 #
 # Build arguments:
@@ -34,4 +34,4 @@ RUN --mount=type=bind,from=packages,target=/mnt/packages \
 USER 1000:1000
 # The usual image's, which its containers' units and the update rely on
 HEALTHCHECK --start-period=10m --interval=30s --retries=3 \
-  CMD ["python3", "/opt/nwi-server-kit/tools/srcds_watchdog.py", "--check"]
+  CMD ["python3", "-m", "nwi_server_kit", "watchdog", "--check"]

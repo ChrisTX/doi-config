@@ -67,12 +67,12 @@ the game's folder (`doi` or `insurgency`, the one with `gameinfo.txt`) and the
 workshop's app of the items. The configs of `game/cfg/doi-config` are Day of
 Infamy's.
 
-At each start, `tools/prepare_server.sh` makes the server's `cfg/server.cfg` of
+At each start, `nwi-server prepare` makes the server's `cfg/server.cfg` of
 it with `nwi-server server-config`, which describes the keys: the names of the
 server and SourceTV, and the configs it runs (see [Configs](#configs)). It also
 copies the server's list of workshop items to `subscribed_file_ids.txt` in the
 `doi` folder, the list the game downloads and mounts by default. The launcher,
-`tools/start_server.sh`, takes the server's slots, whether it's a LAN server,
+`nwi-server start`, takes the server's slots, whether it's a LAN server,
 the first map, the theater and its own options of the command line from it, and
 starts it with the workshop if it has a list. Its passwords and other secrets
 are credentials (see [Secrets](#secrets)).
@@ -116,7 +116,7 @@ instead. The layers are mounted while the server runs, in
 
 The units are in `deploy/systemd`, the group `nwi-rcon` in `deploy/sysusers.d`.
 They run the tools installed with them (`make install`, or the package of
-`deploy/arch/PKGBUILD`), in `/usr/lib/nwi-server-kit`, which read the configs
+`deploy/arch/PKGBUILD`), the command `nwi-server`, which reads the configs
 of the servers' config sources (see [Config sources](#config-sources)).
 SourceMod and Metamod:Source are copied from `SOURCEMOD_DIR` and `METAMOD_DIR`,
 `/usr/lib/sourcemod` and `/usr/lib/metamod` by default.
@@ -141,8 +141,8 @@ SourceMod and Metamod:Source are copied from `SOURCEMOD_DIR` and `METAMOD_DIR`,
   e.g. an install of SteamCMD's, are kept, and checked file by file, so only
   what differs is downloaded.
 - `nwi-server@<server>.service` mounts the layers' versions at every start
-  (`nwi-server mount`), of each the newest that's good or still on trial, configures the server (`tools/prepare_server.sh`:
-  its secrets, the plugins SourceBans++ needs, its website from
+  (`nwi-server mount`), of each the newest that's good or still on trial,
+  configures the server (`nwi-server prepare`: its secrets, the plugins SourceBans++ needs, its website from
   `SOURCEBANS_WEBSITE`) and runs it. SourceBans++ finds the server in the panel
   by its address and port: the address the server reports, or
   `SOURCEBANS_SERVER_IP` if that's a private one, as in a container.
@@ -152,7 +152,7 @@ SourceMod and Metamod:Source are copied from `SOURCEMOD_DIR` and `METAMOD_DIR`,
   `server.toml`. The server uses the folder of the same name in `servers`, or
   the one `SERVER_CONFIG_NAME` names; without one, `GAME` says its game, `doi`
   by default.
-- `tools/srcds_watchdog.py` runs the server and queries it with A2S. The
+- `nwi-server start` runs the server and queries it with A2S. The
   service is ready once the server first answers, and systemd's watchdog
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.
   The hung server has 30 seconds to dump its core first.
@@ -320,11 +320,10 @@ systemd-creds encrypt --with-key=tpm2 --name=nwi-server.sourcemod-databases \
   databases.cfg /etc/credstore.encrypted/nwi-server.sourcemod-databases
 ```
 
-`prepare_server.sh` puts them into the server's folder, readable by the server
+`nwi-server prepare` puts them into the server's folder, readable by the server
 only; the passwords go into a config, not the command line, which every user
 could see. Each server's RCON password is in `/run/nwi-server/rcon/<server>`,
-which the members of the group `nwi-rcon` can read. `nwi-rcon` (`tools/rcon.py`)
-uses it:
+which the members of the group `nwi-rcon` can read. `nwi-rcon` uses it:
 
 ```bash
 nwi-rcon --server coop-commando status
@@ -432,8 +431,8 @@ aurutils: `aur repo --status`, or without aurutils the one repository of
 pacman.conf with a `file://` server. `AUR_REPO` and `AUR_DBROOT` name its name
 and folder, as for aurutils. `build --testing` builds the image with Arch
 Linux's testing repositories, for packages built against them on a machine that
-uses them. `tools/rcon.py` is the RCON client (`nwi-rcon` when installed), with
-the password in `RCON_PASSWORD`.
+uses them. `rcon` runs a command on the server over RCON, as `nwi-rcon` does,
+with the password in `RCON_PASSWORD`.
 
 `up --developer 2` starts the server with the game's developer messages, and
 options after `--` go on its command line, after those of its `server.toml`:
@@ -443,7 +442,7 @@ deploy/container/test-instance.sh up --developer 2 coop-commando -- +sv_cheats 1
 ```
 
 They're `LAUNCH_OPTIONS` of the server's environment file, which
-`tools/start_server.sh` adds, for the systemd units of `up --db-only` too.
+`nwi-server start` adds, for the systemd units of `up --db-only` too.
 
 The systemd units can be tested on this machine as well, set up as in [Running
 with systemd](#running-with-systemd), with only the test instance's database:
@@ -453,7 +452,7 @@ and prints the commands that copy the server's environment file to
 for the test. `down` removes the database again.
 
 The admins get into the database and, through the server's environment file,
-into SourceMod's `admins_simple.ini` (`tools/prepare_server.sh`). So
+into SourceMod's `admins_simple.ini` (`nwi-server prepare`). So
 `TEST_ADMIN` in the environment file of any server, e.g.
 `/etc/nwi-server/<server>.env`, makes test admins on a server without the
 database, too. The live servers' environment files don't have it.
@@ -479,7 +478,7 @@ of their own that the build keeps and names at the end, not into the local one:
 packages and the sanitisers' 32-bit runtime (`compiler-rt`), from that
 repository's folder. With `SANITISER` set to the sanitisers of the build,
 `test-instance.sh up` starts the server from that image, and
-`tools/start_server.sh` preloads the runtime into srcds. The reports go to the
+`nwi-server start` preloads the runtime into srcds. The reports go to the
 server's output, with stack traces:
 
 ```bash

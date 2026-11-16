@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
 """Run SRCDS under systemd's watchdog.
 
-The main process of nwi-server@.service (Type=notify): it starts SRCDS as its child and queries it
+The main process of nwi-server@.service (Type=notify), in nwi-server start (launch.py): it starts SRCDS as its child and queries it
 with A2S. Once the server first answers, it tells systemd that the service is ready, and after every
 answer it pings systemd's watchdog. A server that stops answering for WatchdogSec= is restarted by
 systemd (Restart=), within the limits of StartLimitBurst=.
@@ -15,8 +14,8 @@ changed from to another.
 Without systemd, as in the container, it only runs the server. With --check, it queries the server once
 and exits with 0 if it answered, for a container's health check.
 
-    srcds_watchdog.py [--host HOST] [--port PORT] [--interval SECONDS] [--timeout SECONDS] -- COMMAND...
-    srcds_watchdog.py [--host HOST] [--port PORT] [--timeout SECONDS] --check
+    nwi-server watchdog [--host HOST] [--port PORT] [--interval SECONDS] [--timeout SECONDS] -- COMMAND...
+    nwi-server watchdog [--host HOST] [--port PORT] [--timeout SECONDS] --check
 """
 
 import argparse
@@ -92,20 +91,41 @@ def own_address() -> str:
             return "127.0.0.1"
 
 
-def parse_args() -> argparse.Namespace:
+def check(host: str, port: int, timeout: float) -> int:
+    """Query the server once: 0 if it answered."""
+    try:
+        a2s.info((host, port), timeout=timeout)
+    # Whatever goes wrong with the query, the server didn't answer
+    except Exception as e:  # noqa: BLE001
+        print(f"No answer from {host}:{port}: {e!r}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def default_host() -> str:
+    return os.getenv("SERVER_HOST") or own_address()
+
+
+def default_port() -> int:
+    return int(os.getenv("SERVER_PORT", "27015"))
+
+
+def parse_args(argv: list[str] | None) -> argparse.Namespace:
     """Parse the command line, the command of the server after --."""
     parser = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        prog="nwi-server watchdog",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--host",
-        default=os.getenv("SERVER_HOST") or own_address(),
+        default=default_host(),
         help="the server's address, by default the address this machine's traffic leaves from",
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=int(os.getenv("SERVER_PORT", "27015")),
+        default=default_port(),
         help="the server's port, by default SERVER_PORT or 27015",
     )
     parser.add_argument(
@@ -116,24 +136,30 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--check", action="store_true", help="query the server once")
     parser.add_argument("command", nargs="*", help="the server's command line")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main() -> int:
-    """Run the server and watch it until it exits."""
-    args = parse_args()
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
     if args.check:
-        try:
-            a2s.info((args.host, args.port), timeout=args.timeout)
-        # Whatever goes wrong with the query, the server didn't answer
-        except Exception as e:  # noqa: BLE001
-            print(f"No answer from {args.host}:{args.port}: {e!r}", file=sys.stderr)
-            return 1
-        return 0
+        return check(args.host, args.port, args.timeout)
     if not args.command:
         print("No command to run the server with", file=sys.stderr)
         return 2
-    server = subprocess.Popen(args.command)
+    return watch(args.command, args.host, args.port, args.interval, args.timeout)
+
+
+def watch(
+    command: list[str],
+    host: str,
+    port: int,
+    interval: float = 10,
+    timeout: float = 5,
+    env: dict[str, str] | None = None,
+) -> int:
+    """Run the server, with ENV as its environment if given, and watch it until it exits; its exit
+    status."""
+    server = subprocess.Popen(command, env=env)
 
     # systemd stops the service with KillMode=mixed: the signal goes to this process only, which passes
     # it on, so the server shuts down once. The watchdog's SIGABRT too, so that the hung server dumps
@@ -149,13 +175,13 @@ def main() -> int:
     last = time.monotonic()
     while server.poll() is None:
         try:
-            info = a2s.info((args.host, args.port), timeout=args.timeout)
+            info = a2s.info((host, port), timeout=timeout)
         # Whatever goes wrong with the query, the server didn't answer; the watchdog decides when
         # that's too long. Before the first answer, the server is still starting.
         except Exception as e:  # noqa: BLE001
             if ready:
                 print(
-                    f"No answer from {args.host}:{args.port}: {e!r}",
+                    f"No answer from {host}:{port}: {e!r}",
                     file=sys.stderr,
                     flush=True,
                 )
@@ -165,7 +191,7 @@ def main() -> int:
             if health is not None:
                 try:
                     # A time without answers doesn't count, at most the time to the next query
-                    seconds = min(now - last, args.interval + args.timeout)
+                    seconds = min(now - last, interval + timeout)
                     health.answered(
                         info.map_name, info.player_count - info.bot_count, seconds
                     )
@@ -178,11 +204,7 @@ def main() -> int:
                 ready = True
             else:
                 notify(f"WATCHDOG=1\nSTATUS={status}")
-        time.sleep(args.interval)
+        time.sleep(interval)
 
     # The server's exit status, as a shell would report it
     return server.returncode if server.returncode >= 0 else 128 - server.returncode
-
-
-if __name__ == "__main__":
-    sys.exit(main())

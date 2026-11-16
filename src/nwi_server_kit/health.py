@@ -8,7 +8,7 @@ Usage:
     nwi-server health approve VERSION…  bless versions by hand
     nwi-server health retry VERSION…    give versions their tries again, e.g. after a fix elsewhere
 
-A server's watchdog (srcds_watchdog.py) writes how it goes to /run/nwi-server/health/<server>/status.json:
+A server's watchdog (watchdog.py) writes how it goes to /run/nwi-server/health/<server>/status.json:
 its run (INVOCATION_ID), whether it answered yet (ready), its map, its busy seconds, those with at
 least NWI_BLESS_PLAYERS human players (4 by default), and the maps played to their end while busy
 (completed). Of what the server's mount records (mount.py), the versions on trial are blessed:

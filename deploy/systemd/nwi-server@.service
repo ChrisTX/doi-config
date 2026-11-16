@@ -5,7 +5,7 @@ After=network-online.target nwi-update.service
 Wants=network-online.target nwi-update.service
 # Stopped and restarted with the servers' target, see nwi-restart.service
 PartOf=nwi-servers.target
-# srcds_watchdog.py's restarts of a server that stopped answering: at most 6 an hour
+# The watchdog's restarts of a server that stopped answering: at most 6 an hour
 StartLimitIntervalSec=1h
 StartLimitBurst=6
 # The admins hear of a server that isn't restarted any more (nwi-server notify): restarts skip the
@@ -13,8 +13,9 @@ StartLimitBurst=6
 OnFailure=nwi-notify-failure@%n.service
 
 [Service]
-# srcds_watchdog.py runs the server: ready once it first answers A2S queries, restarted by the watchdog
-# once it doesn't answer for WatchdogSec. Its SIGABRT goes to the server, which dumps its core then.
+# nwi-server start runs the server under the watchdog: ready once it first answers A2S queries,
+# restarted by the watchdog once it doesn't answer for WatchdogSec. Its SIGABRT goes to the server,
+# which dumps its core then.
 Type=notify
 WatchdogSec=90
 # The time the hung server has to dump its core after the watchdog's SIGABRT, before it's killed. A
@@ -30,15 +31,15 @@ EnvironmentFile=/etc/nwi-server/%i.env
 StateDirectory=nwi-server/servers/%i
 # Its secrets, from the credential store (systemd-creds, /etc/credstore.encrypted): the server's own,
 # nwi-server@<server>.<name>, before those of all servers, nwi-server.<name>, as server.<name>
-# (tools/prepare_server.sh)
+# (nwi-server prepare)
 ImportCredential=nwi-server@%i.*:server.
 ImportCredential=nwi-server.*:server.
 # The server's layers, which the first ExecStartPre= mounts there, not a RuntimeDirectory=: systemd
 # would remove it with the server's files when the server stops, before the layers are unmounted.
-# prepare_server.sh writes its RCON password to /run/nwi-server/rcon. Both may be missing ("-") for the
-# first ExecStartPre=, which makes them: systemd sets up the unit's namespace for it too.
-# srcds_watchdog.py writes how the server goes to /run/nwi-server/health/%i, for the trial of new
-# versions of the layers (nwi-server health).
+# nwi-server prepare writes its RCON password to /run/nwi-server/rcon. Both may be missing ("-") for
+# the first ExecStartPre=, which makes them: systemd sets up the unit's namespace for it too. The
+# watchdog (nwi-server start) writes how the server goes to /run/nwi-server/health/%i, for the trial
+# of new versions of the layers (nwi-server health).
 ReadWritePaths=-/run/nwi-server/%i -/run/nwi-server/rcon -/run/nwi-server/health/%i
 WorkingDirectory=-/run/nwi-server/%i
 Environment=LD_LIBRARY_PATH=/run/nwi-server/%i:/run/nwi-server/%i/bin
@@ -50,13 +51,13 @@ Environment=NWI_HEALTH=/run/nwi-server/health/%i
 ExecStartPre=+/usr/bin/nsenter --mount=/proc/1/ns/mnt -- /usr/bin/nwi-server mount %i %n
 ExecStopPost=+/usr/bin/nsenter --mount=/proc/1/ns/mnt -- /usr/bin/nwi-server unmount %i
 # Configured as root ("!"), as the layers of the packages belong to root
-ExecStartPre=!/usr/lib/nwi-server-kit/prepare_server.sh /run/nwi-server/%i %i
-# The command line of the server's server.toml and environment file, run by srcds_watchdog.py
-ExecStart=/usr/lib/nwi-server-kit/start_server.sh /run/nwi-server/%i
+ExecStartPre=!/usr/bin/nwi-server prepare /run/nwi-server/%i %i
+# The command line of the server's server.toml and environment file, run by the watchdog
+ExecStart=/usr/bin/nwi-server start /run/nwi-server/%i
 KillSignal=SIGINT
-# The stop signal to srcds_watchdog.py only, which passes it on to the server
+# The stop signal to nwi-server start only, which passes it on to the server
 KillMode=mixed
-# The server ends on it, which srcds_watchdog.py reports as 128 + SIGINT: a stop, not a failure
+# The server ends on it, which nwi-server start reports as 128 + SIGINT: a stop, not a failure
 SuccessExitStatus=130
 PrivateTmp=yes
 PrivateDevices=yes

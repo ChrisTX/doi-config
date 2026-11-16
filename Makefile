@@ -5,15 +5,13 @@
 # See README.md.
 
 PREFIX ?= /usr
-BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib
 DATADIR ?= $(PREFIX)/share
 # The tools' folder, which the units run them from
 TOOLSDIR = $(LIBDIR)/nwi-server-kit
 
 # The tools of the servers and of their admins; the checks of this repository's files stay in it
-TOOLS = dump_cvars.py games.py prepare_server.sh rcon.py server_config.py soak_watch.py \
-	srcds_watchdog.py start_server.sh
+TOOLS = dump_cvars.py games.py server_config.py soak_watch.py
 UNITS = $(wildcard deploy/systemd/*)
 QUADLET = $(wildcard deploy/quadlet/*)
 DOCS = README.md CONTRIBUTING.md docs/Clients.md docs/Cvars.md
@@ -27,9 +25,6 @@ all:
 install:
 	python -m installer --destdir="$(DESTDIR)" --prefix="$(PREFIX)" dist/*.whl
 	install -Dm755 -t "$(DESTDIR)$(TOOLSDIR)" $(addprefix tools/,$(TOOLS))
-	# The admins' RCON client
-	install -dm755 "$(DESTDIR)$(BINDIR)"
-	ln -sf "$(TOOLSDIR)/rcon.py" "$(DESTDIR)$(BINDIR)/nwi-rcon"
 	install -dm755 "$(DESTDIR)$(LIBDIR)/systemd/system"
 	for unit in $(UNITS); do \
 		sed 's|/usr/lib/nwi-server-kit/|$(TOOLSDIR)/|g' "$$unit" \
@@ -44,7 +39,7 @@ uninstall:
 	rm -rf "$(DESTDIR)$(LIBDIR)/nwi-server-kit" "$(DESTDIR)$(DATADIR)/nwi-server-kit" \
 		"$(DESTDIR)$(DATADIR)/doc/nwi-server-kit"
 	rm -f $(addprefix "$(DESTDIR)$(LIBDIR)/systemd/system/,$(addsuffix ",$(notdir $(UNITS)))) \
-		"$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf" "$(DESTDIR)$(BINDIR)/nwi-rcon"
+		"$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf"
 
 # The checks of the git hooks on all files (CONTRIBUTING.md)
 check:

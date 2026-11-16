@@ -13,6 +13,10 @@ Usage: nwi-server COMMAND ARGUMENTS..., the commands:
     health           the trial of new versions of the layers (health.py)
     notify           the admins' notifications (notify.py)
     workshop         VPK signatures and the approval of workshop items (workshop.py)
+    prepare          configure a server in its writable layer before its start (launch.py)
+    start            run a server under the watchdog (launch.py)
+    watchdog         run a server under systemd's watchdog, or query it once (watchdog.py)
+    rcon             run a command on a server over RCON, also nwi-rcon (rcon.py)
 """
 
 import sys
@@ -23,11 +27,14 @@ from . import (
     check_updates,
     games,
     health,
+    launch,
     make_mods,
     mount,
     notify,
+    rcon,
     server_config,
     update,
+    watchdog,
     workshop_cli,
 )
 
@@ -44,6 +51,10 @@ COMMANDS: dict[str, Callable[[list[str]], int]] = {
     "health": health.main,
     "notify": notify.main,
     "workshop": workshop_cli.main,
+    "prepare": launch.prepare_main,
+    "start": launch.start_main,
+    "watchdog": watchdog.main,
+    "rcon": rcon.main,
 }
 
 
