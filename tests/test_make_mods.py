@@ -1,7 +1,10 @@
 """The parser of the maps' scripts and its repairs of their braces (make_mods.py)."""
 
+from pathlib import Path
+
 import pytest
 
+from nwi_server_kit import update
 from nwi_server_kit.make_mods import ModError, parse_script
 
 
@@ -70,3 +73,14 @@ def test_broken_scripts_are_errors(text: str, error: str) -> None:
 def test_any_key_goes_without_a_level() -> None:
     pairs, _ = parse_script('"theater" { "bogus" "1" }', "x.theater", level=None)
     assert pairs == [("theater", [("bogus", "1")])]
+
+
+def test_mods_of_unlisted_maps_are_left_out(tmp_path: Path) -> None:
+    """The updater leaves out a mod of a workshop map that none of the servers lists (update.py)."""
+    (tmp_path / "stock.toml").write_text('[[copy]]\nmaps = ["bastogne"]\n')
+    (tmp_path / "listed.toml").write_text("[workshop]\nkursk = 5\n")
+    (tmp_path / "unlisted.toml").write_text("[workshop]\nkursk = 5\ntobruk = 7\n")
+    assert [path.name for path in update.used_mods(tmp_path, [5])] == [
+        "listed.toml",
+        "stock.toml",
+    ]

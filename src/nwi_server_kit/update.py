@@ -33,6 +33,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 
 from . import downloads, games, layers, workshop
@@ -415,7 +416,7 @@ def build_mods(
                         "--workshop",
                         str(workshop),
                         str(output),
-                        str(mods),
+                        *(str(path) for path in used_mods(mods, items)),
                     ]
                 )
                 != 0
@@ -426,6 +427,27 @@ def build_mods(
         return layers.keep_if_new(output, layers.folder(state / game, f"mods-{source}"))
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+def used_mods(mods: Path, items: list[int]) -> list[Path]:
+    """The mods of a folder whose workshop maps are of the items: a mod of a map that none of the
+    servers lists, e.g. of the coop servers' maps for a test server alone, has nothing to change."""
+    used = []
+    for path in sorted(mods.glob("*.toml")):
+        with path.open("rb") as file:
+            maps = tomllib.load(file).get("workshop", {})
+        missing = sorted(
+            int(item) for item in maps.values() if int(item) not in set(items)
+        )
+        if missing:
+            print(
+                f"{path.stem}: left out, no server lists its workshop items "
+                + ", ".join(map(str, missing)),
+                file=sys.stderr,
+            )
+        else:
+            used.append(path)
+    return used
 
 
 def move(source: Path, target: Path) -> None:
