@@ -129,6 +129,7 @@ def main() -> int:
             ["ssh", args.ssh, shlex.join(remote)], check=False
         ).returncode
     port = args.port
+    password: str | None
     if args.server is not None:
         try:
             password = Path(f"/run/nwi-server/rcon/{args.server}").read_text().strip()

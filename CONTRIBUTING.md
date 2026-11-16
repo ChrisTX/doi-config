@@ -11,14 +11,14 @@ For problems with a server or a script, open an issue. Problems of the game, Sou
 The tools of the checks are in the Arch Linux repositories, apart from five from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, `hadolint`, `google-java-format`, `pmd` and `python-srctools`, the library the tools read the game's files with (KeyValues, VDF, VPK):
 
 ```bash
-sudo pacman -S --needed prek shfmt shellcheck shellharden ruff systemd-lsp \
-  yamllint tombi rumdl typos trivy editorconfig-checker reuse clang ghidra \
-  jdk21-openjdk
+sudo pacman -S --needed prek shfmt shellcheck shellharden ruff mypy \
+  systemd-lsp yamllint tombi rumdl typos trivy editorconfig-checker reuse \
+  clang ghidra jdk21-openjdk
 ```
 
 clang's `clang-format` formats the C++ of the Ghidra tools, `tools/ghidra/sdk_types.cpp`. The Ghidra scripts in `tools/ghidra` are formatted with google-java-format, compiled against Ghidra's jars and linted with PMD.
 
-The tools are a Python package, `src/nwi_server_kit`, with the command `nwi-server`. Instead of the Python packages, its dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, with the package installed from the checkout, which the hooks then use while it's active:
+The tools are a Python package, `src/nwi_server_kit`, with the command `nwi-server`. Instead of the Python packages, its dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums, mypy's included, of the development group. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, with the package installed from the checkout, which the hooks then use while it's active:
 
 ```bash
 uv sync
@@ -45,6 +45,7 @@ GitHub Actions runs the same checks on every push and pull request. The AUR isn'
 
 - Shell scripts are formatted with shfmt and pass shellcheck and shellharden. Write `cd … || exit` instead of disabling SC2164.
 - Python scripts are formatted with ruff and pass `ruff check`. Suppress a rule only where the code can't comply, with `# noqa: <rule>` and a comment saying why.
+- The Python code passes mypy, with the settings of `pyproject.toml`: functions without annotations are checked too. Narrow a type where it's ambiguous, e.g. a KeyValues value that may be a string or a block, rather than casting it or ignoring the error.
 - The SourceMod plugins (`game/addons/sourcemod/scripting/*.sp`) compile without warnings: `spcomp -E`.
 - C++ (`tools/ghidra/sdk_types.cpp`) is formatted with `clang-format` (`.clang-format`).
 - The Containerfile passes hadolint and `trivy config`.

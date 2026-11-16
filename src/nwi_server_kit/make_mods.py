@@ -151,6 +151,13 @@ class ModError(Exception):
 Pairs = list[tuple[str, "str | Pairs"]]
 
 
+def as_block(value: "str | Pairs", where: str) -> Pairs:
+    """A value that has to be a block; an error if it's a string, e.g. in a broken script."""
+    if isinstance(value, str):
+        raise ModError(f"{where} is a value, not a block")
+    return value
+
+
 @dataclass(frozen=True)
 class Level:
     """The keys a level of a map's script may have, in lower case: its values and its blocks, with the
@@ -258,7 +265,8 @@ def parse_script(
             (
                 depth
                 for depth in range(len(stack) - 1, -1, -1)
-                if stack[depth][0] is None or stack[depth][0].allows(key, block)
+                if (open_level := stack[depth][0]) is None
+                or open_level.allows(key, block)
             ),
             None,
         )
@@ -331,9 +339,9 @@ def map_scripts(folder: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
     for vpk in sorted(folder.glob("*.vpk")):
         if re.search(r"_\d{3}\.vpk$", vpk.name):
             continue
-        for path, read in vpk_files(vpk).items():
-            if re.fullmatch(r"maps/[^/]+\.txt", path) and path not in scripts:
-                scripts[path] = (f"{vpk}/{path}", read)
+        for inner, read in vpk_files(vpk).items():
+            if re.fullmatch(r"maps/[^/]+\.txt", inner) and inner not in scripts:
+                scripts[inner] = (f"{vpk}/{inner}", read)
     return scripts
 
 
@@ -452,7 +460,7 @@ class Copy:
         if self.target in modes:
             raise ModError(f"{name}: has {self.target} already")
         index = modes.index(self.source)
-        block = list(blocks[index][1])
+        block: Pairs = list(as_block(blocks[index][1], f"{name}: {self.source}"))
 
         def is_point(key: str) -> bool:
             return key.lower() == "controlpoint"
@@ -479,8 +487,10 @@ class Copy:
             )
             if zones_index is None:
                 raise ModError(f"{name}: {self.source} has no spawn zones")
-            key, zones = block[zones_index]
-            zones = dict(zones)
+            key, zones_value = block[zones_index]
+            zones = dict(
+                as_block(zones_value, f"{name}: the spawn zones of {self.source}")
+            )
             zones.update(self.spawnzones)
             block[zones_index] = (key, list(zones.items()))
         blocks.insert(index + 1, (self.target, block))
@@ -629,10 +639,10 @@ def game_playlists(game: Path) -> dict[str, tuple[str, Callable[[], bytes]]]:
             name = path.relative_to(folder).with_suffix("").as_posix().lower()
             playlists[name] = (str(path), path.read_bytes)
     for vpk in sorted(game_folder(game).glob("*_dir.vpk")):
-        for path, read in vpk_files(vpk).items():
-            match = re.fullmatch(r"scripts/playlists/(.+)\.playlist", path)
+        for inner, read in vpk_files(vpk).items():
+            match = re.fullmatch(r"scripts/playlists/(.+)\.playlist", inner)
             if match and match[1] not in playlists:
-                playlists[match[1]] = (f"{vpk}/{path}", read)
+                playlists[match[1]] = (f"{vpk}/{inner}", read)
     return playlists
 
 
@@ -763,10 +773,10 @@ class Playlist:
         lines = [header, ""]
         lines += [f'{name} "{value}"' for name, value in settings.items()]
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        for mode, block in modes.items():
+        for mode, values in modes.items():
             lines = [f"{header}, for {mode}", ""]
             lines += [
-                f'nwi_mode_cvar "{name}" "{value}"' for name, value in block.items()
+                f'nwi_mode_cvar "{name}" "{value}"' for name, value in values.items()
             ]
             (folder / f"{self.name}-{mode}.cfg").write_text(
                 "\n".join(lines) + "\n", encoding="utf-8"
@@ -807,7 +817,8 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> list[Rep
         script, repairs = read_script(game, workshop, workshop_maps, name)
         for repair in repairs:
             print(f"{mod}: {name}: {repair}", file=sys.stderr)
-        root, blocks = script[0]
+        root, contents = script[0]
+        blocks = as_block(contents, f"{mod}: {name}")
         for copy in copies:
             if name in copy.maps:
                 copy.apply(blocks, name)

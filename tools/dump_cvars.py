@@ -49,7 +49,7 @@ def main() -> int:
                 "are its own",
                 file=sys.stderr,
             )
-        cvars = {}
+        cvars: dict[str, dict[str, str | float | list[str]]] = {}
         commands = []
         for line in rcon.run(sock, "cvarlist").splitlines():
             match = LINE.match(line)

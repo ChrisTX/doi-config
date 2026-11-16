@@ -33,7 +33,7 @@ def main() -> None:
     wide = pe.FILE_HEADER.Machine == AMD64
     base = pe.OPTIONAL_HEADER.ImageBase
     # The bytes of absolute addresses: IMAGE_REL_BASED_HIGHLOW (3) or DIR64 (10)
-    relocated = set()
+    relocated: set[int] = set()
     for block in getattr(pe, "DIRECTORY_ENTRY_BASERELOC", []):
         for entry in block.entries:
             if entry.type == 3:

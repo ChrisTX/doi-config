@@ -40,7 +40,7 @@ def configs() -> list[Path]:
 
 def parse(line: str) -> tuple[list[str], str]:
     """A line's tokens, unquoted, and its comment."""
-    tokens = []
+    tokens: list[str] = []
     for match in TOKEN.finditer(line):
         if match["comment"] is not None:
             return tokens, match["comment"]

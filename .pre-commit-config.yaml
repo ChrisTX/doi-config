@@ -55,6 +55,14 @@ repos:
         language: system
         entry: ruff format
         types: [python]
+      # The types of the Python code, the package and the scripts of tools/ as pyproject.toml has them,
+      # all at once: types cross the modules
+      - id: mypy
+        name: mypy (mypy)
+        language: system
+        entry: mypy
+        types: [python]
+        pass_filenames: false
 
       # The plugins compile, warnings as errors, with the include folder of the repository (AFK
       # Manager's). spcomp takes one plugin per run. Nothing is written, the plugins are built on the

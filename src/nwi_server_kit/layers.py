@@ -61,6 +61,14 @@ def latest(layer: Path) -> Path | None:
     return found[-1] if found else None
 
 
+def newest(layer: Path) -> Path:
+    """The newest version of a layer's folder; an error without one, before an update made it."""
+    found = latest(layer)
+    if found is None:
+        raise ValueError(f"{layer} has no version, update first (nwi-update.service)")
+    return found
+
+
 def version_of(path: Path) -> str:
     """The version of a version's folder, NAME_VERSION."""
     return path.name.split("_", 1)[1]

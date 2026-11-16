@@ -54,7 +54,7 @@ def files(gamedata: Path, game: str, engine: str) -> list[Path]:
 
 def blocks(tree: Keyvalues, game: str, engine: str):
     """The blocks of a gamedata file that apply to the game."""
-    for block in tree.find_key("Games", []):
+    for block in tree.find_key("Games", or_blank=True):
         if not block.has_children():
             continue
         if block.name == game:
@@ -112,8 +112,8 @@ def main() -> None:
                             library,
                             name,
                         )
-    for (kind, name), (value, library, file) in found.items():
-        print(f"{kind}\t{name}\t{value}\t{library}\t{file}")
+    for (kind, name), (entry, library, file) in found.items():
+        print(f"{kind}\t{name}\t{entry}\t{library}\t{file}")
 
 
 if __name__ == "__main__":

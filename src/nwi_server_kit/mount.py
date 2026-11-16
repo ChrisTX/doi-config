@@ -110,13 +110,6 @@ def app_of(item: Path) -> int:
     return int(next((item / "steamapps/workshop/content").iterdir()).name)
 
 
-def newest(layer: Path) -> Path:
-    found = layers.latest(layer)
-    if found is None:
-        raise ValueError(f"{layer} has no version, update first (nwi-update.service)")
-    return found
-
-
 def mount(name: str, unit: str) -> None:
     """Mount the server's layers, see the module's documentation."""
     # Out of the server's folder, systemd's WorkingDirectory=, which would keep it busy
@@ -143,11 +136,11 @@ def mount(name: str, unit: str) -> None:
 
     depots = (state / game / "depots").read_text().split()[0::2]
     depot_versions = [
-        newest(layers.folder(state, f"depot-{depot}")) for depot in depots
+        layers.newest(layers.folder(state, f"depot-{depot}")) for depot in depots
     ]
     items = item_versions(state, game, games.workshop_items([server], game))
-    plugins = newest(layers.folder(state, f"plugins-{server.source}"))
-    mods = newest(layers.folder(state / game, f"mods-{server.source}"))
+    plugins = layers.newest(layers.folder(state, f"plugins-{server.source}"))
+    mods = layers.newest(layers.folder(state / game, f"mods-{server.source}"))
 
     # The paths, relative to the server's root, that are kept between starts. The game's caches and the
     # crash handler's logs are written anew on every start.

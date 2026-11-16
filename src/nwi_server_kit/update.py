@@ -427,16 +427,16 @@ def link_servers(state: Path, found: list[games.Server]) -> None:
         folder.mkdir(parents=True, exist_ok=True)
         depots = (state / server.game / "depots").read_text().split()[0::2]
         newest = [
-            layers.latest(layers.folder(state, f"depot-{depot}")) for depot in depots
+            layers.newest(layers.folder(state, f"depot-{depot}")) for depot in depots
         ]
         link(folder / "game", newest[-1])
         link(
             folder / "workshop",
-            layers.latest(layers.folder(state / server.game, "workshop")),
+            layers.newest(layers.folder(state / server.game, "workshop")),
         )
         link(
             folder / "mods",
-            layers.latest(layers.folder(state / server.game, f"mods-{server.source}")),
+            layers.newest(layers.folder(state / server.game, f"mods-{server.source}")),
         )
         # A file of its own, not the link of an earlier layout to the game's record
         (folder / "depots").unlink(missing_ok=True)
