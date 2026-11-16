@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from hl2sdk_ghidra import check, dwarf, elf, gamedata, sdk
+from hl2sdk_ghidra import check, dwarf, elf, gamedata, ghidra, sdk
 
 GAMEDATA = """\
 "Games"
@@ -274,3 +274,16 @@ def test_archive_and_apply(sdk_object: Path, tmp_path: Path) -> None:
         }
     assert result.signatures >= 3
     assert functions["second"] == "int second(Base * this, int value)"
+
+
+def test_project_folder() -> None:
+    """Binaries of the same name of different games or architectures get folders of their own."""
+    assert ghidra.project_folder(Path("/s/doi/doi/bin/server_srv.so")) == "/doi"
+    assert ghidra.project_folder(Path("/s/tf2/tf/bin/server_srv.so")) == "/tf"
+    assert ghidra.project_folder(Path("/s/tf2/bin/engine_srv.so")) == "/tf2"
+    assert (
+        ghidra.project_folder(Path("/s/tf2/tf/bin/linux64/server_srv.so"))
+        == "/tf/linux64"
+    )
+    assert ghidra.project_folder(Path("/s/tf2/tf/bin/x64/server.dll")) == "/tf/x64"
+    assert ghidra.project_folder(Path("/tmp/server.so")) == "/tmp"

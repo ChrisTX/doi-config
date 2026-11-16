@@ -6,6 +6,7 @@ in Ghidra's GUI is locked, close it there first. Without a project, a temporary 
 removed afterwards.
 """
 
+import hashlib
 import os
 import tempfile
 from collections.abc import Iterator
@@ -57,14 +58,35 @@ def project(gpr: Path | None) -> Iterator["Project"]:
             opened.close()
 
 
-def import_program(opened: "Project", binary: Path, folder: str = "/") -> str:
-    """Import a binary into the project's folder, unless it's there already, and analyse it; returns
-    its path in the project."""
+def project_folder(binary: Path) -> str:
+    """The project's folder of a binary: its game's folder, the one with bin/ in it, e.g. /doi of
+    doi/bin/server_srv.so, the install's of bin/engine_srv.so, with the architecture's folder of bin/,
+    e.g. /tf/linux64 of tf/bin/linux64/server_srv.so; its own folder otherwise."""
+    parent = binary.parent
+    if parent.name == "bin":
+        return f"/{parent.parent.name}"
+    if parent.parent.name == "bin":
+        return f"/{parent.parent.parent.name}/{parent.name}"
+    return f"/{parent.name}"
+
+
+def import_program(opened: "Project", binary: Path, folder: str | None = None) -> str:
+    """Import a binary into the project's folder (project_folder by default), unless it's there
+    already, and analyse it; returns its path in the project. A program of that path that isn't the
+    binary, by its MD5, is an error."""
     import pyghidra
     from java.io import File
 
+    folder = project_folder(binary) if folder is None else folder
     path = f"{folder.rstrip('/')}/{binary.name}"
     if opened.getProjectData().getFile(path) is not None:
+        with program(opened, path) as existing:
+            md5 = str(existing.getExecutableMD5() or "")
+        if md5 and md5.lower() != hashlib.md5(binary.read_bytes()).hexdigest():
+            raise ValueError(
+                f"{path} of the project is another binary than {binary}: "
+                "use another project, or the program's path"
+            )
         return path
     loader = (
         pyghidra.program_loader()
