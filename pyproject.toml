@@ -18,9 +18,13 @@ dependencies = [
 [project.scripts]
 nwi-server = "nwi_server_kit.cli:main"
 
-# The checks of the git hooks that need the dependencies: in .venv, mypy sees them (CONTRIBUTING.md)
+# The checks of the git hooks that need the dependencies: in .venv, mypy and pytest see them
+# (CONTRIBUTING.md). The Arch Linux packages in parentheses.
 [dependency-groups]
-dev = ["mypy>=2.4"]
+dev = [
+  "mypy>=2.4",  # (mypy)
+  "pytest>=9.2",  # (python-pytest)
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -30,7 +34,7 @@ build-backend = "hatchling.build"
 packages = ["src/nwi_server_kit"]
 
 [tool.mypy]
-files = ["src", "tools"]
+files = ["src", "tools", "tests"]
 python_version = "3.12"
 # The bodies of functions without annotations too, e.g. of the scripts of tools/
 check_untyped_defs = true
@@ -42,6 +46,12 @@ warn_redundant_casts = true
 [[tool.mypy.overrides]]
 module = ["a2s", "a2s.*", "elftools.*", "capstone", "capstone.*", "pefile"]
 ignore_missing_imports = true
+
+# The tests of the package and of the scripts of tools/, which they import as modules
+[tool.pytest]
+testpaths = ["tests"]
+pythonpath = ["src", "tools"]
+addopts = ["--strict-markers"]
 
 [tool.ruff]
 # The package, and the scripts' own modules, e.g. rcon.py, which they import from tools/

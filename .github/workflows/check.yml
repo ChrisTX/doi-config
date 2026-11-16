@@ -63,8 +63,8 @@ jobs:
           echo "$GOOGLE_JAVA_FORMAT_SHA256  /tmp/google-java-format" | sha256sum -c
           install -m755 /tmp/google-java-format /usr/local/bin/google-java-format
 
-      # The Python tools' dependencies (srctools) and mypy, in .venv with the versions and checksums of
-      # uv.lock, for Arch Linux's Python; the hooks run python3 and mypy of .venv
+      # The Python tools' dependencies (srctools, python-a2s), mypy and pytest, in .venv with the versions
+      # and checksums of uv.lock, for Arch Linux's Python; the hooks run python3 and mypy of .venv
       - name: Install the Python dependencies
         env:
           UV_PYTHON_DOWNLOADS: never

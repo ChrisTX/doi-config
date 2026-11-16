@@ -63,6 +63,13 @@ repos:
         entry: mypy
         types: [python]
         pass_filenames: false
+      # The tests of the package and the scripts of tools/ (tests/), all of them on any change
+      - id: pytest
+        name: pytest (python-pytest)
+        language: system
+        entry: python3 -m pytest -q
+        types: [python]
+        pass_filenames: false
 
       # The plugins compile, warnings as errors, with the include folder of the repository (AFK
       # Manager's). spcomp takes one plugin per run. Nothing is written, the plugins are built on the
