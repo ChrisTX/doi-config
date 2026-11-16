@@ -93,6 +93,13 @@ public void OnPluginStart()
         LogError("No physics timestep calls: the gamedata lacks their offsets");
 #if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
     g_physenvSlot = PhysicsEnvironmentSlot();
+#else
+    // 64-bit Windows, the only platform whose gamedata has PhysFrame::physenv: physenv takes
+    // SourceMod 1.13's includes and compiler, see PhysicsEnvironmentSlot. At 64 tick or below,
+    // nothing needs the physics step.
+    if (g_gamedata.GetOffset("PhysFrame::physenv") != -1 && GetTickInterval() < 0.015625)
+        LogError("The physics step stays the tick's at %.0f tick, grenades bounce more than at 64: on 64-bit Windows, nwi_gamedata needs to be compiled with SourceMod 1.13, not %s",
+            1.0 / GetTickInterval(), SOURCEMOD_VERSION);
 #endif
 
     // The counts the server sends to Steam: the call of GetMasterServerPlayerCounts inside

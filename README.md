@@ -632,8 +632,17 @@ simulates on every other tick, and grenades bounce, roll and come to rest as at
 Everything else, like movement and hit registration, keeps the shorter tick. It
 sets the step through `nwi_gamedata`, the plugin that has the game's calls and
 hooks for the others (`addons/sourcemod/gamedata/nwi.games.txt`, its include
-`nwi_gamedata.inc`), whose gamedata covers Windows as well, found in the game's
-server.dll but not tested on a Windows server.
+`nwi_gamedata.inc`), whose gamedata covers Windows as well, 32-bit and 64-bit,
+found in the game's server.dll but not tested on a Windows server.
+
+On 64-bit Windows, it takes SourceMod 1.13 to compile `nwi_gamedata`: what
+matters is the SourceMod whose compiler and include files built the plugin, not
+the one the server runs. There, the game's code reaches the physics environment
+relative to the instruction (x86-64's RIP), which SourceMod's gamedata can't
+follow, so `nwi_gamedata` works out its address itself and reads a 64-bit
+pointer there, which only 1.13's `LoadAddressFromAddress` can. A plugin built
+with 1.12 leaves the step as the game sets it, and above 64 tick logs an error
+that grenades bounce more. Linux and 32-bit Windows work with either version.
 
 ### Server visibility
 
