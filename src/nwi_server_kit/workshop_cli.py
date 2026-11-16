@@ -4,6 +4,9 @@ Usage:
     nwi-server workshop keygen NAME [--bits BITS] [--dir DIR]
         a key pair to sign VPKs with: DIR/NAME.key, the private key (keep it to yourself, off the machine
         that uploads to the Workshop), and DIR/NAME.pem, the public key for workshop/keys/ of the configs
+    nwi-server workshop pack FOLDER VPK
+        pack a folder, e.g. a mod's repository, into a VPK as the Workshop takes it (version 2, one
+        file); files and folders starting with a dot, e.g. .git, are left out
     nwi-server workshop sign KEY VPK...
         sign VPKs (version 2, e.g. a mod's) in place with a private key
     nwi-server workshop verify VPK|FOLDER...
@@ -125,6 +128,9 @@ def main(argv: list[str] | None = None) -> int:
     command.add_argument(
         "--dir", type=Path, default=Path("."), help="where to write the keys"
     )
+    command = commands.add_parser("pack", help="pack a folder into a VPK")
+    command.add_argument("folder", type=Path, metavar="FOLDER")
+    command.add_argument("output", type=Path, metavar="VPK")
     command = commands.add_parser("sign", help="sign VPKs with a private key")
     command.add_argument("key", type=Path, metavar="KEY")
     command.add_argument("vpks", type=Path, nargs="+", metavar="VPK")
@@ -167,6 +173,10 @@ def run(args: argparse.Namespace) -> int:
             f"{key}: the private key; {args.dir / args.name}.pem: the public key, "
             f"{vpk.key_name(vpk.public_der(public))}"
         )
+        return 0
+    if args.command == "pack":
+        count = vpk.pack(args.folder, args.output)
+        print(f"{args.output}: {count} files")
         return 0
     if args.command == "sign":
         private = args.key.read_bytes()

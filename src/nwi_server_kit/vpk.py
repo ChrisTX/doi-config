@@ -10,6 +10,7 @@ the legacy layout only (a key's and a signature's size, then each); its own keys
 
 import hashlib
 import struct
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -109,9 +110,10 @@ def parse(path: Path) -> Directory:
                     file_path = "/".join(
                         part for part in (folder.strip(), name) if part
                     )
-                    entries.append(
-                        Entry(f"{file_path}.{extension}", archive, entry_offset, length)
-                    )
+                    # A space is a file without an extension
+                    if extension.strip():
+                        file_path = f"{file_path}.{extension}"
+                    entries.append(Entry(file_path, archive, entry_offset, length))
     except (ValueError, struct.error) as error:
         raise VPKError(f"{path}: its tree can't be read: {error}") from error
     if offset != HEADER.size + tree:
@@ -296,6 +298,55 @@ def sign(path: Path, private_pem: bytes, password: bytes | None = None) -> bytes
     )
     path.write_bytes(unsigned + section + signature)
     return public
+
+
+def pack(folder: Path, output: Path) -> int:
+    """Pack a folder's files, but those starting with a dot, e.g. .git, into an unsigned version 2
+    VPK of one file, their data embedded, as a mod's for the Workshop; returns how many files."""
+    files = sorted(
+        path
+        for path in folder.rglob("*")
+        if path.is_file()
+        and not any(part.startswith(".") for part in path.relative_to(folder).parts)
+    )
+    # The tree: by extension, then folder, then name
+    tree_of: dict[str, dict[str, list[Path]]] = {}
+    for path in files:
+        relative = path.relative_to(folder)
+        extension = relative.suffix.removeprefix(".") or " "
+        parent = relative.parent.as_posix()
+        tree_of.setdefault(extension, {}).setdefault(
+            " " if parent == "." else parent, []
+        ).append(path)
+    tree = b""
+    data = bytearray()
+    for extension, folders in sorted(tree_of.items()):
+        tree += extension.encode() + b"\0"
+        for parent, paths in sorted(folders.items()):
+            tree += parent.encode() + b"\0"
+            for path in paths:
+                content = path.read_bytes()
+                stem = path.name[: -len(path.suffix)] if path.suffix else path.name
+                tree += stem.encode() + b"\0"
+                tree += struct.pack(
+                    "<IHHIIH",
+                    zlib.crc32(content),
+                    0,
+                    EMBEDDED,
+                    len(data),
+                    len(content),
+                    0xFFFF,
+                )
+                data += content
+            tree += b"\0"
+        tree += b"\0"
+    tree += b"\0"
+    header = HEADER.pack(MAGIC, 2, len(tree), len(data), 0, OTHER_MD5_SIZE, 0)
+    unsigned = header + tree + bytes(data)
+    unsigned += hashlib.md5(tree).digest() + hashlib.md5(b"").digest()
+    unsigned += hashlib.md5(unsigned).digest()
+    output.write_bytes(unsigned)
+    return len(files)
 
 
 def chunk_parts(data: bytes) -> list[tuple[int, bytes]]:

@@ -130,6 +130,32 @@ def test_a_changed_or_missing_archive_is_found(tmp_path: Path, keys: dict) -> No
         vpk.verify(directory)
 
 
+def test_pack(tmp_path: Path, keys: dict) -> None:
+    """A folder packed as the Workshop takes it, without dot files, signed and read back."""
+    folder = tmp_path / "mod"
+    for name, content in FILES.items():
+        (folder / name).parent.mkdir(parents=True, exist_ok=True)
+        (folder / name).write_bytes(content)
+    (folder / "README").write_bytes(b"no extension")
+    (folder / ".git").mkdir()
+    (folder / ".git/config").write_bytes(b"left out")
+    (folder / ".gitattributes").write_bytes(b"left out")
+    output = tmp_path / "mod.vpk"
+    assert vpk.pack(folder, output) == 3
+    parsed = vpk.parse(output)
+    base = vpk.HEADER.size + parsed.tree
+    contents = {
+        entry.path: parsed.data[
+            base + entry.offset : base + entry.offset + entry.length
+        ]
+        for entry in parsed.entries
+    }
+    assert contents == {**FILES, "README": b"no extension"}
+    vpk.check_md5(output, parsed)
+    vpk.sign(output, keys["community"][0])
+    assert vpk.verify(output) == vpk.public_der(keys["community"][1])
+
+
 def test_files_of(tmp_path: Path) -> None:
     build_vpk(tmp_path / "split.vpk", FILES, split=True)
     build_vpk(tmp_path / "single.vpk", FILES)
