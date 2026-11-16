@@ -1,38 +1,80 @@
 // SPDX-FileCopyrightText: Christian Pfeiffer
 // SPDX-License-Identifier: MIT OR GPL-3.0-only WITH LicenseRef-SourceMod-exception
 
-// Scales the number of bots in the coop modes to the number of human players at the start of
-// each round, independently of the map's scripting. The game mode comes from nwi_mode_config.smx
-// (nwi_mode_config.inc).
+// Scales the number of bots in the coop modes to the number of human players at the start of each
+// round, independently of the map's scripting, in Day of Infamy and Insurgency.
 //
-// Day of Infamy only so far: Insurgency's bot counts are cvars of each game mode
-// (ins_bot_count_<mode>_min and _max, e.g. checkpoint's), not Day of Infamy's doi_bot_count_*.
+// The game modes' configs set the numbers with nwi_mode_cvar (nwi_mode_config.smx), which puts the
+// cvars back when the game mode changes, so a game mode without them isn't scaled:
+//
+//     nwi_scaler_enabled              1 to scale the game mode's bots
+//     nwi_scaler_enemy_base           the enemy bots without players
+//     nwi_scaler_enemy_per_player     the enemy bots each human player adds
+//     nwi_scaler_friendly_base        the friendly bots without players (Day of Infamy)
+//     nwi_scaler_friendly_per_player  the friendly bots each human player adds (Day of Infamy)
+//
+// Each side has at most the slots of a team (nwi.inc), which the friendly bots share with the players.
+// Day of Infamy's own scaling between doi_bot_count_default_*_min_players and _max_players is linear
+// in the players too, but caps nothing, e.g. 19 enemies at 8 players with 3 + 2 a player, more than a
+// team's 16 slots: so the plugin sets both to its count, and the configs set doi_bot_count_override,
+// which makes the game use them rather than the map's. In Insurgency it sets the game mode's set bot
+// count, ins_bot_count_<mode> (e.g. ins_bot_count_checkpoint), which has no friendly bots.
 
 #include <sourcemod>
 #include <sdktools>
 #include <nwi>
 #include <nwi_mode_config>
 
+#pragma semicolon 1
+#pragma newdecls required
+
 public Plugin myinfo =
 {
-    name    = "NWI difficulty scaler",
-    author    = "DOI revival project",
-    description = "Scale difficulty dynamically",
-    version   = "2.0",
-    url   = "https://rev-crew.info"
+    name        = "NWI difficulty scaler",
+    author      = "DOI revival project",
+    description = "Scale the coop modes' bots to the players",
+    version     = "3.0",
+    url         = "https://rev-crew.info"
+};
+
+NWIGame g_game;
+ConVar g_enabled;
+ConVar g_enemyBase;
+ConVar g_enemyPerPlayer;
+ConVar g_friendlyBase;
+ConVar g_friendlyPerPlayer;
+
+public void OnPluginStart()
+{
+    g_game = NWI_RequireGame();
+    g_enabled = CreateConVar("nwi_scaler_enabled", "0",
+        "1 to scale the game mode's bots to the players (set by the game mode's config)", _, true, 0.0,
+        true, 1.0);
+    g_enemyBase = CreateConVar("nwi_scaler_enemy_base", "0", "The enemy bots without players", _,
+        true, 0.0);
+    g_enemyPerPlayer = CreateConVar("nwi_scaler_enemy_per_player", "0",
+        "The enemy bots each human player adds", _, true, 0.0);
+    g_friendlyBase = CreateConVar("nwi_scaler_friendly_base", "0",
+        "The friendly bots without players (Day of Infamy)", _, true, 0.0);
+    g_friendlyPerPlayer = CreateConVar("nwi_scaler_friendly_per_player", "0",
+        "The friendly bots each human player adds (Day of Infamy)", _, true, 0.0);
+    // The bot counts are set anew at every round start, which a server without players doesn't have
+    HookEvent("round_start", Event_RoundStart, EventHookMode_Post);
+    RegServerCmd("nwi_scaler_apply", Command_Apply,
+        "Scale the bots to the players now, e.g. after changing the numbers");
 }
 
-// Whether the bot counts are this plugin's, which a game mode it doesn't scale gives back to the game
-bool g_scaled = false;
-
-public OnPluginStart() {
-    NWI_RequireDoI();
-    // The bot counts are set anew at every round start
-    HookEvent("round_start", EventHandler, EventHookMode_Post);
+public Action Command_Apply(int args)
+{
+    if (g_enabled.BoolValue)
+        AdjustDifficulty();
+    else
+        PrintToServer("Difficulty scaler: the game mode isn't scaled (nwi_scaler_enabled 0)");
+    return Plugin_Handled;
 }
 
 // The human players in game; bots and players still connecting don't count
-GetPlayerCount()
+int GetPlayerCount()
 {
     int players = 0;
     for (int i = 1; i <= MaxClients; i++)
@@ -43,70 +85,61 @@ GetPlayerCount()
     return players;
 }
 
-public EventHandler(Handle:event, const String:name[], bool:dontBroadcast) {
-    AdjustDifficulty();
+public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
+{
+    if (g_enabled.BoolValue)
+        AdjustDifficulty();
 }
 
 // Sets a cvar silently, without announcing the change to the players
-public SetVarValue(const String:name[], int value) {
-    Handle my_cvar = FindConVar(name);
+void SetVarValue(const char[] name, int value)
+{
+    ConVar cvar = FindConVar(name);
     // A cvar a game update removed would stop the remaining changes with a native error
-    if (my_cvar == null) {
+    if (cvar == null)
+    {
         LogError("Can't find the cvar %s", name);
         return;
     }
-    SetConVarInt(my_cvar, value, false, false);
+    cvar.SetInt(value, false, false);
 }
 
-// Sets the bots of each side, the same count for the fewest and the most players, so the game's
-// own scaling by players doesn't change it; the override makes the game use these counts
-public SetBotCounts(int friendly_count, int enemy_count) {
-    SetVarValue("doi_bot_count_override", 1);
-
-    SetVarValue("doi_bot_count_default_enemy_min_players", enemy_count);
-    SetVarValue("doi_bot_count_default_enemy_max_players", enemy_count);
-
-    SetVarValue("doi_bot_count_default_friendly_min_players", friendly_count);
-    SetVarValue("doi_bot_count_default_friendly_max_players", friendly_count);
+// BASE and PER_PLAYER bots a player, at most LIMIT and none fewer than 0
+int Scaled(int base, int perPlayer, int players, int limit)
+{
+    int bots = base + perPlayer * players;
+    if (bots > limit)
+        bots = limit;
+    return bots > 0 ? bots : 0;
 }
 
-// The enemies: enemy_base and 2 more per player; the friendlies: friendly_base and 1 more per player.
-// Each side has the slots of a team (nwi.inc), which the friendlies share with the players.
-public SetBots(int playercount, int enemy_base, int friendly_base) {
+void AdjustDifficulty()
+{
+    int players = GetPlayerCount();
     int slots = NWI_TeamSlots(NWI_DOI_COOP_TEAM_SLOTS);
+    int enemies = Scaled(g_enemyBase.IntValue, g_enemyPerPlayer.IntValue, players, slots);
 
-    int botcount = enemy_base + playercount * 2;
-    if(botcount > slots)
-        botcount = slots;
-
-    int friendly_botcount = friendly_base + playercount;
-    int friendly_slots = slots - playercount;
-    if(friendly_botcount > friendly_slots)
-        friendly_botcount = friendly_slots > 0 ? friendly_slots : 0;
-
-    SetBotCounts(friendly_botcount, botcount);
-}
-
-// Only the coop modes are scaled: Stronghold and Raid with 3 enemies and 5 friendlies to start
-// with, Entrenchment with 6 and 3
-public AdjustDifficulty() {
-    int playercount = GetPlayerCount();
-    char mode[NWI_MODE_LENGTH];
-    NWI_GetGameMode(mode, sizeof(mode));
-
-    if(StrEqual(mode, "stronghold") || StrEqual(mode, "raid"))
-        SetBots(playercount, 3, 5);
-    else if(StrEqual(mode, "entrenchment"))
-        SetBots(playercount, 6, 3);
+    if (g_game == NWIGame_DoI)
+    {
+        // The friendly bots share their team's slots with the players
+        int friendlies = Scaled(g_friendlyBase.IntValue, g_friendlyPerPlayer.IntValue, players,
+            slots - players);
+        // The same count for the fewest and the most players, so the game's own scaling by players
+        // doesn't change it
+        SetVarValue("doi_bot_count_default_enemy_min_players", enemies);
+        SetVarValue("doi_bot_count_default_enemy_max_players", enemies);
+        SetVarValue("doi_bot_count_default_friendly_min_players", friendlies);
+        SetVarValue("doi_bot_count_default_friendly_max_players", friendlies);
+        PrintToServer("Difficulty scaler: %d enemy and %d friendly bots for %d players", enemies,
+            friendlies, players);
+    }
     else
     {
-        // Another game mode gets the game's own bot counts back
-        if(g_scaled)
-            SetVarValue("doi_bot_count_override", 0);
-        g_scaled = false;
-        return;
+        char mode[NWI_MODE_LENGTH];
+        NWI_GetGameMode(mode, sizeof(mode));
+        char cvar[64];
+        Format(cvar, sizeof(cvar), "ins_bot_count_%s", mode);
+        SetVarValue(cvar, enemies);
+        PrintToServer("Difficulty scaler: %d bots for %d players (%s)", enemies, players, cvar);
     }
-
-    g_scaled = true;
-    PrintToServer("Difficulty Scaler: Scaling for %d players", playercount);
 }

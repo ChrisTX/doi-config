@@ -655,9 +655,27 @@ overflow in AMTL's hashes, which LTO miscompiled
 ### Difficulty scaler
 
 The `nwi_difficulty_scaler` SourceMod plugin adjusts the number of bots to the
-number of players, independently of the map's scripting, within the 16 players
-of a coop team. It takes the game mode from `nwi_mode_config`, see
-[Configs](#configs).
+number of players at every round start, independently of the map's scripting,
+within the 16 players of a coop team. A game mode's config sets the numbers
+with `nwi_mode_cvar` (see [Configs](#configs)), so they change with the game
+mode, and a game mode without them isn't scaled:
+
+```text
+nwi_mode_cvar "doi_bot_count_override" "1"
+nwi_mode_cvar "nwi_scaler_enabled" "1"
+nwi_mode_cvar "nwi_scaler_enemy_base" "3"
+nwi_mode_cvar "nwi_scaler_enemy_per_player" "2"
+nwi_mode_cvar "nwi_scaler_friendly_base" "5"
+nwi_mode_cvar "nwi_scaler_friendly_per_player" "1"
+```
+
+Stronghold and Raid have these, Entrenchment 6 enemies and 3 friendlies to
+start with (`basic_mode_coop-<mode>.cfg`). Day of Infamy's own scaling of
+`doi_bot_count_default_*_min_players` to `_max_players` is linear in the players
+as well, but caps nothing: measured with `doi_fake_human_players`, 3 + 2 a
+player gives 19 enemies at 8 players, more than a team's 16 slots. In
+Insurgency, the plugin sets the game mode's `ins_bot_count_<mode>`, e.g.
+`ins_bot_count_checkpoint`; no Insurgency game mode has settings yet.
 
 ### Mods
 
