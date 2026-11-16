@@ -435,6 +435,16 @@ Linux's testing repositories, for packages built against them on a machine that
 uses them. `tools/rcon.py` is the RCON client (`nwi-rcon` when installed), with
 the password in `RCON_PASSWORD`.
 
+`up --developer 2` starts the server with the game's developer messages, and
+options after `--` go on its command line, after those of its `server.toml`:
+
+```bash
+deploy/container/test-instance.sh up --developer 2 coop-commando -- +sv_cheats 1
+```
+
+They're `LAUNCH_OPTIONS` of the server's environment file, which
+`tools/start_server.sh` adds, for the systemd units of `up --db-only` too.
+
 The systemd units can be tested on this machine as well, set up as in [Running
 with systemd](#running-with-systemd), with only the test instance's database:
 `up --db-only` starts it at `127.0.0.1:3306` (`TEST_DB_PORT` for another port)

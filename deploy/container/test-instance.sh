@@ -11,9 +11,12 @@
 #                     by default, which includes Insurgency's test server) in the state folder with the
 #                     image's updater (entrypoint.sh update), which the server mounts; the first
 #                     downloads the games and the items
-#   up [--db-only] [CONFIG]
+#   up [--db-only] [--developer LEVEL] [CONFIG] [-- OPTION...]
 #                     start the test instance of a config of servers/ (coop-commando by default), anew;
-#                     with --db-only only its database, for the systemd units on this machine
+#                     with --db-only only its database, for the systemd units on this machine; with
+#                     --developer the server's developer messages of LEVEL (+developer LEVEL, 1 or 2),
+#                     and with OPTION... more options of its command line, e.g. -- +sv_cheats 1, which
+#                     the systemd units get too (LAUNCH_OPTIONS of tools/start_server.sh)
 #   down              remove the test instance, its database and volumes
 #   rcon COMMAND...   run a command on the server over RCON
 #   logs              follow the server's log
@@ -33,6 +36,8 @@
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 # SANITISER: undefined, address or address,undefined: up starts the server from the sanitiser image
 # (localhost/nwi-server-sanitiser, deploy/container/sanitiser, see README.md), with its runtime preloaded
+# LAUNCH_OPTIONS: options of the server's command line for every up, separated by spaces, before those
+# of up's own
 #
 # These variables can be kept in ${XDG_CONFIG_HOME:-~/.config}/nwi-server-kit/test-instance.env, one VAR=value
 # a line, e.g. TEST_ADMIN=[U:1:123]; the environment's take precedence.
@@ -44,7 +49,7 @@ settings=${XDG_CONFIG_HOME:-$HOME/.config}/nwi-server-kit/test-instance.env
 if [[ -f $settings ]]; then
 	while IFS= read -r line || [[ -n $line ]]; do
 		[[ $line =~ ^[[:space:]]*(#|$) ]] && continue
-		if [[ ! $line =~ ^(AUR_REPO|AUR_DBROOT|NWI_TEST_DIR|NWI_STATE|DISABLE_PLUGINS|TEST_ADMIN|TEST_DB_PORT|SANITISER)=(.*)$ ]]; then
+		if [[ ! $line =~ ^(AUR_REPO|AUR_DBROOT|NWI_TEST_DIR|NWI_STATE|DISABLE_PLUGINS|TEST_ADMIN|TEST_DB_PORT|SANITISER|LAUNCH_OPTIONS)=(.*)$ ]]; then
 			echo "Error: $settings: not a setting of this script: $line" >&2
 			exit 1
 		fi
@@ -275,11 +280,37 @@ cmd_update() {
 }
 
 cmd_up() {
-	if [[ ${1:-} == --db-only ]]; then
-		db_only=1
+	local config=coop-commando db_password volume game option
+	local -a launch_options=()
+	read -ra launch_options <<<"${LAUNCH_OPTIONS:-}"
+	while (($#)); do
+		case $1 in
+			--db-only) db_only=1 ;;
+			--developer)
+				if [[ ! ${2:-} =~ ^[0-9]+$ ]]; then
+					echo "Error: --developer needs a level, e.g. --developer 2" >&2
+					exit 2
+				fi
+				launch_options+=(+developer "$2")
+				shift
+				;;
+			--)
+				shift
+				launch_options+=("$@")
+				break
+				;;
+			-*) usage ;;
+			*) config=$1 ;;
+		esac
 		shift
-	fi
-	local config=${1:-coop-commando} db_password volume game
+	done
+	for option in "${launch_options[@]}"; do
+		# One option a word: the environment file separates them by spaces
+		if [[ -z $option || $option =~ [[:space:]] ]]; then
+			echo "Error: a launch option with a space or empty: '$option'" >&2
+			exit 2
+		fi
+	done
 	check_config "$config"
 	game=$(python3 "$repo/tools/server_config.py" game "$repo/servers/$config/server.toml")
 	read_admins
@@ -309,6 +340,10 @@ cmd_up() {
 		# For admins_simple.ini (prepare_server.sh)
 		if ((${#admins[@]})); then
 			printf 'TEST_ADMIN=%s\n' "${admins[*]}"
+		fi
+		# For start_server.sh
+		if ((${#launch_options[@]})); then
+			printf 'LAUNCH_OPTIONS=%s\n' "${launch_options[*]}"
 		fi
 	} >"$dir/server.env"
 	write_database "$game"

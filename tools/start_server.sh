@@ -9,6 +9,8 @@
 #
 # SERVER_PORT, TV_PORT, CLIENT_PORT: the server's ports, from its environment file
 # (/etc/nwi-server/<server>.env); its password is in its config (prepare_server.sh)
+# LAUNCH_OPTIONS: more options of the command line, separated by spaces, after server.toml's, so that
+# they win, e.g. +developer 2 for a test server
 # SANITISER: undefined, address or address,undefined, for a server with test builds of SourceMod and
 # Metamod:Source with these sanitisers (./aur-packages build --sanitize of the AUR packages, see
 # README.md): their 32-bit runtime of compiler-rt is preloaded into srcds too, and they report to the
@@ -23,6 +25,7 @@ game=$(python3 "$tools/games.py" folder "$root")
 # The options of server.toml, one per line
 options=$(python3 "$tools/server_config.py" args "$root")
 mapfile -t settings <<<"$options"
+read -ra launch_options <<<"${LAUNCH_OPTIONS:-}"
 
 # Preloaded into srcds only, as srcds_watchdog.py is a 64-bit Python: the sanitisers' runtime
 libraries=() preload=()
@@ -53,4 +56,4 @@ fi
 
 exec python3 "$tools/srcds_watchdog.py" -- env "${preload[@]}" "$root/srcds_linux" -game "$game" -usercon \
 	-port "${SERVER_PORT:-27015}" +tv_port "${TV_PORT:-27020}" +clientport "${CLIENT_PORT:-27005}" \
-	+r_hunkalloclightmaps 0 "${settings[@]}"
+	+r_hunkalloclightmaps 0 "${settings[@]}" "${launch_options[@]}"
