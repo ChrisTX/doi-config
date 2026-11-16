@@ -8,12 +8,16 @@
 // it comes from PhysFrame, which starts by comparing it with 0 (cmp dword ptr [physenv], 0 at +6, its
 // address at +8). The slots of its timestep methods are those of the SDK's IPhysicsEnvironment
 // (public/vphysics_interface.h); on Windows, the virtual destructor takes one slot instead of GCC's two,
-// so they're one lower (PhysFrame calls Simulate through slot 34 on Windows, 35 on Linux).
+// so they're one lower (PhysFrame calls Simulate through slot 34 on Windows, 35 on Linux). 64-bit
+// Windows has the same slots. There, PhysFrame compares physenv with 0 RIP-relative (cmp qword ptr
+// [rip + disp32], 0), which SourceMod's Addresses can't follow: they only add offsets and read
+// pointers. Its windows64 signature is that cmp, inside PhysFrame: physenv is at the signature's
+// address + 8 + the int32 at +3, which a plugin has to work out itself.
 //
 // CBaseServer::GetMasterServerPlayerCounts(int &humans, int &maximum, int &bots) computes the counts
 // the server reports; CSteam3Server::SendUpdatedServerDetails passes them on to Steam, which answers
 // the server browsers' queries (A2S) with them. Windows: the call before the "players : %i humans, %i
-// bots (%i/%i max)" line of status, the same signature in both games' engine.dll.
+// bots (%i/%i max)" line of status, the same signature in both games' engine.dll, 32-bit and 64-bit.
 //
 // The playlists: CPlaylists (g_Playlists, the object) reads them in UpdateCache, which makes a Playlist
 // for each playlist and ruleset (CPlaylists::GeneratePlaylist: its key and ruleset first, then SetData).
@@ -46,12 +50,14 @@
             {
                 "library"   "server"
                 "windows"   "\x55\x8B\xEC\x83\xEC\x1C\x83\x3D\x2A\x2A\x2A\x2A\x00\x53\x56\x57\x0F\x84\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85"
+                "windows64" "\x48\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x28\xF0\x0F\x84\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85"
             }
             "GetMasterServerPlayerCounts"
             {
                 "library"   "engine"
                 "linux"     "@_ZN11CBaseServer27GetMasterServerPlayerCountsERiS0_S0_"
                 "windows"   "\x55\x8B\xEC\x56\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x8B\x55\x08"
+                "windows64" "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x48\x89\x7C\x24\x18\x41\x56\x48\x83\xEC\x20\x4D\x8B\xF1\x49\x8B\xF0\x48\x8B\xDA\x48\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x89\x03"
             }
             "SendUpdatedServerDetails"
             {
@@ -125,6 +131,7 @@
                     "read"      "8"
                     "read"      "0"
                 }
+                // None for windows64: see the top, PhysFrame's signature is where to start
             }
         }
         "Offsets"
@@ -133,11 +140,13 @@
             {
                 "linux"     "37"
                 "windows"   "36"
+                "windows64" "36"
             }
             "SetSimulationTimestep"
             {
                 "linux"     "38"
                 "windows"   "37"
+                "windows64" "37"
             }
             // Playlist's fields: its key (char[260]) and its own data (KeyValues *)
             "Playlist::m_key"
