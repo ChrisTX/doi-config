@@ -16,7 +16,8 @@ from .gamedata import Entry
 if TYPE_CHECKING:
     from ghidra.program.model.listing import Program
 
-# Gamedata names that differ from the methods'
+# Gamedata names that differ from the methods', SourceMod's names of all games (checked with Day of
+# Infamy, Insurgency, TF2, CS:S and L4D2)
 ALIAS = {
     "SetEntityModel": "SetModel",
     "WeaponEquip": "Weapon_Equip",
@@ -25,7 +26,7 @@ ALIAS = {
     "SetClientName": "SetName",
     "PlayerRunCmd": "PlayerRunCommand",
 }
-# Offsets that aren't vtable slots
+# Offsets that aren't vtable slots: SourceMod's of all games, and those of a game's own gamedata
 FIELDS = frozenset(
     {
         "CSendPropExtra_UtlVector::m_Offset",
@@ -35,8 +36,15 @@ FIELDS = frozenset(
         "TE_GetServerClass",
         "EntityListeners",
         "GetDataDescMap",
-        # CBaseClient's field that CBaseServer::UpdateUserSettings checks
+        # CBaseClient's field that CBaseServer::UpdateUserSettings checks (Day of Infamy's own)
         "InfoChanged",
+        # sm-cstrike.games (CS:S): fields of the weapons' info, the players and the teams
+        "WeaponName",
+        "WeaponPrice",
+        "ClanTagOffset",
+        "CTTeamScoreOffset",
+        "TTeamScoreOffset",
+        "MVPs",
     }
 )
 # The results that are failures of the check
