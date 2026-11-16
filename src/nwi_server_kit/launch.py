@@ -50,6 +50,7 @@ The environment, the server's environment file (/etc/nwi-server/<server>.env):
 """
 
 import os
+import pwd
 import re
 import secrets
 import shutil
@@ -149,7 +150,9 @@ def write_secret(
             if group is not None:
                 shutil.chown(path, group=group)
             elif user and user != "root":
-                shutil.chown(path, user=user)
+                # The user and its login group, as chown USER: does
+                account = pwd.getpwnam(user)
+                os.fchown(descriptor, account.pw_uid, account.pw_gid)
         file.write(text)
 
 
