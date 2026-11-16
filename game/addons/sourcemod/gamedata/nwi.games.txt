@@ -11,8 +11,9 @@
 // so they're one lower (PhysFrame calls Simulate through slot 34 on Windows, 35 on Linux). 64-bit
 // Windows has the same slots. There, PhysFrame compares physenv with 0 RIP-relative (cmp qword ptr
 // [rip + disp32], 0), which SourceMod's Addresses can't follow: they only add offsets and read
-// pointers. Its windows64 signature is that cmp, inside PhysFrame: physenv is at the signature's
-// address + 8 + the int32 at +3, which a plugin has to work out itself.
+// pointers. Its windows64 signature is that cmp, inside PhysFrame, and nwi_gamedata works physenv out
+// itself (with SourceMod 1.13): the int32 at PhysFrame::physenv is its distance from
+// PhysFrame::physenv_next, the end of the cmp.
 //
 // CBaseServer::GetMasterServerPlayerCounts(int &humans, int &maximum, int &bots) computes the counts
 // the server reports; CSteam3Server::SendUpdatedServerDetails passes them on to Steam, which answers
@@ -131,7 +132,7 @@
                     "read"      "8"
                     "read"      "0"
                 }
-                // None for windows64: see the top, PhysFrame's signature is where to start
+                // None for windows64: nwi_gamedata finds it from PhysFrame's signature, see the top
             }
         }
         "Offsets"
@@ -147,6 +148,15 @@
                 "linux"     "38"
                 "windows"   "37"
                 "windows64" "37"
+            }
+            // Where physenv's distance is in PhysFrame's signature, and what it's relative to
+            "PhysFrame::physenv"
+            {
+                "windows64" "3"
+            }
+            "PhysFrame::physenv_next"
+            {
+                "windows64" "8"
             }
             // Playlist's fields: its key (char[260]) and its own data (KeyValues *)
             "Playlist::m_key"

@@ -36,6 +36,10 @@ GlobalForward g_onSteamServerDetails;
 GlobalForward g_onStatsWorkshopCheck;
 // Whether the server is sending its details to Steam, while GetMasterServerPlayerCounts runs for it
 bool g_inServerDetails = false;
+#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
+// Where physenv is, on 64-bit Windows, where the gamedata's Addresses can't name it
+Address g_physenvSlot;
+#endif
 
 // The playlists: CPlaylists::UpdateCache, Playlist::GenerateCoalescedData and the KeyValues calls that
 // load a replacement (all or none), the Playlist's fields, and the folder of the replacements (none
@@ -87,6 +91,9 @@ public void OnPluginStart()
     }
     if (g_getStep == null || g_setStep == null)
         LogError("No physics timestep calls: the gamedata lacks their offsets");
+#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
+    g_physenvSlot = PhysicsEnvironmentSlot();
+#endif
 
     // The counts the server sends to Steam: the call of GetMasterServerPlayerCounts inside
     // SendUpdatedServerDetails, not those of status or the server's own answers
@@ -295,8 +302,34 @@ MRESReturn Detour_PlayerCountsPost(DHookParam params)
 // The physics environment, which the game creates anew at every map start
 Address PhysicsEnvironment()
 {
+#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
+    if (g_physenvSlot != Address_Null)
+        return LoadAddressFromAddress(g_physenvSlot);
+#endif
     return g_gamedata.GetAddress("physenv");
 }
+
+#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
+// Where physenv is on 64-bit Windows, or null elsewhere. PhysFrame reaches it there relative to the
+// instruction (RIP), which the gamedata's Addresses can't follow: the int32 at PhysFrame::physenv of
+// PhysFrame's signature is physenv's distance from PhysFrame::physenv_next. Only that platform's
+// gamedata has those offsets. LoadAddressFromAddress, for its 64-bit pointer, is SourceMod 1.13's.
+Address PhysicsEnvironmentSlot()
+{
+    int displacement = g_gamedata.GetOffset("PhysFrame::physenv");
+    int next = g_gamedata.GetOffset("PhysFrame::physenv_next");
+    if (displacement == -1 || next == -1)
+        return Address_Null;
+    Address instruction = g_gamedata.GetMemSig("PhysFrame");
+    if (instruction == Address_Null)
+    {
+        LogError("No physics timestep calls: PhysFrame's signature doesn't match");
+        return Address_Null;
+    }
+    int distance = LoadFromAddress(instruction + view_as<Address>(displacement), NumberType_Int32);
+    return instruction + view_as<Address>(next) + view_as<Address>(distance);
+}
+#endif
 
 public any Native_GetPhysicsTimestep(Handle plugin, int numParams)
 {
