@@ -26,7 +26,6 @@ game's own depot (game), its workshop items, a folder made of its game's items' 
 (<game>/workshop.v), and its mods, and a list of its game's other depots (depots).
 """
 
-import argparse
 import hashlib
 import os
 import shutil
@@ -36,9 +35,8 @@ import tempfile
 import tomllib
 from pathlib import Path
 
-from . import downloads, games, layers, workshop
-from .check_gamedata import main as check_gamedata
-from .make_mods import main as make_mods
+from . import check_gamedata, downloads, games, layers, workshop
+from .make_mods import ModError, check_scripts, make
 
 # The shipped, outdated C++ runtime, which the system's replaces, and libogg and libvorbis, which no
 # library of the game loads (the engine has its own Vorbis decoder): the server puts bin/ on
@@ -139,19 +137,6 @@ def compile_plugins(configs: Path, output: Path) -> None:
             check=True,
             stdout=sys.stderr,
         )
-
-
-def compile_main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    if len(args) != 2:
-        print("Usage: nwi-server compile-plugins CONFIGS OUTPUT", file=sys.stderr)
-        return 2
-    try:
-        compile_plugins(Path(args[0]), Path(args[1]))
-    except (OSError, subprocess.CalledProcessError) as error:
-        print(f"nwi-server compile-plugins: {error}", file=sys.stderr)
-        return 1
-    return 0
 
 
 # The installs the servers' game folders get as layers of their own: the layer, the variable that
@@ -400,28 +385,22 @@ def build_mods(
             # The map scripts of the game and the items, which the mods are made from: the log lists
             # those whose braces are repaired, or can't be, which a mod's fix table repairs. Broken ones
             # don't fail the update, as the servers run without the maps.
-            if (
-                make_mods(["--game", str(own), "--workshop", str(workshop), "--check"])
-                != 0
-            ):
+            try:
+                broken = check_scripts(own, workshop)
+            except (ModError, OSError, ValueError) as error:
+                print(f"Warning: the map scripts of {game}: {error}", file=sys.stderr)
+                broken = 0
+            if broken:
                 print(
                     f"Warning: map scripts of {game} that can't be repaired, see above",
                     file=sys.stderr,
                 )
-            if (
-                make_mods(
-                    [
-                        "--game",
-                        str(own),
-                        "--workshop",
-                        str(workshop),
-                        str(output),
-                        *(str(path) for path in used_mods(mods, items)),
-                    ]
-                )
-                != 0
-            ):
-                raise ValueError(f"the mods of {source} for {game} can't be made")
+            try:
+                make(own, workshop, output, used_mods(mods, items))
+            except (ModError, OSError, ValueError) as error:
+                raise ValueError(
+                    f"the mods of {source} for {game} can't be made: {error}"
+                ) from error
         else:
             output.mkdir()
         return layers.keep_if_new(output, layers.folder(state / game, f"mods-{source}"))
@@ -574,7 +553,10 @@ def update(state: Path, image: bool = False) -> None:
         for source in game_sources or [games.DEFAULT_SOURCE]:
             configs = games.config_folder(source)
             gamedata = configs / "game/addons/sourcemod/gamedata/nwi.games.txt"
-            if check_gamedata([str(own), "--gamedata", str(gamedata)]) != 0:
+            lacking = check_gamedata.missing(own, gamedata)
+            for line in lacking:
+                print(f"Error: {line}", file=sys.stderr)
+            if lacking:
                 raise ValueError(f"{game} lacks functions of the gamedata of {source}")
             build_mods(state, game, source, configs, own, app, items)
             needed.add(layers.folder(state / game, f"mods-{source}"))
@@ -609,20 +591,3 @@ def remove_clones(state: Path, sources: list[str]) -> None:
             print(
                 f"Removed {clone}, of a config source that was removed", file=sys.stderr
             )
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        prog="nwi-server update",
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument("--image", action="store_true", help="for the container image")
-    parser.add_argument("state", type=Path, metavar="STATE", help="the updater's state")
-    args = parser.parse_args(argv)
-    try:
-        update(args.state, args.image)
-    except (ValueError, OSError, RuntimeError, subprocess.CalledProcessError) as error:
-        print(f"nwi-server update: {error}", file=sys.stderr)
-        return 1
-    return 0

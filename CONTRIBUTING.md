@@ -21,7 +21,7 @@ clang's `clang-format` formats the C++ of hl2sdk-ghidra, `src/hl2sdk_ghidra/sdk_
 
 What runs where:
 
-- `src/`: the packages, everything a server, its updates and its admins run; `tests/` has their tests (pytest).
+- `src/`: the packages, everything a server, its updates and its admins run; `tests/` has their tests (pytest). In `src/nwi_server_kit`, the modules are the library, and `cli/` has the command line of each: its arguments, what it prints and its exit status.
 - `deploy/`: the systemd units, the container image, the Quadlet units and the package (`deploy/arch/PKGBUILD`).
 - `checks/`: what the git hooks and GitHub Actions run on the repository's files, e.g. the check of the game's configs against the game's cvars (`checks/cvars.json`).
 - `testing/`: what developers run against test servers: the test instance (`testing/test-instance.sh`), the image with sanitiser builds, the soak test (`test-instance.sh soak`, its config in `testing/servers`) and the dump of a server's cvars. Neither `checks/` nor `testing/` is installed.

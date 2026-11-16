@@ -30,6 +30,7 @@ login).
 import json
 import os
 import re
+import shutil
 import sys
 import time
 import tomllib
@@ -37,7 +38,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import layers, notify, steam_web, vpk
+from . import games, layers, notify, server_config, steam_web, vpk
 
 APPROVED = Path("workshop/approved.toml")
 KEYS = Path("workshop/keys")
@@ -317,3 +318,95 @@ def filter_mapcycle(text: str, maps: set[str]) -> str:
         for line in text.splitlines(keepends=True)
         if not line.split() or line.split()[0] not in maps
     )
+
+
+# The approvals' file and uploads, for nwi-server workshop (cli/workshop.py)
+
+HEADER = """\
+# The approved versions of the workshop items of the servers' lists, by their manifests, and the keys
+# (workshop/keys/<name>.pem) an item's versions may be signed with, which approves them too. Any other
+# new version is held: the servers keep theirs (see nwi_server_kit/workshop.py).
+"""
+
+
+def listed_items(configs: Path) -> list[int]:
+    """The items of the workshop lists the configs' servers name."""
+    items: set[int] = set()
+    for toml in sorted(configs.glob("servers/*/server.toml")):
+        settings = server_config.load(toml)
+        if "workshop" in settings:
+            text = (configs / "game/cfg" / settings["workshop"]).read_text()
+            items |= {
+                int(line.split()[0])
+                for line in text.splitlines()
+                if line.split() and line.split()[0].isdigit()
+            }
+    return sorted(items)
+
+
+def current_manifests(items: list[int]) -> dict[int, str]:
+    """The Workshop's current manifests of the items that are available."""
+    return {
+        int(detail["publishedfileid"]): str(detail["hcontent_file"])
+        for detail in games.item_details(items)
+        if detail.get("result") == 1 and detail.get("hcontent_file")
+    }
+
+
+def read_approved(configs: Path) -> dict[int, dict[str, list[str]]]:
+    path = configs / APPROVED
+    if not path.is_file():
+        return {}
+    with path.open("rb") as file:
+        settings = tomllib.load(file)
+    return {
+        int(item): {
+            "manifests": [str(manifest) for manifest in entry.get("manifests", [])],
+            "keys": [str(key) for key in entry.get("keys", [])],
+        }
+        for item, entry in settings.get("items", {}).items()
+    }
+
+
+def write_approved(configs: Path, approved: dict[int, dict[str, list[str]]]) -> None:
+    lines = [HEADER]
+    for item, entry in sorted(approved.items()):
+        lines.append(f"[items.{item}]")
+        lines.append(
+            "manifests = [" + ", ".join(f'"{m}"' for m in entry["manifests"]) + "]"
+        )
+        if entry["keys"]:
+            lines.append("keys = [" + ", ".join(f'"{k}"' for k in entry["keys"]) + "]")
+        lines.append("")
+    path = configs / APPROVED
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines).rstrip("\n") + "\n")
+
+
+def approve(
+    approved: dict[int, dict[str, list[str]]], item: int, manifest: str
+) -> bool:
+    """Approve a manifest of an item; whether it's new."""
+    entry = approved.setdefault(item, {"manifests": [], "keys": []})
+    if manifest in entry["manifests"]:
+        return False
+    entry["manifests"].append(manifest)
+    return True
+
+
+def stage(paths: list[Path], folder: Path) -> Path:
+    """The content of an upload: a folder as it is, or VPKs, with their archives, copied into FOLDER."""
+    if len(paths) == 1 and paths[0].is_dir():
+        return paths[0]
+    for path in paths:
+        if path.is_dir() or path.suffix != ".vpk":
+            raise ValueError(f"{path}: upload VPKs, or one folder")
+        files = [path]
+        if path.name.endswith("_dir.vpk"):
+            stem = path.name.removesuffix("_dir.vpk")
+            files += sorted(path.parent.glob(f"{stem}_[0-9][0-9][0-9].vpk"))
+        for file in files:
+            if (folder / file.name).exists():
+                raise ValueError(f"{file.name}: given twice")
+            shutil.copy2(file, folder / file.name)
+    return folder

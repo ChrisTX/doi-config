@@ -12,13 +12,9 @@ default; A2S counts the bots as players too), and the maps played to their end w
 changed from to another.
 
 Without systemd, as in the container, it only runs the server. With --check, it queries the server once
-and exits with 0 if it answered, for a container's health check.
-
-    nwi-server watchdog [--host HOST] [--port PORT] [--interval SECONDS] [--timeout SECONDS] -- COMMAND...
-    nwi-server watchdog [--host HOST] [--port PORT] [--timeout SECONDS] --check
+and exits with 0 if it answered, for a container's health check (cli/watchdog.py).
 """
 
-import argparse
 import json
 import os
 import signal
@@ -108,45 +104,6 @@ def default_host() -> str:
 
 def default_port() -> int:
     return int(os.getenv("SERVER_PORT", "27015"))
-
-
-def parse_args(argv: list[str] | None) -> argparse.Namespace:
-    """Parse the command line, the command of the server after --."""
-    parser = argparse.ArgumentParser(
-        prog="nwi-server watchdog",
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--host",
-        default=default_host(),
-        help="the server's address, by default the address this machine's traffic leaves from",
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=default_port(),
-        help="the server's port, by default SERVER_PORT or 27015",
-    )
-    parser.add_argument(
-        "--interval", type=float, default=10, help="seconds between queries"
-    )
-    parser.add_argument(
-        "--timeout", type=float, default=5, help="seconds to wait for an answer"
-    )
-    parser.add_argument("--check", action="store_true", help="query the server once")
-    parser.add_argument("command", nargs="*", help="the server's command line")
-    return parser.parse_args(argv)
-
-
-def main(argv: list[str] | None = None) -> int:
-    args = parse_args(argv)
-    if args.check:
-        return check(args.host, args.port, args.timeout)
-    if not args.command:
-        print("No command to run the server with", file=sys.stderr)
-        return 2
-    return watch(args.command, args.host, args.port, args.interval, args.timeout)
 
 
 def watch(

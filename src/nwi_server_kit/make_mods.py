@@ -84,15 +84,9 @@ With --check, nothing is made: every map script of the game and of the workshop 
 those whose braces had to be repaired, or can't be, are listed, the latter with an exit status of 1. A
 broken script of a workshop map can be repaired with a mod that has the map in its fix list.
 
-Usage: nwi-server make-mods --game DIR --workshop DIR OUTPUT MODS...
-       nwi-server make-mods --game DIR --workshop DIR --check
-
---game is the game's install, with its game's folder, e.g. doi/, in it (games.py), --workshop
-the folder of the workshop items (steamapps/workshop/content/<app>/<item> in it). MODS are the mods' .toml files, or folders of them.
-OUTPUT is replaced.
+The commands: cli/make_mods.py.
 """
 
-import argparse
 import fnmatch
 import re
 import shutil
@@ -830,68 +824,25 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> list[Rep
     return replaces
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        prog="nwi-server make-mods",
-        description="Make the mods of mods/<game>/*.toml from the game's map scripts and playlists.",
-    )
-    parser.add_argument(
-        "--game",
-        type=Path,
-        required=True,
-        help="the game's install, with its game's folder, e.g. doi/, in it",
-    )
-    parser.add_argument(
-        "--workshop",
-        type=Path,
-        required=True,
-        help="the folder of the workshop items",
-    )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="check every map script of the game and the workshop items instead",
-    )
-    parser.add_argument(
-        "output", type=Path, nargs="?", help="the folder of the mods, replaced"
-    )
-    parser.add_argument(
-        "mods", type=Path, nargs="*", help="the mods' .toml files, or folders of them"
-    )
-    arguments = parser.parse_args(argv)
-    if arguments.check:
-        if arguments.output is not None:
-            parser.error("--check takes no output or mods")
-        try:
-            return 1 if check_scripts(arguments.game, arguments.workshop) else 0
-        except (ModError, OSError, ValueError) as error:
-            print(f"nwi-server make-mods: {error}", file=sys.stderr)
-            return 1
-    if arguments.output is None or not arguments.mods:
-        parser.error("the output and the mods are required")
-
-    # Made next to the output first, so that a failure leaves the mods as they were
-    new = arguments.output.with_name(arguments.output.name + ".new")
+def make(game: Path, workshop: Path, output: Path, mods: list[Path]) -> None:
+    """Make the mods, their .toml files or folders of them, of the game's install and the folder of the
+    workshop items into OUTPUT, replaced: made next to it first, so that a failure leaves the mods as
+    they were."""
+    new = output.with_name(output.name + ".new")
     shutil.rmtree(new, ignore_errors=True)
     new.mkdir(parents=True)
     try:
         configs = [
             config
-            for path in arguments.mods
+            for path in mods
             for config in (sorted(path.glob("*.toml")) if path.is_dir() else [path])
         ]
         replaces = []
         for config in configs:
-            replaces += make_mod(config, arguments.game, arguments.workshop, new)
-        make_replacements(arguments.game, replaces, new)
-    except (ModError, OSError, ValueError) as error:
+            replaces += make_mod(config, game, workshop, new)
+        make_replacements(game, replaces, new)
+    except BaseException:
         shutil.rmtree(new, ignore_errors=True)
-        print(f"nwi-server make-mods: {error}", file=sys.stderr)
-        return 1
-    shutil.rmtree(arguments.output, ignore_errors=True)
-    new.rename(arguments.output)
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+        raise
+    shutil.rmtree(output, ignore_errors=True)
+    new.rename(output)

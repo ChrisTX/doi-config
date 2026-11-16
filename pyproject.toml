@@ -18,7 +18,7 @@ dependencies = [
 
 [project.scripts]
 hl2sdk-ghidra = "hl2sdk_ghidra.cli:main"
-nwi-rcon = "nwi_server_kit.rcon:main"
+nwi-rcon = "nwi_server_kit.cli.rcon:main"
 nwi-server = "nwi_server_kit.cli:main"
 
 # hl2sdk-ghidra's (src/hl2sdk_ghidra): Ghidra through PyGhidra, with JPype (python-jpype1, AUR), and

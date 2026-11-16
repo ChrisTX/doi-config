@@ -8,8 +8,6 @@ and those of the game's own block, count; signatures without a Linux symbol are 
 is read as SourceMod reads it (hl2sdk_ghidra.gamedata).
 """
 
-import argparse
-import sys
 from pathlib import Path
 
 from hl2sdk_ghidra import elf, gamedata
@@ -17,43 +15,20 @@ from hl2sdk_ghidra import elf, gamedata
 from .games import config_folder, game_folder
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        prog="nwi-server check-gamedata",
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "game_dir",
-        type=Path,
-        metavar="GAME",
-        help="the game install, with its game's folder, doi/ or insurgency/, in it",
-    )
-    parser.add_argument(
-        "--gamedata",
-        type=Path,
-        default=None,
-        help="the gamedata file (of the default config source's configs by default)",
-    )
-    args = parser.parse_args(argv)
-
-    try:
-        if args.gamedata is None:
-            args.gamedata = (
-                config_folder() / "game/addons/sourcemod/gamedata/nwi.games.txt"
-            )
-        folder = game_folder(args.game_dir)
-    except ValueError as error:
-        print(f"Error: {error}", file=sys.stderr)
-        return 2
+def missing(game_dir: Path, gamedata_file: Path | None = None) -> list[str]:
+    """The gamedata's signatures by symbol that the game install's libraries don't have, as
+    messages; the gamedata of the default config source's configs without GAMEDATA_FILE."""
+    if gamedata_file is None:
+        gamedata_file = config_folder() / "game/addons/sourcemod/gamedata/nwi.games.txt"
+    folder = game_folder(game_dir)
     game = folder.name
     libraries = {
         "server": folder / "bin/server_srv.so",
-        "engine": args.game_dir / "bin/engine_srv.so",
+        "engine": game_dir / "bin/engine_srv.so",
     }
     # The game's engine as SourceMod names it is the game's name: doi or insurgency
-    found = gamedata.symbols(gamedata.entries([args.gamedata], game, game))
-    missing = []
+    found = gamedata.symbols(gamedata.entries([gamedata_file], game, game))
+    messages = []
     loaded: dict[str, set[str]] = {}
     for entry in found:
         library = entry.library or "server"
@@ -62,11 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         if library not in loaded:
             loaded[library] = elf.symbols(libraries[library])
         if entry.value not in loaded[library]:
-            missing.append(f"{entry.name}: {entry.value} isn't in {libraries[library]}")
-    for line in missing:
-        print(f"Error: {line}", file=sys.stderr)
-    return 1 if missing else 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+            messages.append(
+                f"{entry.name}: {entry.value} isn't in {libraries[library]}"
+            )
+    return messages

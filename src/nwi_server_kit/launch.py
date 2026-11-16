@@ -1,10 +1,6 @@
 """A server's start: its preparation in its writable layer and its run under the watchdog, for
 nwi-server@.service and the container's entrypoint, which share them this way.
 
-Usage:
-    nwi-server prepare ROOT NAME   configure the server of ROOT, named NAME, in its writable layer
-    nwi-server start ROOT          run the server of ROOT (srcds_linux there) under the watchdog
-
 prepare configures a server in its writable layer: one assembled by nwi-server mount, whose writable
 layer starts empty whenever nwi-server@.service mounts it, on every start of the server
 (nwi-server@.service runs it as root with "!", as the layers belong to root), or the container's
@@ -47,6 +43,8 @@ The environment, the server's environment file (/etc/nwi-server/<server>.env):
                       --sanitize of the AUR packages, see README.md): their 32-bit runtime of
                       compiler-rt is preloaded into srcds too, and they report to the server's output
                       with stack traces (UBSAN_OPTIONS and ASAN_OPTIONS, unless they're set)
+
+The commands: cli/launch.py.
 """
 
 import os
@@ -54,7 +52,6 @@ import pwd
 import re
 import secrets
 import shutil
-import sys
 from pathlib import Path
 
 from . import games, rcon, server_config, watchdog
@@ -261,26 +258,3 @@ def start(root: Path) -> int:
     return watchdog.watch(
         line, watchdog.default_host(), watchdog.default_port(), env=environment
     )
-
-
-def prepare_main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        print(__doc__.split("Usage:")[1].split("\n\n")[0], file=sys.stderr)
-        return 2
-    try:
-        prepare(Path(argv[0]), argv[1])
-    except (OSError, ValueError) as error:
-        print(f"nwi-server prepare: {error}", file=sys.stderr)
-        return 1
-    return 0
-
-
-def start_main(argv: list[str]) -> int:
-    if len(argv) != 1:
-        print(__doc__.split("Usage:")[1].split("\n\n")[0], file=sys.stderr)
-        return 2
-    try:
-        return start(Path(argv[0]))
-    except (OSError, ValueError) as error:
-        print(f"nwi-server start: {error}", file=sys.stderr)
-        return 1

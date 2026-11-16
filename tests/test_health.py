@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from nwi_server_kit import health, layers
+from nwi_server_kit.cli import health as health_cli
 
 from .conftest import State
 
@@ -136,9 +137,9 @@ def test_the_core_is_blessed_by_busy_minutes_over_runs(
 
 def test_retry_and_approve_by_hand(server: Server) -> None:
     used_up = layers.renamed(server.depot, 0, 3)
-    assert health.main(["retry", str(used_up)]) == 0
+    assert health_cli.main(["retry", str(used_up)]) == 0
     assert server.counters(server.depot) == (3, 0)
-    assert health.main(["approve", str(layers.canonical(used_up))]) == 0
+    assert health_cli.main(["approve", str(layers.canonical(used_up))]) == 0
     assert server.counters(server.depot) is None
 
 
@@ -146,7 +147,7 @@ def test_retry_and_approve_by_hand(server: Server) -> None:
 def test_commands_take_only_versions_of_layers(server: Server, version: str) -> None:
     with pytest.raises(ValueError, match="not a version of a layer"):
         health.version_folder(version)
-    assert health.main(["retry", version]) == 1
+    assert health_cli.main(["retry", version]) == 1
 
 
 def test_status_report(server: Server, capsys: pytest.CaptureFixture[str]) -> None:

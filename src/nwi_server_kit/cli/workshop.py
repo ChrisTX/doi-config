@@ -42,79 +42,7 @@ import time
 import tomllib
 from pathlib import Path
 
-from . import games, steam_ugc, steam_web, vpk, workshop
-from .server_config import load as load_settings
-
-HEADER = """\
-# The approved versions of the workshop items of the servers' lists, by their manifests, and the keys
-# (workshop/keys/<name>.pem) an item's versions may be signed with, which approves them too. Any other
-# new version is held: the servers keep theirs (see nwi_server_kit/workshop.py).
-"""
-
-
-def listed_items(configs: Path) -> list[int]:
-    """The items of the workshop lists the configs' servers name."""
-    items: set[int] = set()
-    for toml in sorted(configs.glob("servers/*/server.toml")):
-        settings = load_settings(toml)
-        if "workshop" in settings:
-            text = (configs / "game/cfg" / settings["workshop"]).read_text()
-            items |= {
-                int(line.split()[0])
-                for line in text.splitlines()
-                if line.split() and line.split()[0].isdigit()
-            }
-    return sorted(items)
-
-
-def current_manifests(items: list[int]) -> dict[int, str]:
-    """The Workshop's current manifests of the items that are available."""
-    return {
-        int(detail["publishedfileid"]): str(detail["hcontent_file"])
-        for detail in games.item_details(items)
-        if detail.get("result") == 1 and detail.get("hcontent_file")
-    }
-
-
-def read_approved(configs: Path) -> dict[int, dict[str, list[str]]]:
-    path = configs / workshop.APPROVED
-    if not path.is_file():
-        return {}
-    with path.open("rb") as file:
-        settings = tomllib.load(file)
-    return {
-        int(item): {
-            "manifests": [str(manifest) for manifest in entry.get("manifests", [])],
-            "keys": [str(key) for key in entry.get("keys", [])],
-        }
-        for item, entry in settings.get("items", {}).items()
-    }
-
-
-def write_approved(configs: Path, approved: dict[int, dict[str, list[str]]]) -> None:
-    lines = [HEADER]
-    for item, entry in sorted(approved.items()):
-        lines.append(f"[items.{item}]")
-        lines.append(
-            "manifests = [" + ", ".join(f'"{m}"' for m in entry["manifests"]) + "]"
-        )
-        if entry["keys"]:
-            lines.append("keys = [" + ", ".join(f'"{k}"' for k in entry["keys"]) + "]")
-        lines.append("")
-    path = configs / workshop.APPROVED
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines).rstrip("\n") + "\n")
-
-
-def approve(
-    approved: dict[int, dict[str, list[str]]], item: int, manifest: str
-) -> bool:
-    """Approve a manifest of an item; whether it's new."""
-    entry = approved.setdefault(item, {"manifests": [], "keys": []})
-    if manifest in entry["manifests"]:
-        return False
-    entry["manifests"].append(manifest)
-    return True
+from .. import games, steam_ugc, steam_web, vpk, workshop
 
 
 def show_code(url: str) -> None:
@@ -135,24 +63,6 @@ def show_code(url: str) -> None:
     print(url, file=sys.stderr)
 
 
-def stage(paths: list[Path], folder: Path) -> Path:
-    """The content of an upload: a folder as it is, or VPKs, with their archives, copied into FOLDER."""
-    if len(paths) == 1 and paths[0].is_dir():
-        return paths[0]
-    for path in paths:
-        if path.is_dir() or path.suffix != ".vpk":
-            raise ValueError(f"{path}: upload VPKs, or one folder")
-        files = [path]
-        if path.name.endswith("_dir.vpk"):
-            stem = path.name.removesuffix("_dir.vpk")
-            files += sorted(path.parent.glob(f"{stem}_[0-9][0-9][0-9].vpk"))
-        for file in files:
-            if (folder / file.name).exists():
-                raise ValueError(f"{file.name}: given twice")
-            shutil.copy2(file, folder / file.name)
-    return folder
-
-
 def show_progress(status: str, done: int, total: int) -> None:
     share = f" {done * 100 // total}%" if total else ""
     print(f"\r{status}{share}\033[K", end="", file=sys.stderr, flush=True)
@@ -169,7 +79,7 @@ def upload(args: argparse.Namespace) -> int:
     else:
         app = steam_ugc.CONSUMER_APPS[args.game]
     with tempfile.TemporaryDirectory(prefix="nwi-upload-") as temporary:
-        content = stage(args.paths, Path(temporary))
+        content = workshop.stage(args.paths, Path(temporary))
         update = steam_ugc.Update(
             content=content,
             title=args.title,
@@ -326,12 +236,13 @@ def run(args: argparse.Namespace) -> int:
         return status
     if args.command in ("freeze", "approve"):
         configs = configs_folder(args.configs)
-        approved = read_approved(configs)
+        approved = workshop.read_approved(configs)
         if args.command == "freeze":
-            items = listed_items(configs)
-            found = current_manifests(items)
+            items = workshop.listed_items(configs)
+            found = workshop.current_manifests(items)
             added = sum(
-                approve(approved, item, manifest) for item, manifest in found.items()
+                workshop.approve(approved, item, manifest)
+                for item, manifest in found.items()
             )
             for item in sorted(set(items) - set(found)):
                 print(
@@ -340,14 +251,16 @@ def run(args: argparse.Namespace) -> int:
                 )
             print(f"{added} versions approved, of {len(found)} items")
         else:
-            manifest = args.manifest or current_manifests([args.item]).get(args.item)
+            manifest = args.manifest or workshop.current_manifests([args.item]).get(
+                args.item
+            )
             if manifest is None:
                 raise ValueError(f"item {args.item} isn't available on the Workshop")
-            new = approve(approved, args.item, manifest)
+            new = workshop.approve(approved, args.item, manifest)
             print(
                 f"Item {args.item} at {manifest}: {'approved' if new else 'approved already'}"
             )
-        write_approved(configs, approved)
+        workshop.write_approved(configs, approved)
         return 0
     if args.command == "login":
         answer = steam_web.sign_in(show_code)

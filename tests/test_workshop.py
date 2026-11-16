@@ -1,5 +1,5 @@
 """VPK signatures (vpk.py), the approval of workshop items' versions and the servers' lists of them
-(workshop.py, workshop_cli.py, mount.leave_out, check_updates)."""
+(workshop.py, cli/workshop.py, mount.leave_out, check_updates)."""
 
 import hashlib
 import json
@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from nwi_server_kit import check_updates, mount, notify, vpk, workshop, workshop_cli
+from nwi_server_kit import check_updates, mount, notify, vpk, workshop
+from nwi_server_kit.cli import workshop as workshop_cli
 
 from .conftest import State
 
@@ -320,17 +321,17 @@ def test_held_versions_are_no_updates(
 
 def test_freeze_and_approve(configs: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        workshop_cli,
+        workshop,
         "current_manifests",
         lambda items: {item: f"{item}0" for item in items},
     )
     assert workshop_cli.main(["freeze", "--configs", str(configs)]) == 0
-    approved = workshop_cli.read_approved(configs)
+    approved = workshop.read_approved(configs)
     assert approved[ITEM] == {"manifests": ["111", f"{ITEM}0"], "keys": ["community"]}
     assert approved[333] == {"manifests": ["3330"], "keys": []}
     assert workshop_cli.main(["approve", "222", "6", "--configs", str(configs)]) == 0
     # freeze approved the current version, 2220, approve the 6
-    assert workshop_cli.read_approved(configs)[222]["manifests"] == ["5", "2220", "6"]
+    assert workshop.read_approved(configs)[222]["manifests"] == ["5", "2220", "6"]
     # The file stays readable as the gate reads it
     approvals = workshop.load(configs)
     assert approvals is not None and "6" in approvals.manifests[222]

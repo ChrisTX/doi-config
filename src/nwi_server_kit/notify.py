@@ -1,16 +1,14 @@
 """The admins' notifications: of versions that used up their tries (health.py) and of servers that
 failed for good (nwi-notify-failure@.service, OnFailure= of nwi-server@.service).
 
-Usage:
-    nwi-server notify send          send the queued notifications (nwi-notify.service)
-    nwi-server notify failed UNIT   queue a notification of a unit that failed
-
 A notification is printed to the journal and queued in /run/nwi-server/notify, or the queue of
 NWI_NOTIFY_DIR, e.g. the update's, which runs as a user of its own (/run/nwi-server/notify-update);
 nwi-notify.path watches them: nwi-notify.service sends it by mail through sendmail(8), to root, whose mail the system's
 aliases forward, and to the addresses of NOTIFY_MAIL (space-separated), and to Discord with the webhook
 of the credential nwi-server.discord-webhook, if there's one. NOTIFY_MAIL is set in
 /etc/nwi-server/notify.env.
+
+The commands: cli/notify.py.
 """
 
 import json
@@ -146,14 +144,3 @@ def failed(unit: str) -> None:
         check=False,
     ).stdout
     queue(f"{unit} failed", f"{unit} failed and isn't restarted any more.\n\n{journal}")
-
-
-def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    if args == ["send"]:
-        return send()
-    if len(args) == 2 and args[0] == "failed":
-        failed(args[1])
-        return 0
-    print(__doc__.split("Usage:")[1].split("\n\n")[0].rstrip(), file=sys.stderr)
-    return 2

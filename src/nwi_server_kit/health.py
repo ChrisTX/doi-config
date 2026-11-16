@@ -2,12 +2,6 @@
 server, counted down when a server fails with them, so that a version that keeps failing is passed over
 for the one before.
 
-Usage:
-    nwi-server health [status]          the versions on trial and how far they got
-    nwi-server health bless             bless the versions that proved themselves (nwi-bless.service)
-    nwi-server health approve VERSION…  bless versions by hand
-    nwi-server health retry VERSION…    give versions their tries again, e.g. after a fix elsewhere
-
 A server's watchdog (watchdog.py) writes how it goes to /run/nwi-server/health/<server>/status.json:
 its run (INVOCATION_ID), whether it answered yet (ready), its map, its busy seconds, those with at
 least NWI_BLESS_PLAYERS human players (4 by default), and the maps played to their end while busy
@@ -26,6 +20,8 @@ server failed on another map of an item on trial too with the same core versions
 versions instead, and the items blamed before get their tries back. A version blamed counts a try down;
 once it has none left, the servers pass it over, and the admins are notified (notify.py). The failures
 of a server are in /var/lib/nwi-server/health/<server>.json.
+
+The commands: cli/health.py.
 """
 
 import json
@@ -263,32 +259,3 @@ def status_report() -> None:
             f"{layers.canonical(path).relative_to(state)}: {left} tries left, {done} failed, "
             f"{minutes:.0f} of {busy_seconds() / 60:.0f} busy minutes"
         )
-
-
-def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    command = args[0] if args else "status"
-    try:
-        if command == "status" and len(args) <= 1:
-            status_report()
-        elif command == "bless" and len(args) == 1:
-            bless_all()
-        elif command in ("approve", "retry") and len(args) > 1:
-            with layers.lock(LAYERS.resolve()):
-                for version in args[1:]:
-                    path = version_folder(version)
-                    if command == "approve":
-                        bless(str(path), "approved by hand")
-                    else:
-                        layers.renamed(path, layers.tries())
-                        print(
-                            f"{layers.canonical(path)} is on trial again",
-                            file=sys.stderr,
-                        )
-        else:
-            print(__doc__.split("Usage:")[1].split("\n\n")[0].rstrip(), file=sys.stderr)
-            return 2
-    except (ValueError, OSError) as error:
-        print(f"nwi-server health: {error}", file=sys.stderr)
-        return 1
-    return 0

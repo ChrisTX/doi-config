@@ -1,4 +1,5 @@
-"""The nwi-server command: the tools of the kit as subcommands.
+"""The nwi-server command: the tools of the kit as subcommands, each the command line (cli/<module>.py)
+of a module of the library (<module>.py).
 
 Usage: nwi-server COMMAND ARGUMENTS..., the commands:
     games            what the tools know of the games and find out about the servers (games.py)
@@ -35,7 +36,7 @@ from . import (
     server_config,
     update,
     watchdog,
-    workshop_cli,
+    workshop,
 )
 
 COMMANDS: dict[str, Callable[[list[str]], int]] = {
@@ -50,7 +51,7 @@ COMMANDS: dict[str, Callable[[list[str]], int]] = {
     "unmount": mount.unmount_main,
     "health": health.main,
     "notify": notify.main,
-    "workshop": workshop_cli.main,
+    "workshop": workshop.main,
     "prepare": launch.prepare_main,
     "start": launch.start_main,
     "watchdog": watchdog.main,

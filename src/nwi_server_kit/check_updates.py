@@ -17,18 +17,16 @@ doesn't (workshop.py).
 Exit status: 0 if there are updates, which it lists, 1 if there are none, 255 if it can't tell, e.g.
 without a connection. For systemd's ExecCondition=, which skips the unit on 1 and fails it on 255.
 
-Usage: nwi-server check-updates STATE
+The commands: cli/check_updates.py.
 """
 
-import argparse
-import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 from . import layers, workshop
-from .games import SERVER_APPS, item_details, item_sources, servers, used_games
+from .games import SERVER_APPS, item_details
 
 UPDATES = 0
 NO_UPDATES = 1
@@ -107,39 +105,3 @@ def workshop_updates(state: Path, game: str, sources: dict[int, set[str]]) -> li
                 f"workshop item {item} ({detail.get('title')}): manifest {current}"
             )
     return updates
-
-
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        prog="nwi-server check-updates",
-        description="Check the servers' games and workshop items for updates.",
-    )
-    parser.add_argument(
-        "state", type=Path, metavar="STATE", help="the state folder of the layers"
-    )
-    arguments = parser.parse_args(argv)
-    # The config sources' versions of the state, as servers() reads the servers' settings there
-    os.environ["NWI_LAYERS"] = str(arguments.state)
-    try:
-        found = servers()
-        updates = []
-        for game in used_games(found):
-            updates += game_updates(game, arguments.state)
-            updates += workshop_updates(
-                arguments.state, game, item_sources(found, game)
-            )
-    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
-        print(
-            f"nwi-server check-updates: can't check for updates: {error}",
-            file=sys.stderr,
-        )
-        return UNKNOWN
-    for update in updates:
-        print(f"update: {update}")
-    if not updates:
-        print("no updates")
-    return UPDATES if updates else NO_UPDATES
-
-
-if __name__ == "__main__":
-    sys.exit(main())

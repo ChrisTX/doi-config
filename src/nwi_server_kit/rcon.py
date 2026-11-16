@@ -1,25 +1,10 @@
-"""Source RCON: running a command on a server, and nwi-rcon, which prints its answer.
-
-The password comes from RCON_PASSWORD, so it doesn't show up in the process list, or with --server
-from the server of nwi-server@.service on this machine: its password from /run/nwi-server/rcon/<server>,
-which the members of the group nwi-rcon can read (nwi-server prepare, launch.py), and its port, SERVER_PORT
-of /etc/nwi-server/<server>.env. With --ssh, the command runs on another machine instead, as nwi-rcon
---server there: the password stays on it, and its RCON port needs no opening.
-
-nwi-rcon, also nwi-server rcon, e.g. nwi-rcon --server coop-commando status, or
-nwi-rcon --ssh admin@example.org --server coop-commando sm plugins list.
+"""Source RCON: running a command on a server and reading its answer (connect, run). nwi-rcon, also
+nwi-server rcon, prints a command's answer (cli/rcon.py).
 """
 
-import argparse
-import os
-import shlex
 import socket
 import struct
-import subprocess
-import sys
 from pathlib import Path
-
-from .games import read_env
 
 # The servers' generated passwords, by their names (nwi-server prepare)
 RCON_DIR = Path("/run/nwi-server/rcon")
@@ -89,70 +74,3 @@ def run(sock: socket.socket, command: str) -> str:
     finally:
         sock.settimeout(10)
     return "".join(answer)
-
-
-def main(argv: list[str] | None = None) -> int:
-    """Authenticate, run the command and print the answer."""
-    parser = argparse.ArgumentParser(
-        prog="nwi-rcon",
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--host", default="127.0.0.1", help="the server's address (%(default)s)"
-    )
-    parser.add_argument(
-        "--port", type=int, help="the server's port (27015, or SERVER_PORT of --server)"
-    )
-    parser.add_argument(
-        "--server",
-        metavar="NAME",
-        help="a server of nwi-server@.service: its password and port, see above",
-    )
-    parser.add_argument(
-        "--ssh",
-        metavar="HOST",
-        help="run it with --server on HOST over SSH, e.g. admin@example.org",
-    )
-    parser.add_argument(
-        "command",
-        nargs="+",
-        metavar="COMMAND",
-        help="the command and its arguments, joined by spaces",
-    )
-    args = parser.parse_args(argv)
-    if args.server is not None and ("/" in args.server or args.server.startswith(".")):
-        parser.error(f"not a server's name: {args.server}")
-    if args.ssh is not None:
-        if args.server is None:
-            parser.error("--ssh needs --server")
-        remote = ["nwi-rcon", "--server", args.server, "--", *args.command]
-        # ssh passes the command to the remote shell as one string
-        return subprocess.run(
-            ["ssh", args.ssh, shlex.join(remote)], check=False
-        ).returncode
-    port = args.port
-    password: str | None
-    if args.server is not None:
-        try:
-            password = (RCON_DIR / args.server).read_text().strip()
-            env = Path(f"/etc/nwi-server/{args.server}.env")
-            settings = read_env(env) if env.is_file() else {}
-        except OSError as error:
-            print(f"nwi-rcon: {args.server}: {error}", file=sys.stderr)
-            return 1
-        if port is None:
-            port = int(settings.get("SERVER_PORT", "27015"))
-    else:
-        password = os.environ.get("RCON_PASSWORD")
-        if not password:
-            print("RCON_PASSWORD isn't set", file=sys.stderr)
-            return 2
-    try:
-        sock = connect(args.host, port or 27015, password)
-    except PermissionError as error:
-        print(error, file=sys.stderr)
-        return 1
-    with sock:
-        print(run(sock, " ".join(args.command)), end="")
-    return 0

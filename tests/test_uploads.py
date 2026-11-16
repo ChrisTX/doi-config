@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from nwi_server_kit import games, steam_ugc, workshop_cli
+from nwi_server_kit import games, steam_ugc
+from nwi_server_kit.cli import workshop as workshop_cli
 
 SOURCE = Path(__file__).with_name("fake_steam_api.c")
 
