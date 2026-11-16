@@ -101,6 +101,14 @@ repos:
         entry: env PYTHONPATH=src python3 -m nwi_server_kit server-config check
         files: ^(tests/integration/)?servers/[^/]+/server\.toml$
 
+      # The container image's packages against the package's dependencies (checks/check_packages.py)
+      - id: check-packages
+        name: the image's packages (checks/check_packages.py)
+        language: system
+        entry: python3 checks/check_packages.py
+        pass_filenames: false
+        files: ^(deploy/arch/PKGBUILD|deploy/container/Containerfile|checks/check_packages\.py)$
+
       # The C++ of the Ghidra tools (src/hl2sdk_ghidra/sdk_types.cpp), which hl2sdk-ghidra types compiles
       # against the SDK, and the C of the tests' stand-in of the Steamworks API, formatted with clang-format
       - id: clang-format

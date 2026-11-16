@@ -83,8 +83,9 @@ pythonpath = ["src"]
 testpaths = ["tests/unit"]
 
 [tool.ruff]
-# The package, which the scripts of checks/ and tests/integration/ import from src/
-src = ["src"]
+# The package, which the scripts of checks/ and tests/integration/ import from src/, and the
+# repository's own checks and tests, which the unit tests import
+src = ["src", "."]
 
 [tool.uv.sources]
 ghidra-stubs = { path = "/opt/ghidra/docs/ghidra_stubs/ghidra_stubs-12.2-py3-none-any.whl" }
