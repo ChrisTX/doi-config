@@ -1,6 +1,6 @@
 # The Day of Infamy server, with SourceMod and the plugins from their packages and this configuration,
 # without the game and the workshop items: those are the state folder's, which the updater of the same
-# image fills with DepotDownloader, as nwi-update.service does for the systemd units (see entrypoint.sh). The
+# image fills with DepotDownloader, as nwi-update.service does for the systemd units (see nwi_server_kit/container.py). The
 # image has nothing of the game's, which may not be passed on. See README.md for building and running.
 #
 # Build arguments:
@@ -71,4 +71,5 @@ STOPSIGNAL SIGINT
 # The server answers A2S queries, as the systemd units' watchdog checks; the port is SERVER_PORT
 HEALTHCHECK --start-period=10m --interval=30s --retries=3 \
   CMD ["python3", "-m", "nwi_server_kit", "watchdog", "--check"]
-ENTRYPOINT ["/opt/nwi-server-kit/deploy/container/entrypoint.sh"]
+# The image's commands: the server by default, update and check (nwi_server_kit.container)
+ENTRYPOINT ["python3", "-m", "nwi_server_kit", "container"]

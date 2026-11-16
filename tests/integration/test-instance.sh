@@ -9,7 +9,7 @@
 #   update [CONFIG...]
 #                     update the games, the workshop items and the mods of the configs (all of servers/
 #                     by default, which includes Insurgency's test server) in the state folder with the
-#                     image's updater (entrypoint.sh update), which the server mounts; the first
+#                     image's updater (nwi-server container update), which the server mounts; the first
 #                     downloads the games and the items. An update of some configs keeps what the
 #                     others have, but doesn't update it
 #   up [--db-only] [--developer LEVEL] [CONFIG] [-- OPTION...]

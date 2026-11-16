@@ -369,7 +369,7 @@ podman build --format docker --build-context repo=/var/lib/aurutils-repo \
 ```
 
 `tests/integration/test-instance.sh build` does the same with the repository
-aurutils uses. The image's commands (`deploy/container/entrypoint.sh`) are the
+aurutils uses. The image's commands (`src/nwi_server_kit/container.py`) are the
 server, `update` and `check`: `nwi-server update --image` and
 `nwi-server check-updates` on the state folder, mounted at `/srv/state`, for the
 servers whose environment files are mounted at `/etc/nwi-server`. The image's

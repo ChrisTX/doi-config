@@ -18,6 +18,7 @@ Usage: nwi-server COMMAND ARGUMENTS..., the commands:
     start            run a server under the watchdog (launch.py)
     watchdog         run a server under systemd's watchdog, or query it once (watchdog.py)
     rcon             run a command on a server over RCON, also nwi-rcon (rcon.py)
+    container        the container image's commands, its entrypoint (container.py)
 """
 
 import sys
@@ -26,6 +27,7 @@ from collections.abc import Callable
 from . import (
     check_gamedata,
     check_updates,
+    container,
     games,
     health,
     launch,
@@ -56,6 +58,7 @@ COMMANDS: dict[str, Callable[[list[str]], int]] = {
     "start": launch.start_main,
     "watchdog": watchdog.main,
     "rcon": rcon.main,
+    "container": container.main,
 }
 
 

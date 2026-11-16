@@ -4,7 +4,7 @@ nwi-server@.service and the container's entrypoint, which share them this way.
 prepare configures a server in its writable layer: one assembled by nwi-server mount, whose writable
 layer starts empty whenever nwi-server@.service mounts it, on every start of the server
 (nwi-server@.service runs it as root with "!", as the layers belong to root), or the container's
-(deploy/container/entrypoint.sh), which keeps its writable layer when the container restarts, so
+(container.py), which keeps its writable layer when the container restarts, so
 preparing it twice changes nothing. It makes the server's server.cfg and subscribed_file_ids.txt of
 its server.toml (server_config.py); without one, e.g. a server of no config of servers/, its own
 cfg/server.cfg comes from the secrets. It enables SourceMod's SQL admins and disables the plugins
