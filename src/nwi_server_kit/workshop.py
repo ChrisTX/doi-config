@@ -19,20 +19,32 @@ Clients always download an item's newest version of the Workshop. So a server li
 whose version it runs is the Workshop's (its workshop list, subscribed_file_ids.txt), whether another
 version is held or its own fell back after failures (layers.py), and its mapcycle leaves out the maps
 of the others, which clients would lack; a startup map of theirs becomes the mapcycle's first.
+
+Players subscribed to a Workshop collection get its items' newest versions too. So a source's
+collections that mirror its lists (workshop/collections.toml) are made, at every update, the items of
+their lists that aren't held, signed in with the credential nwi-server.steam-refresh-token of an
+account that may change them, e.g. a contributor of the collections (steam_web.py; nwi-server workshop
+login).
 """
 
 import json
+import os
 import re
 import sys
+import time
 import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import layers, notify, vpk
+from . import layers, notify, steam_web, vpk
 
 APPROVED = Path("workshop/approved.toml")
 KEYS = Path("workshop/keys")
+COLLECTIONS = Path("workshop/collections.toml")
+TOKEN_CREDENTIAL = "nwi-server.steam-refresh-token"
+# How long before the sign-in expires the admins hear of it
+EXPIRY_WARNING = 30 * 24 * 3600
 
 
 @dataclass
@@ -91,23 +103,27 @@ def signed_by(folder: Path, keys: list[bytes]) -> str | None:
 
 
 class State:
-    """The update's record of versions approved by signature, per source and item, and of the held
-    versions the admins heard of: STATE/workshop.json."""
+    """The update's record of versions approved by signature, per source and item, of the held
+    versions the admins heard of, and of the collections' failures and the sign-in's expiry they heard
+    of: STATE/workshop.json."""
 
     def __init__(self, state: Path) -> None:
         self.path = state / "workshop.json"
         data = json.loads(self.path.read_text()) if self.path.is_file() else {}
         self.signed: dict[str, dict[str, list[str]]] = data.get("signed", {})
         self.held: dict[str, dict[str, str]] = data.get("held", {})
+        self.failed: dict[str, str] = data.get("failed", {})
+        self.warned: float = data.get("warned", 0)
 
     def save(self) -> None:
+        data = {
+            "signed": self.signed,
+            "held": self.held,
+            "failed": self.failed,
+            "warned": self.warned,
+        }
         temporary = self.path.with_name(f".{self.path.name}.new")
-        temporary.write_text(
-            json.dumps(
-                {"signed": self.signed, "held": self.held}, indent=1, sort_keys=True
-            )
-            + "\n"
-        )
+        temporary.write_text(json.dumps(data, indent=1, sort_keys=True) + "\n")
         temporary.rename(self.path)
 
     def approved(
@@ -167,6 +183,107 @@ def gate(
         )
     record.save()
     return allowed
+
+
+def collections(configs: Path) -> dict[int, str]:
+    """A config source's collections and the workshop lists they mirror (game/cfg/<list>), of
+    workshop/collections.toml:
+
+        [collections.3450000000]
+        list = "doi-config/workshop-ids-pvp.txt"
+    """
+    path = configs / COLLECTIONS
+    if not path.is_file():
+        return {}
+    with path.open("rb") as file:
+        settings = tomllib.load(file)
+    return {
+        int(collection): str(entry["list"])
+        for collection, entry in settings.get("collections", {}).items()
+    }
+
+
+def list_items(path: Path) -> list[int]:
+    """The items of a workshop list, in its order."""
+    return [
+        int(match[1])
+        for line in path.read_text().splitlines()
+        if (match := re.match(r"\s*(\d+)", line))
+    ]
+
+
+def refresh_token() -> str | None:
+    """The sign-in for the collections: the credential nwi-server.steam-refresh-token (systemd's
+    CREDENTIALS_DIRECTORY), or the file NWI_STEAM_TOKEN; None without."""
+    candidates = []
+    if os.environ.get("NWI_STEAM_TOKEN"):
+        candidates.append(Path(os.environ["NWI_STEAM_TOKEN"]))
+    if os.environ.get("CREDENTIALS_DIRECTORY"):
+        candidates.append(Path(os.environ["CREDENTIALS_DIRECTORY"]) / TOKEN_CREDENTIAL)
+    for path in candidates:
+        if path.is_file():
+            return path.read_text().strip()
+    return None
+
+
+def sync_collections(
+    state: Path, sources: list[str], configs_of: Callable[[str], Path]
+) -> None:
+    """Make the sources' collections the items of their lists that aren't held, in their order: the
+    players subscribed to a collection mustn't get a held version (see the module's documentation). A
+    change that fails, or a sign-in about to expire, the admins hear of once."""
+    wanted = {source: collections(configs_of(source)) for source in sources}
+    if not any(wanted.values()):
+        return
+    token = refresh_token()
+    record = State(state)
+    if token is None:
+        print(
+            f"No sign-in for the collections ({TOKEN_CREDENTIAL}), they aren't changed",
+            file=sys.stderr,
+        )
+        return
+    expiry = steam_web.expires(token)
+    if expiry - time.time() < EXPIRY_WARNING and record.warned != expiry:
+        notify.queue(
+            "The Workshop sign-in expires soon",
+            f"The sign-in the servers change the Workshop's collections with expires on "
+            f"{time.strftime('%Y-%m-%d', time.gmtime(expiry))}. Sign in again with nwi-server "
+            f"workshop login and replace the credential {TOKEN_CREDENTIAL}.",
+        )
+        record.warned = expiry
+    community: steam_web.Community | None = None
+    for source, mirrored in sorted(wanted.items()):
+        held = set(record.held.get(source, {}))
+        for collection, list_name in sorted(mirrored.items()):
+            key = f"{source}:{collection}"
+            try:
+                items = [
+                    item
+                    for item in list_items(configs_of(source) / "game/cfg" / list_name)
+                    if str(item) not in held
+                ]
+                current = steam_web.collection_items(collection)
+                changes = [("add", item) for item in items if item not in current]
+                changes += [("remove", item) for item in current if item not in items]
+                if changes and community is None:
+                    community = steam_web.Community(token)
+                for action, item in changes:
+                    assert community is not None
+                    getattr(community, action)(collection, item)
+                    print(f"Collection {collection}: {action} {item}", file=sys.stderr)
+                record.failed.pop(key, None)
+            except (steam_web.SteamError, OSError, ValueError) as error:
+                print(f"Collection {collection} of {source}: {error}", file=sys.stderr)
+                if record.failed.get(key) != str(error):
+                    notify.queue(
+                        f"Workshop collection {collection} not changed",
+                        f"The collection {collection} of {source} couldn't be made the items of "
+                        f"{list_name} that aren't held: {error}.\n\nChange it by hand so that "
+                        "players don't download a held version.",
+                    )
+                record.failed[key] = str(error)
+    record.save()
 
 
 def manifest_of(version: Path) -> str:

@@ -22,6 +22,8 @@ RuntimeDirectory=nwi-server/notify-update
 RuntimeDirectoryMode=0700
 RuntimeDirectoryPreserve=yes
 Environment=NWI_NOTIFY_DIR=%t/nwi-server/notify-update
+# The sign-in it changes the Workshop's collections with, if there's one (nwi-server workshop login)
+ImportCredential=nwi-server.steam-refresh-token
 ExecStart=/usr/bin/nwi-server update %S/nwi-server/layers
 TimeoutStartSec=infinity
 PrivateTmp=yes

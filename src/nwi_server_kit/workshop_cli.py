@@ -18,16 +18,25 @@ Usage:
         approve a version of an item, the Workshop's current one without MANIFEST
     nwi-server workshop status [STATE]
         the versions the update held, per config source
+    nwi-server workshop login
+        sign in for changing the collections, with a QR code to scan in the Steam app, and print the
+        refresh token, e.g. for: systemd-creds encrypt --name=nwi-server.steam-refresh-token -
+        /etc/credstore.encrypted/nwi-server.steam-refresh-token
+    nwi-server workshop collection ID
+        a collection's items
 
 The configs are the checkout the tools are in (NWI_CONFIG) without --configs.
 """
 
 import argparse
+import shutil
+import subprocess
 import sys
+import time
 import tomllib
 from pathlib import Path
 
-from . import games, vpk, workshop
+from . import games, steam_web, vpk, workshop
 from .server_config import load as load_settings
 
 HEADER = """\
@@ -102,6 +111,24 @@ def approve(
     return True
 
 
+def show_code(url: str) -> None:
+    """Show a sign-in's QR code on the terminal (qrencode), and its URL."""
+    print(
+        "Scan this code in the Steam app (Steam Guard, the QR code button):",
+        file=sys.stderr,
+    )
+    if shutil.which("qrencode"):
+        subprocess.run(
+            ["qrencode", "-t", "ansiutf8", url], stdout=sys.stderr, check=False
+        )
+    else:
+        print(
+            "(install qrencode to see the code here; the URL is the code)",
+            file=sys.stderr,
+        )
+    print(url, file=sys.stderr)
+
+
 def configs_folder(argument: Path | None) -> Path:
     if argument is not None:
         return argument
@@ -145,6 +172,9 @@ def main(argv: list[str] | None = None) -> int:
         if name == "approve":
             command.add_argument("item", type=int, metavar="ITEM")
             command.add_argument("manifest", nargs="?", metavar="MANIFEST")
+    commands.add_parser("login", help="sign in for changing the collections")
+    command = commands.add_parser("collection", help="a collection's items")
+    command.add_argument("collection", type=int, metavar="ID")
     command = commands.add_parser("status", help="the held versions")
     command.add_argument(
         "state",
@@ -156,7 +186,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return run(args)
-    except (ValueError, OSError, tomllib.TOMLDecodeError) as error:
+    except (
+        ValueError,
+        OSError,
+        tomllib.TOMLDecodeError,
+        steam_web.SteamError,
+    ) as error:
         print(f"nwi-server workshop: {error}", file=sys.stderr)
         return 1
 
@@ -218,6 +253,20 @@ def run(args: argparse.Namespace) -> int:
                 f"Item {args.item} at {manifest}: {'approved' if new else 'approved already'}"
             )
         write_approved(configs, approved)
+        return 0
+    if args.command == "login":
+        answer = steam_web.sign_in(show_code)
+        token = str(answer["refresh_token"])
+        expiry = time.strftime("%Y-%m-%d", time.gmtime(steam_web.expires(token)))
+        print(
+            f"Signed in as {answer.get('account_name')}, until {expiry}",
+            file=sys.stderr,
+        )
+        print(token)
+        return 0
+    if args.command == "collection":
+        for item in steam_web.collection_items(args.collection):
+            print(item)
         return 0
     held = workshop.State(args.state).held
     if not any(held.values()):

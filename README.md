@@ -261,6 +261,31 @@ and the public key `NAME.pem` for the configs, and `nwi-server workshop sign
 NAME.key MOD.vpk`; `nwi-server workshop verify` checks a VPK's signature.
 `nwi-server workshop status` shows the held versions on a server.
 
+Players subscribed to a Workshop collection get its items' newest versions too.
+So a source's collections that mirror its lists, in `workshop/collections.toml`,
+are made the items of their lists that aren't held at every update:
+
+```toml
+[collections.3450000000]
+list = "doi-config/workshop-ids-pvp.txt"
+```
+
+The update changes them signed in as an account that may, e.g. a contributor of
+the collections of its own for the servers, with its refresh token, which lasts
+about 200 days: `nwi-server workshop login` signs in with a QR code to scan in
+the Steam app (shown with `qrencode` if it's installed) and prints it, to keep
+as the credential `nwi-server.steam-refresh-token`:
+
+```bash
+nwi-server workshop login | systemd-creds encrypt \
+  --name=nwi-server.steam-refresh-token - \
+  /etc/credstore.encrypted/nwi-server.steam-refresh-token
+```
+
+The admins hear of a change that fails, to make it by hand, and of the sign-in a
+month before it expires. The Web API can't change collections, so the update
+does it as the community site does, which may change one day.
+
 ### Secrets
 
 A server's secrets are systemd credentials, encrypted in

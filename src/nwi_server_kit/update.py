@@ -569,6 +569,7 @@ def update(state: Path, image: bool = False) -> None:
                 print(f"Removed {download}, which no server needs", file=sys.stderr)
     if not image:
         remove_clones(state, sources)
+        workshop.sync_collections(state, sources, games.config_folder)
 
 
 def remove_clones(state: Path, sources: list[str]) -> None:
