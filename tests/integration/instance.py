@@ -1,0 +1,825 @@
+#!/usr/bin/env python3
+"""A local test instance of a server in a Podman pod, with a new MariaDB that has SourceBans++'s and
+SourceMod's tables, the server registered in SourceBans++ and optionally an admin. Nothing of it reaches
+the live servers: the passwords are generated, and without its config the Discord forward stays silent.
+
+Usage:
+    instance.py build [--testing] [PODMAN BUILD OPTION...]
+        build the image (podman build, see README.md) from the local pacman repository; with
+        --testing with Arch Linux's testing repositories, for packages built against them, as on a
+        machine that uses them
+    instance.py update [CONFIG...]
+        update the games, the workshop items and the mods of the configs (all of servers/ by default,
+        which includes Insurgency's test server) in the state folder with the image's updater
+        (nwi-server container update), which the server mounts; the first downloads the games and the
+        items. An update of some configs keeps what the others have, but doesn't update it
+    instance.py up [--db-only] [--developer LEVEL] [CONFIG] [-- OPTION...]
+        start the test instance of a config (coop-commando by default), anew; with --db-only only its
+        database, for the systemd units on this machine; with --developer the server's developer
+        messages of LEVEL (+developer LEVEL, 1 or 2), and with OPTION... more options of its command
+        line, e.g. -- +sv_cheats 1, which the systemd units get too (LAUNCH_OPTIONS of nwi-server start)
+    instance.py soak [--hours HOURS] [LOG]
+        the soak test: update and start soak-bots (tests/integration/servers), from the sanitiser image
+        with SANITISER, log it with tests/integration/soak_watch.py for HOURS (8 by default) to LOG
+        (soak-<time>.tsv in the working folder) and the server's output next to it (LOG without .tsv,
+        .log), then remove it
+    instance.py down
+        remove the test instance, its database and volumes
+    instance.py rcon COMMAND...
+        run a command on the server over RCON
+    instance.py logs
+        follow the server's log
+
+A config is one of servers/, or of tests/integration/servers/, the tests' own, e.g. soak-bots, which the
+containers get mounted among the image's (servers/<config>): they run in the container only. A config's
+own cfg folder goes into the game's, e.g. a test's configs and mapcycle.
+
+The local pacman repository with the packages, which aurutils builds into, is found like aurutils finds
+it (aur repo --status, or the one file:// repository of pacman.conf without aurutils); its package of
+the SourceBans++ web panel has the tables, and the signature of its database names its key.
+
+The settings, of the environment or of ${XDG_CONFIG_HOME:-~/.config}/nwi-server-kit/test-instance.env,
+one VAR=value a line, e.g. TEST_ADMIN=[U:1:123], the environment's taking precedence:
+    AUR_REPO, AUR_DBROOT  the local repository's name and folder, as for aurutils
+    NWI_TEST_DIR          the test instance's files (${XDG_STATE_HOME:-~/.local/state}/nwi-test)
+    NWI_STATE             the state folder with the game, the workshop items and the mods
+                          (${XDG_STATE_HOME:-~/.local/state}/nwi-server, as for the Quadlet units)
+    DISABLE_PLUGINS       plugins the server starts without, by name, e.g. nwi_cvar_unlocker for the
+                          game's own bounds in checks/dump_cvars.py
+    TEST_ADMIN            SteamIDs that get root admin, separated by spaces, each as STEAM_0:…,
+                          STEAM_1:…, [U:1:…] or SteamID64: in the database, and in admins_simple.ini
+                          through the server's environment file (nwi-server prepare), so also on
+                          servers without the database
+    TEST_DB_PORT          the database's port on 127.0.0.1 with --db-only (3306)
+    SANITISER             undefined, address or address,undefined: up starts the server from the
+                          sanitiser image (localhost/nwi-server-sanitiser, tests/integration/sanitiser,
+                          see README.md), with its runtime preloaded
+    LAUNCH_OPTIONS        options of the server's command line for every up, separated by spaces,
+                          before those of up's own
+"""
+
+import os
+import re
+import secrets
+import shlex
+import shutil
+import subprocess
+import sys
+import tempfile
+import time
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from pathlib import Path
+
+REPOSITORY = Path(__file__).resolve().parents[2]
+SETTINGS = (
+    "AUR_REPO",
+    "AUR_DBROOT",
+    "NWI_TEST_DIR",
+    "NWI_STATE",
+    "DISABLE_PLUGINS",
+    "TEST_ADMIN",
+    "TEST_DB_PORT",
+    "SANITISER",
+    "LAUNCH_OPTIONS",
+)
+IMAGE = "localhost/nwi-server"
+SANITISER_IMAGE = "localhost/nwi-server-sanitiser"
+POD = "nwi-test"
+# The image's user is this one, who owns the state folder
+USERNS = "keep-id:uid=1000,gid=1000"
+# What the server keeps, the pod's volumes and where the image has them
+VOLUMES = {
+    "dumps": "/srv/nwi-data/dumps",
+    "logs": "/srv/nwi-data/logs",
+    "sm-logs": "/srv/nwi-data/sourcemod/logs",
+    "sm-data": "/srv/nwi-data/sourcemod/data",
+}
+SOURCEMOD_SQL = Path(
+    "/usr/lib/sourcemod/addons/sourcemod/configs/sql-init-scripts/mysql"
+)
+GNUPG = "/etc/pacman.d/gnupg"
+
+
+class InstanceError(RuntimeError):
+    """What stops a command, with the message for the user."""
+
+
+def read_settings(path: Path, environ: Mapping[str, str]) -> dict[str, str]:
+    """The settings: the environment's, and those of the settings file it doesn't set. The file is read,
+    not sourced: it holds settings, not commands."""
+    settings = {name: environ[name] for name in SETTINGS if name in environ}
+    if not path.is_file():
+        return settings
+    for line in path.read_text().splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = re.fullmatch(r"([A-Z_]+)=(.*)", line)
+        if match is None or match.group(1) not in SETTINGS:
+            raise InstanceError(f"{path}: not a setting of the test instance: {line}")
+        settings.setdefault(match.group(1), match.group(2))
+    return settings
+
+
+def steam2(steam_id: str) -> str:
+    """A SteamID as STEAM_0:Y:Z, the form SourceBans++ matches admins by (SourceMod takes all forms
+    itself), converted as SourceMod's AdminCache::GetUnifiedSteamIdentity does."""
+    account = None
+    if match := re.fullmatch(r"STEAM_[0-5]:([01]):([0-9]+)", steam_id):
+        return f"STEAM_0:{match.group(1)}:{int(match.group(2))}"
+    if match := re.fullmatch(r"\[U:1:([0-9]+)\]", steam_id):
+        account = int(match.group(1))
+    elif re.fullmatch(r"[0-9]{17}", steam_id):
+        number = int(steam_id)
+        # An individual account (type 1) of a valid universe (1-4), instance up to 4 (web)
+        universe, kind = number >> 56, (number >> 52) & 0xF
+        instance = (number >> 32) & 0xFFFFF
+        if 1 <= universe <= 4 and kind == 1 and instance <= 4:
+            account = number & 0xFFFFFFFF
+    if account is None or not 0 < account <= 0xFFFFFFFF:
+        raise InstanceError(
+            "TEST_ADMIN has no SteamID like STEAM_0:0:123, [U:1:246] or "
+            f"76561197960265974: {steam_id}"
+        )
+    return f"STEAM_0:{account & 1}:{account >> 1}"
+
+
+def password() -> str:
+    return secrets.token_urlsafe(18).replace("-", "").replace("_", "")
+
+
+def config_folder(config: str, repository: Path = REPOSITORY) -> Path:
+    """A config's folder, of servers/ or tests/integration/servers/: its server.toml has the server's
+    settings."""
+    for folder in (repository / "servers", repository / "tests/integration/servers"):
+        if (folder / config / "server.toml").is_file():
+            return folder / config
+    raise InstanceError(f"no config {config} in servers/ or tests/integration/servers/")
+
+
+def config_mounts(configs: list[str], repository: Path = REPOSITORY) -> list[str]:
+    """The mounts of the tests' configs among the image's, for a container."""
+    mounts = []
+    for config in configs:
+        folder = config_folder(config, repository)
+        if folder.parent == repository / "tests/integration/servers":
+            mounts += ["-v", f"{folder}:/opt/nwi-server-kit/servers/{config}:ro"]
+    return mounts
+
+
+@dataclass
+class Up:
+    """up's options."""
+
+    config: str = "coop-commando"
+    db_only: bool = False
+    launch_options: list[str] = field(default_factory=list)
+
+
+def parse_up(args: list[str], settings: Mapping[str, str]) -> Up:
+    up = Up(launch_options=settings.get("LAUNCH_OPTIONS", "").split())
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        if arg == "--db-only":
+            up.db_only = True
+        elif arg == "--developer":
+            level = args[index + 1] if index + 1 < len(args) else ""
+            if not level.isdigit():
+                raise InstanceError("--developer needs a level, e.g. --developer 2")
+            up.launch_options += ["+developer", level]
+            index += 1
+        elif arg == "--":
+            up.launch_options += args[index + 1 :]
+            break
+        elif arg.startswith("-"):
+            raise InstanceError(f"unknown option {arg}")
+        else:
+            up.config = arg
+        index += 1
+    for option in up.launch_options:
+        # One option a word: the environment file separates them by spaces
+        if not option or re.search(r"\s", option):
+            raise InstanceError(f"a launch option with a space or empty: {option!r}")
+    return up
+
+
+def server_env(admins: list[str], launch_options: list[str]) -> str:
+    """The server's environment file of the test instance."""
+    lines = [
+        # A client port other than the game's 27005, which a client on this machine sends from
+        "SERVER_PORT=27015",
+        "TV_PORT=27020",
+        "CLIENT_PORT=27025",
+        "SERVER_PASSWORD=",
+        "SOURCEBANS_SERVER_IP=127.0.0.1",
+        f"RCON_PASSWORD={password()}",
+    ]
+    # For admins_simple.ini (nwi-server prepare) and the command line (nwi-server start)
+    if admins:
+        lines.append(f"TEST_ADMIN={' '.join(admins)}")
+    if launch_options:
+        lines.append(f"LAUNCH_OPTIONS={' '.join(launch_options)}")
+    return "\n".join(lines) + "\n"
+
+
+def instance_sql(game: str, admins: list[str]) -> tuple[str, str]:
+    """The test server, of its game's mod, which the panel has for Insurgency but not for Day of
+    Infamy, and root on it for the admins for SourceMod and SourceBans++, without a web panel login
+    (the password isn't a hash); SourceBans++'s admin names are unique."""
+    name = "Day of Infamy" if game == "doi" else "Insurgency"
+    server = (
+        "-- The test server, which SourceBans++ finds by its address (SOURCEBANS_SERVER_IP) and port,\n"
+        "-- of its game's mod\n"
+        "INSERT IGNORE INTO sb_mods (mid, name, icon, modfolder, steam_universe, enabled) VALUES\n"
+        f"(100, '{name}', 'web.png', '{game}', 0, 1);\n"
+        "INSERT INTO sb_servers (sid, ip, port, rcon, modid, enabled)\n"
+        f"SELECT 1, '127.0.0.1', 27015, '', mid, 1 FROM sb_mods WHERE modfolder = '{game}';\n"
+    )
+    root = ""
+    for number, admin in enumerate(admins, 1):
+        root += (
+            "INSERT INTO sm_admins (authtype, identity, password, flags, name, immunity) VALUES\n"
+            f"('steam', '{admin}', NULL, 'z', 'Test admin {number}', 100);\n"
+            "INSERT INTO sb_admins (user, authid, password, gid, email, extraflags, immunity, "
+            "srv_flags) VALUES\n"
+            f"('Test admin {number}', '{admin}', '!', -1, '', 0, 100, 'z');\n"
+            "INSERT INTO sb_admins_servers_groups (admin_id, group_id, srv_group_id, server_id)\n"
+            f"SELECT aid, 0, -1, 1 FROM sb_admins WHERE authid = '{admin}';\n"
+        )
+    return server, root
+
+
+def databases_cfg(db_password: str, port: int) -> str:
+    """SourceMod's databases.cfg of the test's database."""
+    text = '"Databases"\n{\n\t"driver_default"\t"mysql"\n'
+    for entry in ("default", "sourcebans", "clientprefs"):
+        text += (
+            f'\n\t"{entry}"\n\t{{\n\t\t"driver"\t"mysql"\n\t\t"host"\t"127.0.0.1"\n'
+            f'\t\t"port"\t"{port}"\n\t\t"database"\t"doi"\n\t\t"user"\t"doi"\n'
+            f'\t\t"pass"\t"{db_password}"\n\t}}\n'
+        )
+    text += '\n\t"storage-local"\n\t{\n\t\t"driver"\t"sqlite"\n\t\t"database"\t"sourcemod-local"\n\t}\n}\n'
+    return text
+
+
+def run(*args: str, capture: bool = False, check: bool = True) -> str:
+    """Run a command; its output with CAPTURE."""
+    result = subprocess.run(
+        args, check=check, text=True, stdout=subprocess.PIPE if capture else None
+    )
+    return result.stdout if capture else ""
+
+
+def succeeds(*args: str) -> bool:
+    return (
+        subprocess.run(
+            args,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
+def find_repo(settings: Mapping[str, str]) -> tuple[str, Path]:
+    """The local repository's name and folder."""
+    if succeeds("sh", "-c", "command -v aur"):
+        status = run("aur", "repo", "--status", capture=True)
+        values = dict(line.split(":", 1) for line in status.splitlines() if ":" in line)
+        name, root = values.get("repo", ""), Path(values.get("root", ""))
+    else:
+        wanted = settings.get("AUR_REPO")
+        found = []
+        for repo in run("pacman-conf", "--repo-list", capture=True).split():
+            if wanted and repo != wanted:
+                continue
+            servers = run("pacman-conf", f"--repo={repo}", "Server", capture=True)
+            server = (servers.splitlines() or [""])[0]
+            if server.startswith("file://"):
+                found.append((repo, Path(server.removeprefix("file://").rstrip("/"))))
+        if wanted and not found:
+            raise InstanceError(
+                f"pacman.conf has no local (file://) repository {wanted}"
+            )
+        if len(found) != 1:
+            names = " ".join(repo for repo, _ in found)
+            raise InstanceError(
+                f"{len(found)} local repositories in pacman.conf ({names}), name one with AUR_REPO"
+            )
+        name, root = found[0]
+        root = Path(settings.get("AUR_DBROOT") or root)
+    if not (root / f"{name}.db").is_file():
+        raise InstanceError(f"no database of the repository {name} in {root}")
+    return name, root
+
+
+def repo_key(name: str, root: Path) -> str:
+    """The fingerprint of the key the repository's database is signed with."""
+    database = root / f"{name}.db"
+    status = subprocess.run(
+        [
+            "gpg",
+            "--homedir",
+            GNUPG,
+            "--no-permission-warning",
+            "--status-fd",
+            "1",
+            "--verify",
+            f"{database}.sig",
+            str(database),
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).stdout
+    for line in status.splitlines():
+        if line.startswith("[GNUPG:] VALIDSIG "):
+            return line.split()[2]
+    raise InstanceError(f"the database of {name} in {root} has no valid signature")
+
+
+class Instance:
+    """The test instance of this machine, with its settings."""
+
+    def __init__(self, settings: Mapping[str, str]) -> None:
+        self.settings = settings
+        state_home = Path(
+            os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state"
+        )
+        self.dir = Path(settings.get("NWI_TEST_DIR") or state_home / "nwi-test")
+        self.state = Path(settings.get("NWI_STATE") or state_home / "nwi-server")
+        self.server_image = SANITISER_IMAGE if settings.get("SANITISER") else IMAGE
+        self.db_port = int(settings.get("TEST_DB_PORT") or 3306)
+
+    def build(self, args: list[str]) -> None:
+        testing = []
+        if args[:1] == ["--testing"]:
+            testing, args = ["--build-arg", "TESTING=1"], args[1:]
+        name, root = find_repo(self.settings)
+        fingerprint = repo_key(name, root)
+        with tempfile.NamedTemporaryFile("w", suffix=".asc") as key:
+            key.write(
+                run(
+                    "gpg",
+                    "--homedir",
+                    GNUPG,
+                    "--no-permission-warning",
+                    "--export",
+                    "-a",
+                    fingerprint,
+                    capture=True,
+                )
+            )
+            key.flush()
+            run(
+                "podman",
+                "build",
+                "--format",
+                "docker",
+                "--build-context",
+                f"repo={root}",
+                "--secret",
+                f"id=repo-key,src={key.name}",
+                "--build-arg",
+                f"REPO_NAME={name}",
+                *testing,
+                "-f",
+                str(REPOSITORY / "deploy/container/Containerfile"),
+                "-t",
+                IMAGE,
+                str(REPOSITORY),
+                *args,
+            )
+
+    def update(self, configs: list[str]) -> None:
+        mounts = config_mounts(configs)
+        if not succeeds("podman", "image", "exists", IMAGE):
+            raise InstanceError(f"no image {IMAGE}, build it first: instance.py build")
+        # The configs' games and items (nwi-server games), without the servers' environment files: all
+        # configs' without configs
+        env = ["-e", f"NWI_SERVER_CONFIGS={' '.join(configs)}"] if configs else []
+        self.state.mkdir(parents=True, exist_ok=True)
+        run(
+            "podman",
+            "run",
+            "--rm",
+            "--userns",
+            USERNS,
+            "--health-cmd",
+            "none",
+            *env,
+            *mounts,
+            "-v",
+            f"{self.state}:/srv/state",
+            IMAGE,
+            "update",
+        )
+
+    def write_database(self, game: str, admins: list[str], db_only: bool) -> None:
+        """The tables of SourceBans++ (from the web panel's package, its placeholders filled in),
+        SourceMod's admins and client preferences (from the image, or this machine's SourceMod for the
+        systemd units), the test server and the admins."""
+        _, root = find_repo(self.settings)
+        packages = sorted(
+            root.glob("sourcebans-pp-[0-9]*.pkg.tar.zst"), key=version_key
+        )
+        if not packages:
+            raise InstanceError(
+                f"{root} has no sourcebans-pp package with SourceBans++'s tables"
+            )
+        init = self.dir / "init"
+        init.mkdir(parents=True, exist_ok=True)
+        # One at a time: the tables have to come before their data
+        tables = "".join(
+            run(
+                "bsdtar",
+                "-xOf",
+                str(packages[-1]),
+                f"usr/share/sourcebans-pp/install/includes/sql/{sql}",
+                capture=True,
+            )
+            for sql in ("struc.sql", "data.sql")
+        )
+        (init / "01-sourcebans.sql").write_text(
+            tables.replace("{prefix}", "sb").replace("{charset}", "utf8mb4")
+        )
+        scripts = [
+            str(SOURCEMOD_SQL / "create_admins.sql"),
+            str(SOURCEMOD_SQL / "clientprefs-mysql.sql"),
+        ]
+        cat = (
+            ["cat"]
+            if db_only
+            else ["podman", "run", "--rm", "--entrypoint", "cat", IMAGE]
+        )
+        (init / "02-sourcemod.sql").write_text(run(*cat, *scripts, capture=True))
+        server, root_sql = instance_sql(game, admins)
+        (init / "03-test.sql").write_text(server)
+        (init / "04-admin.sql").write_text(root_sql)
+
+    def wait(
+        self, container: str, check: list[str], interval: float, what: str
+    ) -> None:
+        while not succeeds("podman", "exec", container, *check):
+            running = run(
+                "podman",
+                "inspect",
+                "-f",
+                "{{.State.Running}}",
+                container,
+                capture=True,
+                check=False,
+            ).strip()
+            if running != "true":
+                raise InstanceError(f"the {what} stopped, see podman logs {container}")
+            time.sleep(interval)
+
+    def up(self, args: list[str]) -> None:
+        up = parse_up(args, self.settings)
+        folder = config_folder(up.config)
+        mounts = config_mounts([up.config])
+        if up.db_only and mounts:
+            raise InstanceError(
+                f"{up.config} is a test's config, which runs in the container only"
+            )
+        game = run(
+            sys.executable,
+            "-m",
+            "nwi_server_kit",
+            "server-config",
+            "game",
+            str(folder / "server.toml"),
+            capture=True,
+        ).strip()
+        admins = [
+            steam2(admin) for admin in self.settings.get("TEST_ADMIN", "").split()
+        ]
+        if not up.db_only:
+            if not succeeds("podman", "image", "exists", self.server_image):
+                raise InstanceError(
+                    f"no image {self.server_image}, build it first (see README.md)"
+                )
+            if not os.access(
+                self.state / "servers" / up.config / "game/srcds_linux", os.X_OK
+            ):
+                raise InstanceError(
+                    f"no {game} in {self.state}, download it first: instance.py update"
+                )
+        if succeeds("podman", "pod", "exists", POD):
+            raise InstanceError(
+                "the test instance is running, remove it first: instance.py down"
+            )
+        self.remove_dir()
+        # The test's passwords, for the user only: the containers get the files bind-mounted
+        self.dir.mkdir(mode=0o700, parents=True)
+        db_password = password()
+        (self.dir / "db.env").write_text(
+            f"MARIADB_DATABASE=doi\nMARIADB_USER=doi\nMARIADB_PASSWORD={db_password}\n"
+            "MARIADB_RANDOM_ROOT_PASSWORD=1\n"
+        )
+        (self.dir / "server.env").write_text(server_env(admins, up.launch_options))
+        self.write_database(game, admins, up.db_only)
+        configs = self.dir / "secrets/addons/sourcemod/configs"
+        configs.mkdir(parents=True)
+        # The server of the systemd units reaches the database at its port on this machine, the
+        # container's within the pod
+        (configs / "databases.cfg").write_text(
+            databases_cfg(db_password, self.db_port if up.db_only else 3306)
+        )
+        # A private address of the pod's own: by default, rootless Podman's pasta gives the pod the
+        # host's address, and the server ignores connections that seem to come from its own address
+        ports = (
+            ["-p", f"127.0.0.1:{self.db_port}:3306/tcp"]
+            if up.db_only
+            else [
+                "-p",
+                "27015:27015/udp",
+                "-p",
+                "27015:27015/tcp",
+                "-p",
+                "27020:27020/udp",
+            ]
+        )
+        run(
+            "podman",
+            "pod",
+            "create",
+            "--name",
+            POD,
+            "--userns",
+            USERNS,
+            "--network",
+            "pasta:-a,10.0.2.100,-n,24,-g,10.0.2.2",
+            *ports,
+            capture=True,
+        )
+        # The database on a tmpfs: it's the test's only, and with the pod's user namespace for the
+        # server, a volume would belong to an ID that MariaDB's user isn't
+        run(
+            "podman",
+            "run",
+            "-d",
+            "--pod",
+            POD,
+            "--name",
+            f"{POD}-db",
+            "--env-file",
+            str(self.dir / "db.env"),
+            "--tmpfs",
+            "/var/lib/mysql:rw,mode=1777",
+            "-v",
+            f"{self.dir / 'init'}:/docker-entrypoint-initdb.d:ro",
+            "docker.io/library/mariadb:lts",
+            capture=True,
+        )
+        print("Waiting for the database")
+        self.wait(
+            f"{POD}-db",
+            ["healthcheck.sh", "--connect", "--innodb_initialized"],
+            2,
+            "database",
+        )
+        if up.db_only:
+            self.print_db_only(up.config)
+            return
+        self.start_server(up.config, mounts)
+
+    def print_db_only(self, config: str) -> None:
+        print(
+            f"The database of the test instance of {config} is up at 127.0.0.1:{self.db_port}. For "
+            f"nwi-server@{config}.service, its settings and its database as a credential, which "
+            "stays plain for the test (systemd-creds encrypt for a real server), as root; its RCON "
+            f"password is a new one at every start (nwi-rcon --server {config}):"
+        )
+        # The settings without the passwords, which the container's environment has
+        settings = [
+            line
+            for line in (self.dir / "server.env").read_text().splitlines()
+            if not line.startswith(("RCON_PASSWORD=", "SERVER_PASSWORD="))
+        ]
+        systemd_env = self.dir / "server-systemd.env"
+        systemd_env.write_text("\n".join(settings) + "\n")
+        databases = self.dir / "secrets/addons/sourcemod/configs/databases.cfg"
+        print(
+            f"\n  install -D -m 644 {shlex.quote(str(systemd_env))} /etc/nwi-server/{config}.env"
+        )
+        print(
+            f"  install -D -m 600 {shlex.quote(str(databases))} "
+            f"/etc/credstore/nwi-server@{config}.sourcemod-databases"
+        )
+
+    def start_server(self, config: str, mounts: list[str]) -> None:
+        servers = self.state / "servers" / config
+        volumes = [
+            arg
+            for name, path in VOLUMES.items()
+            for arg in ("-v", f"{POD}-{name}:{path}")
+        ]
+        geoip = (
+            ["-v", "/var/lib/GeoIP:/var/lib/GeoIP:ro"]
+            if Path("/var/lib/GeoIP").is_dir()
+            else []
+        )
+        # Plugins nwi-server prepare disables, e.g. for checks/dump_cvars.py, and the sanitisers nwi-server
+        # start preloads the runtime of
+        env = [
+            arg
+            for name in ("DISABLE_PLUGINS", "SANITISER")
+            if self.settings.get(name)
+            for arg in ("-e", f"{name}={self.settings[name]}")
+        ]
+        # The state's game and workshop items with an overlay of the container's own, its mods read-only
+        run(
+            "podman",
+            "run",
+            "-d",
+            "--pod",
+            POD,
+            "--name",
+            f"{POD}-server",
+            "--env-file",
+            str(self.dir / "server.env"),
+            "-e",
+            f"SERVER_NAME={config}",
+            *env,
+            *mounts,
+            "-v",
+            f"{servers / 'game'}:/srv/game:O",
+            "-v",
+            f"{servers / 'workshop/steamapps/workshop'}:/srv/game/steamapps/workshop:O",
+            "-v",
+            f"{servers / 'mods'}:/srv/mods:ro",
+            "-v",
+            f"{self.state}:/srv/layers:ro",
+            "-v",
+            f"{servers / 'depots'}:/srv/depots.list:ro",
+            "-v",
+            f"{self.dir / 'secrets'}:/run/secrets/nwi-server:ro",
+            *geoip,
+            *volumes,
+            "--health-on-failure",
+            "restart",
+            self.server_image,
+            capture=True,
+        )
+        print("Waiting for the server")
+        self.wait(
+            f"{POD}-server",
+            [
+                "python3",
+                "-m",
+                "nwi_server_kit",
+                "watchdog",
+                "--check",
+                "--port",
+                "27015",
+                "--timeout",
+                "2",
+            ],
+            3,
+            "server",
+        )
+        # The server drops connections from 127.0.0.1, which pasta passes on from the pod's own address
+        route = run("ip", "-4", "route", "get", "192.0.2.1", capture=True, check=False)
+        match = re.search(r" src ([0-9.]+)", route)
+        address = match.group(1) if match else "<the host address>"
+        print(
+            f"The test instance of {config} is up: connect {address}:27015 (not 127.0.0.1), "
+            "RCON with instance.py rcon"
+        )
+
+    def remove_dir(self) -> None:
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def down(self) -> None:
+        run("podman", "pod", "rm", "-f", "--ignore", POD, capture=True)
+        for name in VOLUMES:
+            subprocess.run(
+                ["podman", "volume", "rm", "-f", f"{POD}-{name}"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+        self.remove_dir()
+
+    def rcon_password(self) -> str:
+        for line in (self.dir / "server.env").read_text().splitlines():
+            if line.startswith("RCON_PASSWORD="):
+                return line.removeprefix("RCON_PASSWORD=")
+        raise InstanceError("the test instance has no RCON password: is it up?")
+
+    def rcon(self, args: list[str]) -> int:
+        env = os.environ | {
+            "RCON_PASSWORD": self.rcon_password(),
+            "PYTHONPATH": str(REPOSITORY / "src"),
+        }
+        return subprocess.run(
+            [sys.executable, "-m", "nwi_server_kit", "rcon", *args],
+            env=env,
+            check=False,
+        ).returncode
+
+    def logs(self) -> int:
+        return subprocess.run(
+            ["podman", "logs", "-f", f"{POD}-server"], check=False
+        ).returncode
+
+    def soak(self, args: list[str]) -> int:
+        hours = "8"
+        if args[:1] == ["--hours"]:
+            if len(args) < 2:
+                raise InstanceError("--hours needs a number")
+            hours, args = args[1], args[2:]
+        log = Path(args[0] if args else f"soak-{time.strftime('%Y%m%d-%H%M')}.tsv")
+        self.update(["soak-bots"])
+        self.up(["soak-bots"])
+        # The server's output next to the log, and the test instance removed, also when it's stopped early
+        output = log.with_suffix(".log") if log.suffix == ".tsv" else Path(f"{log}.log")
+        try:
+            print(
+                f"Watching the soak test for {hours} hours: {log}, the server's output in {output}"
+            )
+            env = os.environ | {"RCON_PASSWORD": self.rcon_password()}
+            return subprocess.run(
+                [
+                    sys.executable,
+                    str(REPOSITORY / "tests/integration/soak_watch.py"),
+                    "--container",
+                    f"{POD}-server",
+                    "--hours",
+                    hours,
+                    str(log),
+                ],
+                env=env,
+                check=False,
+            ).returncode
+        finally:
+            with output.open("w") as file:
+                subprocess.run(
+                    ["podman", "logs", f"{POD}-server"],
+                    stdout=file,
+                    stderr=file,
+                    check=False,
+                )
+            self.down()
+
+
+def version_key(path: Path) -> list[int | str]:
+    """A package's file name, sorted by its version as sort -V does."""
+    return [
+        int(part) if part.isdigit() else part for part in re.split(r"(\d+)", path.name)
+    ]
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    usage = __doc__.split("Usage:")[1].split("\n\n")[0] if __doc__ else ""
+    if not args or args[0] not in (
+        "build",
+        "update",
+        "up",
+        "down",
+        "rcon",
+        "logs",
+        "soak",
+    ):
+        print(f"Usage:{usage}", file=sys.stderr)
+        return 2
+    command, rest = args[0], args[1:]
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+    os.environ["PYTHONPATH"] = str(REPOSITORY / "src")
+    try:
+        instance = Instance(
+            read_settings(config_home / "nwi-server-kit/test-instance.env", os.environ)
+        )
+        if command == "build":
+            instance.build(rest)
+        elif command == "update":
+            instance.update(rest)
+        elif command == "up":
+            instance.up(rest)
+        elif command == "down":
+            instance.down()
+        elif command == "rcon":
+            return instance.rcon(rest)
+        elif command == "logs":
+            return instance.logs()
+        else:
+            return instance.soak(rest)
+    except InstanceError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+    except subprocess.CalledProcessError as error:
+        print(
+            f"Error: {shlex.join(map(str, error.cmd))} failed ({error.returncode})",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -368,7 +368,7 @@ podman build --format docker --build-context repo=/var/lib/aurutils-repo \
   -f deploy/container/Containerfile -t nwi-server .
 ```
 
-`tests/integration/test-instance.sh build` does the same with the repository
+`tests/integration/instance.py build` does the same with the repository
 aurutils uses. The image's commands (`src/nwi_server_kit/container.py`) are the
 server, `update` and `check`: `nwi-server update --image` and
 `nwi-server check-updates` on the state folder, mounted at `/srv/state`, for the
@@ -414,7 +414,7 @@ host's is a private one. Images in the OCI format have no health check, hence
 
 ### Testing locally
 
-`tests/integration/test-instance.sh` runs a server of one of the configs in a
+`tests/integration/instance.py` runs a server of one of the configs in a
 Podman pod, together with a new MariaDB. The database has the tables of
 SourceBans++ and SourceMod and the test server registered, the passwords are
 generated, and without its config the Discord forward stays silent, so nothing
@@ -428,14 +428,14 @@ precedence:
 ```bash
 mkdir -p ~/.config/nwi-server-kit
 echo 'TEST_ADMIN=[U:1:246]' >>~/.config/nwi-server-kit/test-instance.env
-tests/integration/test-instance.sh build
+tests/integration/instance.py build
 # The games and the workshop items of all configs into the state folder: about
 # 20 GB for Day of Infamy at first, and 10 GB for Insurgency's test server;
 # with configs, e.g. update coop-commando, only theirs
-tests/integration/test-instance.sh update
-tests/integration/test-instance.sh up coop-commando
-tests/integration/test-instance.sh rcon sm plugins list
-tests/integration/test-instance.sh down
+tests/integration/instance.py update
+tests/integration/instance.py up coop-commando
+tests/integration/instance.py rcon sm plugins list
+tests/integration/instance.py down
 ```
 
 The server is then at this machine's address, port 27015, which `up` prints.
@@ -453,7 +453,7 @@ with the password in `RCON_PASSWORD`.
 options after `--` go on its command line, after those of its `server.toml`:
 
 ```bash
-tests/integration/test-instance.sh up --developer 2 coop-commando \
+tests/integration/instance.py up --developer 2 coop-commando \
   -- +sv_cheats 1
 ```
 
@@ -474,7 +474,7 @@ into SourceMod's `admins_simple.ini` (`nwi-server prepare`). So
 database, too. The live servers' environment files don't have it.
 
 ```bash
-tests/integration/test-instance.sh up --db-only coop-commando
+tests/integration/instance.py up --db-only coop-commando
 ```
 
 ### Testing with sanitisers
@@ -493,7 +493,7 @@ of their own that the build keeps and names at the end, not into the local one:
 `tests/integration/sanitiser` builds an image on top of the usual one with these
 packages and the sanitisers' 32-bit runtime (`compiler-rt`), from that
 repository's folder. With `SANITISER` set to the sanitisers of the build,
-`test-instance.sh up` starts the server from that image, and
+`instance.py up` starts the server from that image, and
 `nwi-server start` preloads the runtime into srcds. The reports go to the
 server's output, with stack traces:
 
@@ -501,7 +501,7 @@ server's output, with stack traces:
 podman build --format docker --build-context packages=/tmp/aur-build.XXXXXX \
   -f tests/integration/sanitiser/Containerfile \
   -t localhost/nwi-server-sanitiser .
-SANITISER=undefined tests/integration/test-instance.sh up soak-bots
+SANITISER=undefined tests/integration/instance.py up soak-bots
 podman logs nwi-test-server 2>&1 |
   grep -E 'runtime error:|ERROR: AddressSanitizer'
 ```
@@ -510,7 +510,7 @@ The soak test runs the `soak-bots` server for hours without players: 20 bots a
 team on the frontline maps at 128 tick, the maps changing as in a game. Its
 config is a test's, in `tests/integration/servers/soak-bots`, with its own settings and
 mapcycle in its `cfg` folder; the test instance mounts it among the image's
-configs, so it runs in the container only. `test-instance.sh soak` updates and
+configs, so it runs in the container only. `instance.py soak` updates and
 starts it, with `tests/integration/soak_watch.py` logging the map, the bots, srcds' memory
 and the number of sanitiser reports every five minutes as TSV, adding the bots
 again when a map change lost them. At the end, or when it's stopped, it keeps
@@ -519,7 +519,7 @@ AddressSanitizer takes a lot more memory and time than
 UndefinedBehaviorSanitizer, so a long run with it is best left overnight:
 
 ```bash
-SANITISER=address tests/integration/test-instance.sh soak --hours 8 soak.tsv
+SANITISER=address tests/integration/instance.py soak --hours 8 soak.tsv
 ```
 
 ## Server notes
@@ -625,7 +625,7 @@ commands in `checks/cvars.json`: unknown names, values out of their bounds, chea
 cvars and the rules above. `checks/dump_cvars.py` makes `checks/cvars.json` from
 a running server, after a game update; for the game's own bounds, start it
 without the unlocker, e.g. with
-`DISABLE_PLUGINS=nwi_cvar_unlocker tests/integration/test-instance.sh up`.
+`DISABLE_PLUGINS=nwi_cvar_unlocker tests/integration/instance.py up`.
 
 ### Tickrate
 
