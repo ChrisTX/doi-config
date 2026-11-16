@@ -28,8 +28,7 @@ depends=(
 )
 makedepends=(git make python-build python-installer python-hatchling)
 optdepends=(
-  'ghidra: hl2sdk-ghidra, the Ghidra tools, with PyGhidra of its wheel'
-  'python-jpype1: hl2sdk-ghidra'
+  'python-pyghidra: hl2sdk-ghidra, the Ghidra tools'
   'python-pyelftools: hl2sdk-ghidra vtables'
   'python-capstone: hl2sdk-ghidra signature'
   'python-pefile: hl2sdk-ghidra signature'
