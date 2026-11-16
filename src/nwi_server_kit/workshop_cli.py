@@ -24,6 +24,11 @@ Usage:
         /etc/credstore.encrypted/nwi-server.steam-refresh-token
     nwi-server workshop collection ID
         a collection's items
+    nwi-server workshop upload VPK...|FOLDER [--item ITEM | --game GAME --title TITLE] [--note NOTE]
+            [--description TEXT] [--preview IMAGE] [--visibility VISIBILITY] [--tag TAG]...
+        upload VPKs, or a folder as it is, as a new version of ITEM, or as a new item of GAME's Workshop
+        (doi by default; private unless --visibility says otherwise), with the Steam client of this
+        machine, signed in as the item's owner or a contributor, and the Steamworks SDK (steam_ugc.py)
 
 The configs are the checkout the tools are in (NWI_CONFIG) without --configs.
 """
@@ -32,11 +37,12 @@ import argparse
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import tomllib
 from pathlib import Path
 
-from . import games, steam_web, vpk, workshop
+from . import games, steam_ugc, steam_web, vpk, workshop
 from .server_config import load as load_settings
 
 HEADER = """\
@@ -129,6 +135,77 @@ def show_code(url: str) -> None:
     print(url, file=sys.stderr)
 
 
+def stage(paths: list[Path], folder: Path) -> Path:
+    """The content of an upload: a folder as it is, or VPKs, with their archives, copied into FOLDER."""
+    if len(paths) == 1 and paths[0].is_dir():
+        return paths[0]
+    for path in paths:
+        if path.is_dir() or path.suffix != ".vpk":
+            raise ValueError(f"{path}: upload VPKs, or one folder")
+        files = [path]
+        if path.name.endswith("_dir.vpk"):
+            stem = path.name.removesuffix("_dir.vpk")
+            files += sorted(path.parent.glob(f"{stem}_[0-9][0-9][0-9].vpk"))
+        for file in files:
+            if (folder / file.name).exists():
+                raise ValueError(f"{file.name}: given twice")
+            shutil.copy2(file, folder / file.name)
+    return folder
+
+
+def show_progress(status: str, done: int, total: int) -> None:
+    share = f" {done * 100 // total}%" if total else ""
+    print(f"\r{status}{share}\033[K", end="", file=sys.stderr, flush=True)
+
+
+def upload(args: argparse.Namespace) -> int:
+    if args.item is None and args.title is None:
+        raise ValueError("a new item needs --title")
+    if args.item is not None:
+        details = games.item_details([args.item])
+        if not details or details[0].get("result") != 1:
+            raise ValueError(f"item {args.item} isn't available on the Workshop")
+        app = int(details[0]["consumer_app_id"])
+    else:
+        app = steam_ugc.CONSUMER_APPS[args.game]
+    with tempfile.TemporaryDirectory(prefix="nwi-upload-") as temporary:
+        content = stage(args.paths, Path(temporary))
+        update = steam_ugc.Update(
+            content=content,
+            title=args.title,
+            description=args.description,
+            preview=args.preview,
+            visibility=args.visibility or ("private" if args.item is None else None),
+            tags=args.tag,
+            note=args.note,
+            progress=show_progress,
+        )
+        with steam_ugc.Steamworks(app) as steam:
+            item = args.item
+            agreement = False
+            if item is None:
+                item, agreement = steam.create_item()
+                print(
+                    f"Item {item} created; if the upload fails, give it --item {item}",
+                    file=sys.stderr,
+                )
+            agreement |= steam.update_item(item, update)
+        print(file=sys.stderr)
+    print(f"https://steamcommunity.com/sharedfiles/filedetails/?id={item}")
+    if agreement:
+        print(
+            "The item stays hidden until the account accepts the Workshop's legal agreement: "
+            + steam_ugc.LEGAL_AGREEMENT,
+            file=sys.stderr,
+        )
+    print(
+        "Unless its VPKs are signed with a key of the configs, approve the new version in them: "
+        f"nwi-server workshop approve {item}",
+        file=sys.stderr,
+    )
+    return 0
+
+
 def configs_folder(argument: Path | None) -> Path:
     if argument is not None:
         return argument
@@ -175,6 +252,23 @@ def main(argv: list[str] | None = None) -> int:
     commands.add_parser("login", help="sign in for changing the collections")
     command = commands.add_parser("collection", help="a collection's items")
     command.add_argument("collection", type=int, metavar="ID")
+    command = commands.add_parser("upload", help="upload to the Workshop")
+    command.add_argument("paths", type=Path, nargs="+", metavar="VPK|FOLDER")
+    command.add_argument("--item", type=int, help="the item to update")
+    command.add_argument(
+        "--game",
+        choices=sorted(steam_ugc.CONSUMER_APPS),
+        default=games.DEFAULT,
+        help="the game of a new item (%(default)s)",
+    )
+    command.add_argument("--title")
+    command.add_argument("--description")
+    command.add_argument("--preview", type=Path, help="the preview image")
+    command.add_argument("--visibility", choices=list(steam_ugc.VISIBILITIES))
+    command.add_argument(
+        "--tag", action="append", help="a tag, replacing the item's (repeatable)"
+    )
+    command.add_argument("--note", default="", help="the change note")
     command = commands.add_parser("status", help="the held versions")
     command.add_argument(
         "state",
@@ -191,6 +285,7 @@ def main(argv: list[str] | None = None) -> int:
         OSError,
         tomllib.TOMLDecodeError,
         steam_web.SteamError,
+        steam_ugc.SteamworksError,
     ) as error:
         print(f"nwi-server workshop: {error}", file=sys.stderr)
         return 1
@@ -264,6 +359,8 @@ def run(args: argparse.Namespace) -> int:
         )
         print(token)
         return 0
+    if args.command == "upload":
+        return upload(args)
     if args.command == "collection":
         for item in steam_web.collection_items(args.collection):
             print(item)

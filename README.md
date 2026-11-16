@@ -261,6 +261,20 @@ and the public key `NAME.pem` for the configs, and `nwi-server workshop sign
 NAME.key MOD.vpk`; `nwi-server workshop verify` checks a VPK's signature.
 `nwi-server workshop status` shows the held versions on a server.
 
+Authors upload with `nwi-server workshop upload`, through the Steam client of
+their machine, signed in as the item's owner or a contributor, and the
+Steamworks SDK's library (the `steamworks-sdk` package's in `/opt`, or
+`NWI_STEAM_API`; never where games would load it):
+
+```bash
+nwi-server workshop upload MOD.vpk --item ITEM --note "What changed"
+nwi-server workshop upload MOD.vpk --game doi --title "Title" --preview preview.jpg
+```
+
+It uploads VPKs, a `_dir.vpk`'s archives with it, or one folder as it is, as a
+new version of an item, or as a new item, private until `--visibility public`.
+A version that isn't signed with a key of the configs needs their approval.
+
 Players subscribed to a Workshop collection get its items' newest versions too.
 So a source's collections that mirror its lists, in `workshop/collections.toml`,
 are made the items of their lists that aren't held at every update:

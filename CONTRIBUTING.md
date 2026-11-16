@@ -47,9 +47,9 @@ GitHub Actions runs the same checks on every push and pull request. The AUR isn'
 - Shell scripts are formatted with shfmt and pass shellcheck and shellharden. Write `cd … || exit` instead of disabling SC2164.
 - Python scripts are formatted with ruff and pass `ruff check`. Suppress a rule only where the code can't comply, with `# noqa: <rule>` and a comment saying why.
 - The Python code passes mypy, with the settings of `pyproject.toml`: functions without annotations are checked too. Narrow a type where it's ambiguous, e.g. a KeyValues value that may be a string or a block, rather than casting it or ignoring the error.
-- The tests in `tests/` pass: `python3 -m pytest`. They run the code on fake state in temporary folders, never the system's; a change of the layers, their trial (`health.py`) or what the watchdog records comes with tests.
+- The tests in `tests/` pass: `python3 -m pytest`. They run the code on fake state in temporary folders, never the system's; a change of the layers, their trial (`health.py`) or what the watchdog records comes with tests. The tests of the Workshop uploads build a stand-in of the Steamworks API's library, `tests/fake_steam_api.c`, with the C compiler (`cc`).
 - The SourceMod plugins (`game/addons/sourcemod/scripting/*.sp`) compile without warnings: `spcomp -E`.
-- C++ (`src/hl2sdk_ghidra/sdk_types.cpp`) is formatted with `clang-format` (`.clang-format`).
+- C and C++ (`src/hl2sdk_ghidra/sdk_types.cpp`, `tests/fake_steam_api.c`) are formatted with `clang-format` (`.clang-format`).
 - The Containerfile passes hadolint and `trivy config`.
 - systemd units pass systemd-lsp, the GitHub files yamllint, Markdown files rumdl, TOML files tombi (formatted with `tombi format`, checked with `tombi lint`).
 - Everything follows `.editorconfig`, checked by editorconfig-checker. Formatters fix files themselves; run the check again afterwards.

@@ -101,13 +101,13 @@ repos:
         entry: tools/server_config.py check
         files: ^servers/[^/]+/server\.toml$
 
-      # The C++ of the Ghidra tools (src/hl2sdk_ghidra/sdk_types.cpp), formatted with clang-format;
-      # hl2sdk-ghidra types compiles it against the SDK
+      # The C++ of the Ghidra tools (src/hl2sdk_ghidra/sdk_types.cpp), which hl2sdk-ghidra types compiles
+      # against the SDK, and the C of the tests' stand-in of the Steamworks API, formatted with clang-format
       - id: clang-format
         name: clang-format (clang)
         language: system
         entry: clang-format -i
-        types: [c++]
+        types_or: [c, c++]
 
       # The Containerfile: hadolint (from the AUR), with shellcheck for its RUN instructions, and trivy's
       # checks of its configuration, the ones trivy comes with (--skip-check-update, nothing is downloaded)

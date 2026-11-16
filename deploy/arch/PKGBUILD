@@ -32,6 +32,7 @@ optdepends=(
   'python-pyelftools: hl2sdk-ghidra vtables'
   'python-capstone: hl2sdk-ghidra signature'
   'python-pefile: hl2sdk-ghidra signature'
+  'steamworks-sdk: nwi-server workshop upload'
   'podman: the container image and the Quadlet units (deploy/quadlet)'
   'sourcemod-advertisements: the advertisements of the configs'
   'sourcemod-multicolors: the colours of the AFK Manager'
