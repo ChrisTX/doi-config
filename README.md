@@ -95,8 +95,10 @@ server is put together with overlayfs from read-only layers, top first:
 - the mods of `mods/<game>` and the playlists' configs, made by
   `nwi-update.service`
 - `game` of this repository
-- `/usr/lib/sourcemod` and `/usr/lib/metamod`: SourceMod, Metamod:Source and
-  the plugins from their packages (`sourcemod`, `metamod-source`,
+- SourceMod, Metamod:Source and the plugins from their packages, copies of
+  `/usr/lib/sourcemod` and `/usr/lib/metamod` made by `nwi-update.service`
+  when the packages changed, so that their update reaches a server when it
+  restarts, on trial, not while it runs (`sourcemod`, `metamod-source`,
   `sourcemod-sourcebans-pp`, `sourcemod-sourcebans-pp-discord-forward`,
   `sourcemod-advertisements`, `sourcemod-multicolors`, `sourcemod-smjansson`,
   `sourcemod-steamworks`)
@@ -116,7 +118,7 @@ The units are in `deploy/systemd`, the group `nwi-rcon` in `deploy/sysusers.d`.
 They run the tools installed with them (`make install`, or the package of
 `deploy/arch/PKGBUILD`), in `/usr/lib/nwi-server-kit`, which read the configs
 of the servers' config sources (see [Config sources](#config-sources)).
-SourceMod and Metamod:Source are those of `SOURCEMOD_DIR` and `METAMOD_DIR`,
+SourceMod and Metamod:Source are copied from `SOURCEMOD_DIR` and `METAMOD_DIR`,
 `/usr/lib/sourcemod` and `/usr/lib/metamod` by default.
 
 - `nwi-update.service` updates the layers (`nwi-server update`), in its state

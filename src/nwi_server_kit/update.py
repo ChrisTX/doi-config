@@ -3,6 +3,9 @@ STATE (/var/lib/nwi-server/layers), as versions (layers.py) of what it downloads
 
     config-<source>.v         the configs of a config source (games.py), of its clone
     plugins-<source>.v        this repository's plugins, compiled of a source's configs
+    sourcemod.v, metamod.v    the installs of SourceMod and Metamod:Source with the plugins of their
+                              packages (SOURCEMOD_DIR, METAMOD_DIR, /usr/lib/sourcemod and
+                              /usr/lib/metamod by default), shaped as the game's folder: addons/…
     depot-<depot>.v           a depot of a game's dedicated server, which the games share, e.g. the
                               Steam client library (1006)
     <game>/item-<item>.v      a workshop item of the game's servers' lists, laid out as SteamCMD
@@ -24,6 +27,7 @@ game's own depot (game), its workshop items, a folder made of its game's items' 
 """
 
 import argparse
+import hashlib
 import os
 import shutil
 import subprocess
@@ -147,6 +151,42 @@ def compile_main(argv: list[str] | None = None) -> int:
         print(f"nwi-server compile-plugins: {error}", file=sys.stderr)
         return 1
     return 0
+
+
+# The installs the servers' game folders get as layers of their own: the layer, the variable that
+# names the install's folder, its default
+INSTALLS = (
+    ("sourcemod", "SOURCEMOD_DIR", "/usr/lib/sourcemod"),
+    ("metamod", "METAMOD_DIR", "/usr/lib/metamod"),
+)
+
+
+def install_version(folder: Path) -> str:
+    """The version of an install's folder: the time of its newest file, and a fingerprint of all its
+    files' paths, sizes, modes and times, which a package's update changes."""
+    digest = hashlib.sha256()
+    newest = 0
+    for path in sorted(folder.rglob("*")):
+        status = path.lstat()
+        newest = max(newest, status.st_mtime_ns)
+        digest.update(
+            f"{path.relative_to(folder)}\0{status.st_size}\0{status.st_mode}\0"
+            f"{status.st_mtime_ns}\n".encode()
+        )
+    return f"{layers.stamp(newest / 1e9)}.{digest.hexdigest()[:12]}"
+
+
+def snapshot_installs(state: Path) -> list[Path]:
+    """The installs of SourceMod and Metamod:Source as versions of their layers (INSTALLS), new ones
+    when their packages changed: a package's update then reaches a server only when it restarts, on
+    trial, rather than changing its files while it runs."""
+    found = []
+    for name, variable, default in INSTALLS:
+        folder = Path(os.environ.get(variable, default))
+        found.append(
+            layers.snapshot(folder, layers.folder(state, name), install_version(folder))
+        )
+    return found
 
 
 def remove_outdated(version: Path) -> None:
@@ -479,6 +519,8 @@ def update(state: Path, image: bool = False) -> None:
                 layers.folder(state, f"config-{source}"),
                 layers.folder(state, f"plugins-{source}"),
             }
+        snapshot_installs(state)
+        needed |= {layers.folder(state, name) for name, _, _ in INSTALLS}
     found = games.servers()
     downloaded: set[str] = set()
     for game in games.used_games(found):

@@ -8,7 +8,7 @@ left (layers.pick()):
                        library's, and its game's own, with a writable layer
     <runtime>/<game>   of its config source: servers/<config> (its links resolved), the compiled
                        plugins, the mods for the game, game/; then SourceMod and Metamod:Source
-                       (SOURCEMOD_DIR, METAMOD_DIR), the game's folder of its own depot, with a
+                       (sourcemod.v, metamod.v), the game's folder of its own depot, with a
                        writable layer
 
 The server's game, config and config source are its environment file's (games.py): CONFIG_SOURCE,
@@ -17,8 +17,9 @@ SERVER_CONFIG_NAME and GAME, the variables of the unit.
 The server and the updater run as users of their own (DynamicUser=), whose state systemd keeps as the
 user nobody's on disk and maps to the unit's user. So the layers are mounted with an ID mapping of
 nobody to the server's user, which sees the updater's files as its own; overlayfs takes only layers of
-one mapping, so the packages' and the config's are mapped alike, which leaves their files root's,
-read-only to the server, root kept as root for copying them up. So is the server's own state
+one mapping, so the server's config, which mount copies as root, is mapped alike, which leaves its
+files root's, read-only to the server, root kept as root for copying them up. The updater's copies of
+SourceMod and Metamod:Source are its own, as the other layers. So is the server's own state
 (/var/lib/nwi-server/servers/<name>), whose paths it keeps are bind-mounted into the server. Its
 writable layers are folders of its own in /run/nwi-server/.work/<name>, not on the mapped state:
 overlayfs writes there as root, whom the mapping doesn't have. They start empty whenever the layers
@@ -41,7 +42,7 @@ import time
 from pathlib import Path
 
 from . import games, health, layers
-from .update import item_versions, write_record
+from .update import INSTALLS, item_versions, write_record
 
 RUN = Path("/run/nwi-server")
 STATE = Path("/var/lib/nwi-server")
@@ -164,6 +165,7 @@ def _mount(name: str, unit: str, state: Path) -> None:
     items = item_versions(state, game, games.workshop_items([server], game), pick=True)
     plugins = layers.picked(layers.folder(state, f"plugins-{server.source}"))
     mods = layers.picked(layers.folder(state / game, f"mods-{server.source}"))
+    installs = [layers.picked(layers.folder(state, name)) for name, _, _ in INSTALLS]
 
     # The paths, relative to the server's root, that are kept between starts. The game's caches and the
     # crash handler's logs are written anew on every start.
@@ -205,18 +207,10 @@ def _mount(name: str, unit: str, state: Path) -> None:
         mapped(plugins, work / "lower/plugins", NOBODY, uid),
         mapped(mods, work / "lower/mods", NOBODY, uid),
         mapped(configs / "game", work / "lower/configs", NOBODY, uid),
-        mapped(
-            Path(os.environ.get("SOURCEMOD_DIR", "/usr/lib/sourcemod")),
-            work / "lower/sourcemod",
-            NOBODY,
-            uid,
-        ),
-        mapped(
-            Path(os.environ.get("METAMOD_DIR", "/usr/lib/metamod")),
-            work / "lower/metamod",
-            NOBODY,
-            uid,
-        ),
+    ]
+    lower_game += [
+        mapped(version, work / f"lower/{name}", NOBODY, uid)
+        for (name, _, _), version in zip(INSTALLS, installs, strict=True)
     ]
     lower_root = [mapped(record, work / "lower/record", NOBODY, uid)]
     lower_root += [
@@ -255,12 +249,19 @@ def _mount(name: str, unit: str, state: Path) -> None:
         for version in items.values()
         for map_name in maps_of(version)
     }
-    core = [*depot_versions, plugins, mods, configs]
+    core = [*depot_versions, plugins, mods, configs, *installs]
     core += [version for version in items.values() if not maps_of(version)]
     used = {
         "versions": [
             canonical(path)
-            for path in [*depot_versions, *items.values(), plugins, mods, configs]
+            for path in [
+                *depot_versions,
+                *items.values(),
+                plugins,
+                mods,
+                configs,
+                *installs,
+            ]
         ],
         "core": [canonical(path) for path in core],
         "maps": maps,
