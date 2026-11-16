@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dump the cvars and commands of a running server, for tools/check_configs.py.
+"""Dump the cvars and commands of a running server, for checks/check_configs.py.
 
 Lists every cvar with its default, its bounds and its flags, and the commands, from the server's
 cvarlist and the help of each cvar, over RCON. The descriptions are left out. Bounds and flags are
@@ -7,7 +7,7 @@ the server's as they are: those nwi_cvar_unlocker.smx changes are its own, which
 takes from the plugin's source instead, so a dump from a server without the plugin is the exact
 one (a server's nwi-server prepare disables it with DISABLE_PLUGINS=nwi_cvar_unlocker).
 
-The password comes from RCON_PASSWORD. The dump goes to the output, e.g. > tools/cvars.json.
+The password comes from RCON_PASSWORD. The dump goes to the output, e.g. > checks/cvars.json.
 """
 
 import argparse

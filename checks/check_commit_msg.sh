@@ -56,7 +56,7 @@ if [[ $known == false ]]; then
 	} | tr / '\n' | sort -u)
 fi
 if [[ $known == false ]]; then
-	echo "The scope '$scope' is neither a file or folder of the repository nor an area of tools/check_commit_msg.sh" >&2
+	echo "The scope '$scope' is neither a file or folder of the repository nor an area of checks/check_commit_msg.sh" >&2
 	exit 1
 fi
 

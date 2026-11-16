@@ -55,7 +55,7 @@ repos:
         language: system
         entry: ruff format
         types: [python]
-      # The types of the Python code, the package and the scripts of tools/ as pyproject.toml has them,
+      # The types of the Python code, the package and the scripts of checks/ and testing/ as pyproject.toml has them,
       # all at once: types cross the modules
       - id: mypy
         name: mypy (mypy)
@@ -63,7 +63,7 @@ repos:
         entry: mypy
         types: [python]
         pass_filenames: false
-      # The tests of the package and the scripts of tools/ (tests/), all of them on any change
+      # The tests of the package (tests/), all of them on any change
       - id: pytest
         name: pytest (python-pytest)
         language: system
@@ -84,15 +84,15 @@ repos:
         files: ^game/addons/sourcemod/scripting/[^/]+\.sp$
 
       # The game's configs: formatted, the cvar bare and its arguments quoted, and checked against the
-      # game's cvars and commands (tools/cvars.json, made with tools/dump_cvars.py) and those of our
-      # plugins, see tools/check_configs.py. It checks all configs, as a change of the cvars or the
+      # game's cvars and commands (checks/cvars.json, made with testing/dump_cvars.py) and those of our
+      # plugins, see checks/check_configs.py. It checks all configs, as a change of the cvars or the
       # plugins can make any of them wrong.
       - id: check-configs
-        name: the game's configs (tools/check_configs.py)
+        name: the game's configs (checks/check_configs.py)
         language: system
-        entry: python3 tools/check_configs.py
+        entry: python3 checks/check_configs.py
         pass_filenames: false
-        files: \.cfg$|^tools/(cvars\.json|check_configs\.py)$|^game/addons/sourcemod/scripting/
+        files: \.cfg$|^checks/(cvars\.json|check_configs\.py)$|^game/addons/sourcemod/scripting/
 
       # The servers' settings: their keys, and the configs and lists they name (nwi-server server-config)
       - id: server-config
@@ -177,7 +177,7 @@ repos:
       - id: commit-msg-summary
         name: summary of the commit message
         language: system
-        entry: tools/check_commit_msg.sh
+        entry: checks/check_commit_msg.sh
         stages: [commit-msg]
 
       # The commit message, without git's comments and the diff below them of `git commit -v`

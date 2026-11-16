@@ -1,6 +1,6 @@
 # The bot soak test: a PvP server with 20 bots a team on the frontline maps, for tests of SourceMod and
-# its extensions over hours, e.g. the sanitiser builds (deploy/container/sanitiser), see README.md. On
-# the LAN only. tools/soak_watch.py logs it and adds the bots again after map changes.
+# its extensions over hours, e.g. the sanitiser builds (testing/sanitiser), see README.md. On
+# the LAN only. testing/soak_watch.py logs it and adds the bots again after map changes.
 hostname = "DoI bot soak test"
 playlist = "nwi/mp_casual_with_bots"
 startup_map = "crete frontline"

@@ -1,5 +1,5 @@
 # nwi-server-kit, the Python package of the servers' tools (src/nwi_server_kit) with its command
-# nwi-server, and the dependencies of it and the scripts of tools/. uv sync makes .venv with the
+# nwi-server, and the dependencies of it and the scripts of checks/ and testing/. uv sync makes .venv with the
 # versions of uv.lock and the package installed from the checkout (see CONTRIBUTING.md); the servers'
 # package (deploy/arch/PKGBUILD) installs it with the Arch Linux packages of the dependencies.
 
@@ -51,9 +51,9 @@ build-backend = "hatchling.build"
 packages = ["src/nwi_server_kit", "src/hl2sdk_ghidra"]
 
 [tool.mypy]
-files = ["src", "tools", "tests"]
+files = ["src", "checks", "testing", "tests"]
 python_version = "3.12"
-# The bodies of functions without annotations too, e.g. of the scripts of tools/
+# The bodies of functions without annotations too, e.g. of the scripts of checks/ and testing/
 check_untyped_defs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
@@ -76,15 +76,15 @@ module = ["ghidra.pcode.emu.jit.gen", "ghidra.pcode.emu.jit.gen.*"]
 follow_imports = "skip"
 follow_imports_for_stubs = true
 
-# The tests of the package and of the scripts of tools/, which they import as modules
+# The tests of the package
 [tool.pytest]
 addopts = ["--strict-markers"]
-pythonpath = ["src", "tools"]
+pythonpath = ["src"]
 testpaths = ["tests"]
 
 [tool.ruff]
-# The package, and the scripts' own modules, e.g. rcon.py, which they import from tools/
-src = ["src", "tools"]
+# The package, which the scripts of checks/ and testing/ import from src/
+src = ["src"]
 
 [tool.uv.sources]
 ghidra-stubs = { path = "/opt/ghidra/docs/ghidra_stubs/ghidra_stubs-12.2-py3-none-any.whl" }

@@ -19,7 +19,14 @@ sudo pacman -S --needed prek shfmt shellcheck shellharden ruff mypy \
 
 clang's `clang-format` formats the C++ of hl2sdk-ghidra, `src/hl2sdk_ghidra/sdk_types.cpp`. Ghidra's own type stubs (`/opt/ghidra/docs/ghidra_stubs`) let mypy check hl2sdk-ghidra's use of Ghidra's API; the virtual environment has them.
 
-The tools are a Python package, `src/nwi_server_kit`, with the command `nwi-server`, and the Ghidra tools another, `src/hl2sdk_ghidra`, with the command `hl2sdk-ghidra` (see [its README](src/hl2sdk_ghidra/README.md)). Instead of the Python packages, its dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums, mypy's and pytest's included, of the development group. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, with the package installed from the checkout, which the hooks then use while it's active:
+What runs where:
+
+- `src/`: the packages, everything a server, its updates and its admins run; `tests/` has their tests (pytest).
+- `deploy/`: the systemd units, the container image, the Quadlet units and the package (`deploy/arch/PKGBUILD`).
+- `checks/`: what the git hooks and GitHub Actions run on the repository's files, e.g. the check of the game's configs against the game's cvars (`checks/cvars.json`).
+- `testing/`: what developers run against test servers: the test instance (`testing/test-instance.sh`), the image with sanitiser builds, the soak test's log and the dump of a server's cvars. Neither `checks/` nor `testing/` is installed.
+
+The tools are a Python package, `src/nwi_server_kit`, with the commands `nwi-server` and `nwi-rcon`, and the Ghidra tools another, `src/hl2sdk_ghidra`, with the command `hl2sdk-ghidra` (see [its README](src/hl2sdk_ghidra/README.md)). Instead of the Python packages, its dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums, mypy's and pytest's included, of the development group. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, with the package installed from the checkout, which the hooks then use while it's active:
 
 ```bash
 uv sync
@@ -65,5 +72,5 @@ GitHub Actions runs the same checks on every push and pull request. The AUR isn'
 ## Commits
 
 - One commit per logical change.
-- Message summary: `<scope>: <summary>`, where the scope is the script, file or area that changes (e.g. `launch:`, `MOTD:`, `systemd:`, `.github:`). The summary is imperative (`Add …`, `Fix …`, `Remove …`), without a trailing period. The commit-msg hook checks it: the scope has to be a file or folder of the repository, by its name with or without the extension, or one of the areas in `tools/check_commit_msg.sh`.
+- Message summary: `<scope>: <summary>`, where the scope is the script, file or area that changes (e.g. `launch:`, `MOTD:`, `systemd:`, `.github:`). The summary is imperative (`Add …`, `Fix …`, `Remove …`), without a trailing period. The commit-msg hook checks it: the scope has to be a file or folder of the repository, by its name with or without the extension, or one of the areas in `checks/check_commit_msg.sh`.
 - The body says why, where the summary doesn't.

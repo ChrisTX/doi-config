@@ -2,8 +2,8 @@
 
 Notes on cvars whose effect in Day of Infamy isn't what their name or
 description suggests, tested on our servers. A full list of the cvars with
-their defaults, bounds and flags is in `tools/cvars.json` (made by
-`tools/dump_cvars.py`).
+their defaults, bounds and flags is in `checks/cvars.json` (made by
+`testing/dump_cvars.py`).
 
 ## sv_visiblemaxplayers
 

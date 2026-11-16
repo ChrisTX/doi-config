@@ -7,11 +7,7 @@
 PREFIX ?= /usr
 LIBDIR ?= $(PREFIX)/lib
 DATADIR ?= $(PREFIX)/share
-# The tools' folder, which the units run them from
-TOOLSDIR = $(LIBDIR)/nwi-server-kit
-
-# The tools of the servers and of their admins; the checks of this repository's files stay in it
-TOOLS = dump_cvars.py soak_watch.py
+# The checks (checks/) and the tests (tests/, testing/) aren't installed: they're for this repository
 UNITS = $(wildcard deploy/systemd/*)
 QUADLET = $(wildcard deploy/quadlet/*)
 DOCS = README.md CONTRIBUTING.md docs/Clients.md docs/Cvars.md
@@ -24,19 +20,14 @@ all:
 
 install:
 	python -m installer --destdir="$(DESTDIR)" --prefix="$(PREFIX)" dist/*.whl
-	install -Dm755 -t "$(DESTDIR)$(TOOLSDIR)" $(addprefix tools/,$(TOOLS))
-	install -dm755 "$(DESTDIR)$(LIBDIR)/systemd/system"
-	for unit in $(UNITS); do \
-		sed 's|/usr/lib/nwi-server-kit/|$(TOOLSDIR)/|g' "$$unit" \
-			>"$(DESTDIR)$(LIBDIR)/systemd/system/$${unit##*/}" || exit; \
-	done
+	install -Dm644 -t "$(DESTDIR)$(LIBDIR)/systemd/system" $(UNITS)
 	install -Dm644 deploy/sysusers.d/nwi-server.conf "$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf"
 	# Copied into ~/.config by whoever runs the containers: in Podman's folders, they'd be every user's
 	install -Dm644 -t "$(DESTDIR)$(DATADIR)/nwi-server-kit/quadlet" $(QUADLET)
 	install -Dm644 -t "$(DESTDIR)$(DATADIR)/doc/nwi-server-kit" $(DOCS)
 
 uninstall:
-	rm -rf "$(DESTDIR)$(LIBDIR)/nwi-server-kit" "$(DESTDIR)$(DATADIR)/nwi-server-kit" \
+	rm -rf "$(DESTDIR)$(DATADIR)/nwi-server-kit" \
 		"$(DESTDIR)$(DATADIR)/doc/nwi-server-kit"
 	rm -f $(addprefix "$(DESTDIR)$(LIBDIR)/systemd/system/,$(addsuffix ",$(notdir $(UNITS)))) \
 		"$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf"

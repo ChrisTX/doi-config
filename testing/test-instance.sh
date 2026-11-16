@@ -29,13 +29,13 @@
 # NWI_STATE: the state folder with the game, the workshop items and the mods
 # (${XDG_STATE_HOME:-~/.local/state}/nwi-server, as for the Quadlet units of deploy/quadlet)
 # DISABLE_PLUGINS: plugins the server starts without, by name, e.g. nwi_cvar_unlocker for the game's own
-# bounds in tools/dump_cvars.py
+# bounds in testing/dump_cvars.py
 # TEST_ADMIN: SteamIDs that get root admin, separated by spaces, each as STEAM_0:…, STEAM_1:…, [U:1:…]
 # or SteamID64: in the database, and in admins_simple.ini through the server's environment file
 # (nwi-server prepare), so also on servers without the database
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 # SANITISER: undefined, address or address,undefined: up starts the server from the sanitiser image
-# (localhost/nwi-server-sanitiser, deploy/container/sanitiser, see README.md), with its runtime preloaded
+# (localhost/nwi-server-sanitiser, testing/sanitiser, see README.md), with its runtime preloaded
 # LAUNCH_OPTIONS: options of the server's command line for every up, separated by spaces, before those
 # of up's own
 #
@@ -57,7 +57,7 @@ if [[ -f $settings ]]; then
 	done <"$settings"
 fi
 
-repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
+repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
 # Set by find_repo
 repo_name=''
 repo_root=''
@@ -390,7 +390,7 @@ cmd_up() {
 		geoip=(-v /var/lib/GeoIP:/var/lib/GeoIP:ro)
 	fi
 	# The state's game and workshop items with an overlay of the container's own, its mods read-only
-	# Plugins nwi-server prepare disables, e.g. for tools/dump_cvars.py
+	# Plugins nwi-server prepare disables, e.g. for testing/dump_cvars.py
 	local -a extra_env=()
 	if [[ -n ${DISABLE_PLUGINS:-} ]]; then
 		extra_env=(-e DISABLE_PLUGINS="$DISABLE_PLUGINS")
