@@ -15,6 +15,12 @@ layer of it, the servers keep the version they have, and the admins hear of it o
 approved. A source without workshop/approved.toml approves every version (`nwi-server workshop freeze`
 makes one of the current versions).
 
+Every new version is scanned first (scan.py): one with findings is held for every source, approved
+or signed or not, until a source approves it as unscanned, a reviewed false alarm:
+
+    [items.3431236539]
+    unscanned = ["7284409961546829163"]
+
 Clients always download an item's newest version of the Workshop. So a server lists only the items
 whose version it runs is the Workshop's (its workshop list, subscribed_file_ids.txt), whether another
 version is held or its own fell back after failures (layers.py), and its mapcycle leaves out the maps
@@ -38,7 +44,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import games, layers, notify, server_config, steam_web, vpk
+from . import games, layers, notify, scan, server_config, steam_web, vpk
 
 APPROVED = Path("workshop/approved.toml")
 KEYS = Path("workshop/keys")
@@ -55,6 +61,8 @@ class Approvals:
 
     manifests: dict[int, set[str]] = field(default_factory=dict)
     keys: dict[int, list[bytes]] = field(default_factory=dict)
+    # The versions that may pass despite the scan's findings
+    unscanned: dict[int, set[str]] = field(default_factory=dict)
 
 
 def load(configs: Path) -> Approvals | None:
@@ -68,6 +76,9 @@ def load(configs: Path) -> Approvals | None:
     for item, entry in settings.get("items", {}).items():
         approvals.manifests[int(item)] = {
             str(manifest) for manifest in entry.get("manifests", [])
+        }
+        approvals.unscanned[int(item)] = {
+            str(manifest) for manifest in entry.get("unscanned", [])
         }
         keys = []
         for name in entry.get("keys", []):
@@ -149,7 +160,13 @@ def gate(
     servers list it. Records approvals by signature and held versions, and notifies the admins."""
     record = State(state)
     allowed = False
+    findings = scan.scan(download)
     for source, approvals in sorted(sources.items()):
+        if findings and (
+            approvals is None or manifest not in approvals.unscanned.get(item, set())
+        ):
+            hold_scanned(record, source, item, manifest, findings)
+            continue
         if record.approved(source, item, manifest, approvals):
             allowed = True
             record.held.get(source, {}).pop(str(item), None)
@@ -184,6 +201,30 @@ def gate(
         )
     record.save()
     return allowed
+
+
+def hold_scanned(
+    record: State, source: str, item: int, manifest: str, findings: list[str]
+) -> None:
+    """Hold a version the scan found problems in, and tell the admins once."""
+    if record.held.get(source, {}).get(str(item)) != manifest:
+        shown = "\n".join(f"- {finding}" for finding in findings[:20])
+        more = f"\n- and {len(findings) - 20} more" if len(findings) > 20 else ""
+        notify.queue(
+            f"Workshop item {item} held: the scan found problems",
+            f"Version {manifest} of workshop item {item} failed the scan of its files for {source}, "
+            f"which holds it whether it's approved or not:\n\n{shown}{more}\n\n"
+            "The servers keep the version they have and leave the item off their workshop lists, "
+            "and its maps out of their mapcycles. If it's a false alarm, approve it as unscanned in "
+            f"workshop/approved.toml of {source}'s configs, e.g. with: nwi-server workshop approve "
+            f"--unscanned {item} {manifest}",
+        )
+    record.held.setdefault(source, {})[str(item)] = manifest
+    print(
+        f"Held workshop item {item} at {manifest} for {source}: the scan found "
+        f"{len(findings)} problems, e.g. {findings[0]}",
+        file=sys.stderr,
+    )
 
 
 def collections(configs: Path) -> dict[int, str]:
@@ -363,6 +404,7 @@ def read_approved(configs: Path) -> dict[int, dict[str, list[str]]]:
         int(item): {
             "manifests": [str(manifest) for manifest in entry.get("manifests", [])],
             "keys": [str(key) for key in entry.get("keys", [])],
+            "unscanned": [str(manifest) for manifest in entry.get("unscanned", [])],
         }
         for item, entry in settings.get("items", {}).items()
     }
@@ -377,6 +419,10 @@ def write_approved(configs: Path, approved: dict[int, dict[str, list[str]]]) -> 
         )
         if entry["keys"]:
             lines.append("keys = [" + ", ".join(f'"{k}"' for k in entry["keys"]) + "]")
+        if entry.get("unscanned"):
+            lines.append(
+                "unscanned = [" + ", ".join(f'"{m}"' for m in entry["unscanned"]) + "]"
+            )
         lines.append("")
     path = configs / APPROVED
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -384,14 +430,21 @@ def write_approved(configs: Path, approved: dict[int, dict[str, list[str]]]) -> 
 
 
 def approve(
-    approved: dict[int, dict[str, list[str]]], item: int, manifest: str
+    approved: dict[int, dict[str, list[str]]],
+    item: int,
+    manifest: str,
+    unscanned: bool = False,
 ) -> bool:
-    """Approve a manifest of an item; whether it's new."""
-    entry = approved.setdefault(item, {"manifests": [], "keys": []})
-    if manifest in entry["manifests"]:
-        return False
-    entry["manifests"].append(manifest)
-    return True
+    """Approve a manifest of an item, with UNSCANNED despite the scan's findings too; whether it's
+    new."""
+    entry = approved.setdefault(item, {"manifests": [], "keys": [], "unscanned": []})
+    lists = ["manifests", "unscanned"] if unscanned else ["manifests"]
+    new = False
+    for name in lists:
+        if manifest not in entry.setdefault(name, []):
+            entry[name].append(manifest)
+            new = True
+    return new
 
 
 def stage(paths: list[Path], folder: Path) -> Path:

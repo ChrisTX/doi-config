@@ -327,14 +327,24 @@ def test_freeze_and_approve(configs: Path, monkeypatch: pytest.MonkeyPatch) -> N
     )
     assert workshop_cli.main(["freeze", "--configs", str(configs)]) == 0
     approved = workshop.read_approved(configs)
-    assert approved[ITEM] == {"manifests": ["111", f"{ITEM}0"], "keys": ["community"]}
-    assert approved[333] == {"manifests": ["3330"], "keys": []}
+    assert approved[ITEM] == {
+        "manifests": ["111", f"{ITEM}0"],
+        "keys": ["community"],
+        "unscanned": [],
+    }
+    assert approved[333] == {"manifests": ["3330"], "keys": [], "unscanned": []}
     assert workshop_cli.main(["approve", "222", "6", "--configs", str(configs)]) == 0
     # freeze approved the current version, 2220, approve the 6
     assert workshop.read_approved(configs)[222]["manifests"] == ["5", "2220", "6"]
     # The file stays readable as the gate reads it
     approvals = workshop.load(configs)
     assert approvals is not None and "6" in approvals.manifests[222]
+    # A reviewed false alarm of the scan
+    arguments = ["approve", "222", "7", "--unscanned", "--configs", str(configs)]
+    assert workshop_cli.main(arguments) == 0
+    approvals = workshop.load(configs)
+    assert approvals is not None and approvals.unscanned[222] == {"7"}
+    assert "7" in approvals.manifests[222]
 
 
 def test_keygen_sign_verify_commands(

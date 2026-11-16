@@ -14,8 +14,11 @@ Usage:
     nwi-server workshop freeze [--configs DIR]
         approve the current version of every item of the configs' servers' workshop lists, in
         workshop/approved.toml, which then gates their updates (keeping what it approves already)
-    nwi-server workshop approve ITEM [MANIFEST] [--configs DIR]
-        approve a version of an item, the Workshop's current one without MANIFEST
+    nwi-server workshop approve ITEM [MANIFEST] [--unscanned] [--configs DIR]
+        approve a version of an item, the Workshop's current one without MANIFEST; with --unscanned
+        despite the scan's findings too, a reviewed false alarm
+    nwi-server workshop scan FOLDER...
+        scan items' folders, e.g. of a download or a mod's, as the update scans new versions (scan.py)
     nwi-server workshop status [STATE]
         the versions the update held, per config source
     nwi-server workshop login
@@ -42,7 +45,7 @@ import time
 import tomllib
 from pathlib import Path
 
-from .. import games, steam_ugc, steam_web, vpk, workshop
+from .. import games, scan, steam_ugc, steam_web, vpk, workshop
 
 
 def show_code(url: str) -> None:
@@ -159,6 +162,13 @@ def main(argv: list[str] | None = None) -> int:
         if name == "approve":
             command.add_argument("item", type=int, metavar="ITEM")
             command.add_argument("manifest", nargs="?", metavar="MANIFEST")
+            command.add_argument(
+                "--unscanned",
+                action="store_true",
+                help="despite the scan's findings too",
+            )
+    command = commands.add_parser("scan", help="scan items' folders")
+    command.add_argument("folders", type=Path, nargs="+", metavar="FOLDER")
     commands.add_parser("login", help="sign in for changing the collections")
     command = commands.add_parser("collection", help="a collection's items")
     command.add_argument("collection", type=int, metavar="ID")
@@ -234,6 +244,17 @@ def run(args: argparse.Namespace) -> int:
                     print(error)
                     status = 1
         return status
+    if args.command == "scan":
+        status = 0
+        for folder in args.folders:
+            findings = scan.scan(folder)
+            for finding in findings:
+                print(f"{folder}: {finding}")
+            if findings:
+                status = 1
+            else:
+                print(f"{folder}: no findings")
+        return status
     if args.command in ("freeze", "approve"):
         configs = configs_folder(args.configs)
         approved = workshop.read_approved(configs)
@@ -256,7 +277,7 @@ def run(args: argparse.Namespace) -> int:
             )
             if manifest is None:
                 raise ValueError(f"item {args.item} isn't available on the Workshop")
-            new = workshop.approve(approved, args.item, manifest)
+            new = workshop.approve(approved, args.item, manifest, args.unscanned)
             print(
                 f"Item {args.item} at {manifest}: {'approved' if new else 'approved already'}"
             )

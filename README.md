@@ -251,6 +251,22 @@ leaves out the maps of the others, which players couldn't get; a startup map of
 theirs becomes the mapcycle's first. That covers an item that fell back after
 failures too. A source without `workshop/approved.toml` approves every version.
 
+Every new version is scanned before that (`src/nwi_server_kit/scan.py`), as a
+version that reaches the servers reaches the players' clients, which parse it,
+e.g. of an author's account that was taken over. Its files, loose and in its
+VPKs, have to be game content (maps, models, materials, sounds, scripts and the
+like) in the folders the game reads it from: no configs, plugins or libraries,
+which the server's search path would load as its own. And the formats the game
+parses (maps, nav meshes, models, textures, sounds, particles) have to hold
+together: every offset and size within the file, the dimensions within the
+game's limits, the VPKs' entries matching their checksums. A version with
+findings is held for every source, approved or not, and the admins are told
+what was found. A false alarm, after a review, is approved per version with
+`nwi-server workshop approve --unscanned ITEM MANIFEST`. `nwi-server workshop
+scan FOLDER` scans a folder by hand, e.g. a mod before its upload. It's a
+defence in depth, not a proof: a file that's malformed in a way its headers
+don't show passes.
+
 In a checkout of the configs, `nwi-server workshop freeze` approves the current
 versions of all items of the servers' lists, and `nwi-server workshop approve
 ITEM [MANIFEST]` one version, the current one without MANIFEST, after a review.
