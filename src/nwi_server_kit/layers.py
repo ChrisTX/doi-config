@@ -128,10 +128,11 @@ def latest(layer: Path) -> Path | None:
     return found[-1] if found else None
 
 
-def pick(layer: Path) -> Path | None:
+def pick(layer: Path, allowed: Callable[[Path], bool] | None = None) -> Path | None:
     """The version of a layer a server mounts: the newest that's good or has tries left. If all used up
-    theirs, the newest, at best effort."""
-    found = versions(layer)
+    theirs, the newest, at best effort. With ALLOWED, only of the versions it allows, e.g. a workshop
+    item's approved ones (workshop.py)."""
+    found = [path for path in versions(layer) if allowed is None or allowed(path)]
     for path in reversed(found):
         left = counters(path)
         if left is None or left[0] > 0:

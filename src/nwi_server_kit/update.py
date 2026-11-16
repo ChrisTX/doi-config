@@ -35,7 +35,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from . import downloads, games, layers
+from . import downloads, games, layers, workshop
 from .check_gamedata import main as check_gamedata
 from .make_mods import main as make_mods
 
@@ -237,8 +237,14 @@ def update_items(
     """The workshop items of the game's servers' lists, downloaded and made versions of, each laid out
     as SteamCMD would (steamapps/workshop/content/<app>/<item>); returns the workshop's app and the
     items. An item that fails to download keeps its versions. One downloaded without
-    DepotDownloader's record, e.g. SteamCMD's, is checked file by file."""
-    items = games.workshop_items(found, game)
+    DepotDownloader's record, e.g. SteamCMD's, is checked file by file. A new version becomes a layer
+    only if a config source whose servers list the item approves it (workshop.py)."""
+    sources = games.item_sources(found, game)
+    items = sorted(sources)
+    approvals = {
+        source: workshop.load(games.config_folder(source))
+        for source in set().union(*sources.values())
+    }
     if not items:
         return None, []
     app = games.workshop_app(items)
@@ -262,11 +268,19 @@ def update_items(
         if manifest is None:
             failed.append(item)
             continue
-        layers.snapshot(
+        layer = layers.folder(state / game, f"item-{item}")
+        version = f"{layers.stamp(updated.get(item, 0))}.{manifest}"
+        name = layer.name.removesuffix(".v")
+        if layers.current(layer / f"{name}_{version}") is None and not workshop.gate(
+            state,
+            item,
+            manifest,
             download,
-            layers.folder(state / game, f"item-{item}"),
-            f"{layers.stamp(updated.get(item, 0))}.{manifest}",
-            shape=f"steamapps/workshop/content/{app}/{item}",
+            {source: approvals[source] for source in sources[item]},
+        ):
+            continue
+        layers.snapshot(
+            download, layer, version, shape=f"steamapps/workshop/content/{app}/{item}"
         )
     if failed:
         print(

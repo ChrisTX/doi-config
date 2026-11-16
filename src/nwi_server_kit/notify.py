@@ -5,8 +5,9 @@ Usage:
     nwi-server notify send          send the queued notifications (nwi-notify.service)
     nwi-server notify failed UNIT   queue a notification of a unit that failed
 
-A notification is printed to the journal and queued in /run/nwi-server/notify, which nwi-notify.path
-watches: nwi-notify.service sends it by mail through sendmail(8), to root, whose mail the system's
+A notification is printed to the journal and queued in /run/nwi-server/notify, or the queue of
+NWI_NOTIFY_DIR, e.g. the update's, which runs as a user of its own (/run/nwi-server/notify-update);
+nwi-notify.path watches them: nwi-notify.service sends it by mail through sendmail(8), to root, whose mail the system's
 aliases forward, and to the addresses of NOTIFY_MAIL (space-separated), and to Discord with the webhook
 of the credential nwi-server.discord-webhook, if there's one. NOTIFY_MAIL is set in
 /etc/nwi-server/notify.env.
@@ -25,6 +26,19 @@ from pathlib import Path
 from .games import read_env
 
 QUEUE = Path("/run/nwi-server/notify")
+# The update's queue, which it writes as its own user (nwi-update.service's RuntimeDirectory=)
+UPDATE_QUEUE = Path("/run/nwi-server/notify-update")
+
+
+def own_queue() -> Path:
+    """The queue a notification of this process goes into."""
+    return (
+        Path(os.environ["NWI_NOTIFY_DIR"])
+        if os.environ.get("NWI_NOTIFY_DIR")
+        else QUEUE
+    )
+
+
 SETTINGS = Path("/etc/nwi-server/notify.env")
 # Discord takes at most 2000 characters a message
 DISCORD_LIMIT = 2000
@@ -33,11 +47,12 @@ DISCORD_LIMIT = 2000
 def queue(subject: str, body: str) -> None:
     """Print a notification to the journal and queue it for the admins."""
     print(f"{subject}\n{body}", file=sys.stderr)
-    QUEUE.mkdir(mode=0o700, parents=True, exist_ok=True)
+    queue_dir = own_queue()
+    queue_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
     name = f"{time.time_ns()}-{os.getpid()}.json"
-    temporary = QUEUE / f".{name}"
+    temporary = queue_dir / f".{name}"
     temporary.write_text(json.dumps({"subject": subject, "body": body}))
-    temporary.rename(QUEUE / name)
+    temporary.rename(queue_dir / name)
 
 
 def send_mail(subject: str, body: str, recipients: list[str]) -> None:
@@ -81,7 +96,14 @@ def send() -> int:
     if not mail:
         print("No sendmail, no mail is sent", file=sys.stderr)
     status = 0
-    for path in sorted(QUEUE.glob("*.json")) if QUEUE.is_dir() else []:
+    queued = [
+        path
+        for queue_dir in (QUEUE, UPDATE_QUEUE)
+        if queue_dir.is_dir()
+        for path in queue_dir.glob("*.json")
+    ]
+    # In the order they were queued: their names start with the time
+    for path in sorted(queued, key=lambda path: path.name):
         message = json.loads(path.read_text())
         sent = False
         if mail:

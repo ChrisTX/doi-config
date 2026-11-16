@@ -16,6 +16,8 @@ depends=(
   metamod-source
   python
   python-a2s
+  # The workshop items' VPK signatures
+  python-cryptography
   python-srctools
   sourcemod
   # spcomp, which compiles the plugins of the clone at every update

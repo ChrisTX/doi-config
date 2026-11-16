@@ -16,6 +16,12 @@ DynamicUser=yes
 StateDirectory=nwi-server/layers
 # DepotDownloader keeps its settings in the home folder
 Environment=HOME=%S/nwi-server/layers
+# Its notifications of workshop items, e.g. a held version (nwi-server workshop), which
+# nwi-notify.service sends; kept when it ends, until they're sent
+RuntimeDirectory=nwi-server/notify-update
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+Environment=NWI_NOTIFY_DIR=%t/nwi-server/notify-update
 ExecStart=/usr/bin/nwi-server update %S/nwi-server/layers
 TimeoutStartSec=infinity
 PrivateTmp=yes

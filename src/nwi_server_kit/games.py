@@ -207,14 +207,19 @@ def used_games(found: list[Server]) -> list[str]:
 
 def workshop_items(found: list[Server], game: str) -> list[int]:
     """The workshop items of the game's servers' lists."""
-    items = set()
+    return sorted(item_sources(found, game))
+
+
+def item_sources(found: list[Server], game: str) -> dict[int, set[str]]:
+    """The workshop items of the game's servers' lists, with the config sources of the servers that list
+    them."""
+    items: dict[int, set[str]] = {}
     for found_server in found:
         if found_server.game == game and found_server.workshop is not None:
             text = found_server.workshop.read_text()
-            items |= {
-                int(match[1]) for match in re.finditer(r"^(\d+)", text, re.MULTILINE)
-            }
-    return sorted(items)
+            for match in re.finditer(r"^(\d+)", text, re.MULTILINE):
+                items.setdefault(int(match[1]), set()).add(found_server.source)
+    return items
 
 
 def item_details(items: list[int]) -> list[dict]:

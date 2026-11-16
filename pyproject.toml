@@ -11,6 +11,7 @@ requires-python = ">=3.12"
 license = "MIT"
 # The Arch Linux packages of the same libraries in parentheses
 dependencies = [
+  "cryptography>=50.0.2",  # the VPKs' signatures (python-cryptography)
   "python-a2s>=1.4",  # srcds_watchdog.py's queries of the servers (python-a2s)
   "srctools>=2.7",  # the game's KeyValues, Steam's VDF and the VPKs (python-srctools)
 ]
@@ -76,9 +77,9 @@ follow_imports_for_stubs = true
 
 # The tests of the package and of the scripts of tools/, which they import as modules
 [tool.pytest]
-testpaths = ["tests"]
-pythonpath = ["src", "tools"]
 addopts = ["--strict-markers"]
+pythonpath = ["src", "tools"]
+testpaths = ["tests"]
 
 [tool.ruff]
 # The package, and the scripts' own modules, e.g. rcon.py, which they import from tools/

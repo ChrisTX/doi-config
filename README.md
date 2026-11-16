@@ -228,6 +228,39 @@ CONFIG_SOURCE=theirs
 The workshop items stay one download per game for all sources, and each server
 mounts the items of its own list.
 
+### Workshop items
+
+Players download a workshop item's newest version from the Workshop, and their
+game parses it, so a broken or malicious update of an item on the servers' lists
+reaches everyone who joins. So a config source approves the versions its servers
+use, in `workshop/approved.toml` of its configs, by their manifests, and may name
+keys (`workshop/keys/<name>.pem`) an item's versions may be signed with:
+
+```toml
+[items.3431236539]
+manifests = ["7284409961546829163"]
+keys = ["community"]
+```
+
+`nwi-update.service` makes a layer of a new version only if a source whose
+servers list the item approves it: by its manifest, or because it's VPKs only,
+each signed with one of the item's keys, which approves it by itself. Any other
+version is held: the servers keep the version they have, and the admins are told
+(see the notifications above). A server lists only the items whose version it
+runs is the Workshop's newest, in its `subscribed_file_ids.txt`, and its mapcycle
+leaves out the maps of the others, which players couldn't get; a startup map of
+theirs becomes the mapcycle's first. That covers an item that fell back after
+failures too. A source without `workshop/approved.toml` approves every version.
+
+In a checkout of the configs, `nwi-server workshop freeze` approves the current
+versions of all items of the servers' lists, and `nwi-server workshop approve
+ITEM [MANIFEST]` one version, the current one without MANIFEST, after a review.
+Authors sign their VPKs with `nwi-server workshop keygen NAME`, which makes the
+private key `NAME.key` (keep it off the machine that uploads to the Workshop)
+and the public key `NAME.pem` for the configs, and `nwi-server workshop sign
+NAME.key MOD.vpk`; `nwi-server workshop verify` checks a VPK's signature.
+`nwi-server workshop status` shows the held versions on a server.
+
 ### Secrets
 
 A server's secrets are systemd credentials, encrypted in

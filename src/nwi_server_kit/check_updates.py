@@ -12,7 +12,8 @@ a new build of the game.
 The workshop items: each item of the game's servers' lists against the Steam Web API's current
 manifest of the item (GetPublishedFileDetails, no key needed), which the newest version of
 the item's layer has in its name (<game>/item-<item>.v, update.py). An item of a list that isn't
-installed counts as an update.
+installed counts as an update; a version the update held for every config source whose servers list it
+doesn't (workshop.py).
 
 Exit status: 0 if there are updates, which it lists, 1 if there are none, 255 if it can't tell, e.g.
 without a connection. For systemd's ExecCondition=, which skips the unit on 1 and fails it on 255.
@@ -27,8 +28,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from . import layers
-from .games import SERVER_APPS, item_details, servers, used_games, workshop_items
+from . import layers, workshop
+from .games import SERVER_APPS, item_details, item_sources, servers, used_games
 
 UPDATES = 0
 NO_UPDATES = 1
@@ -75,13 +76,14 @@ def game_updates(game: str, state: Path) -> list[str]:
     ]
 
 
-def workshop_updates(state: Path, game: str, items: list[int]) -> list[str]:
+def workshop_updates(state: Path, game: str, sources: dict[int, set[str]]) -> list[str]:
     """The items whose newest version's manifest (<time>.<manifest>) isn't the current one, or that
-    have no version."""
-    if not items:
+    have no version, unless the current one is held for all the sources whose servers list it."""
+    if not sources:
         return []
     updates = []
-    for detail in item_details(items):
+    held = workshop.State(state).held
+    for detail in item_details(sorted(sources)):
         item = detail["publishedfileid"]
         # An item that was removed from the workshop (a result other than 1) can't be updated
         if detail.get("result") != 1:
@@ -91,6 +93,11 @@ def workshop_updates(state: Path, game: str, items: list[int]) -> list[str]:
             )
             continue
         current = detail.get("hcontent_file")
+        if all(
+            held.get(source, {}).get(str(item)) == current
+            for source in sources[int(item)]
+        ):
+            continue
         newest = layers.latest(layers.folder(state / game, f"item-{item}"))
         if newest is None:
             updates.append(
@@ -120,7 +127,7 @@ def main(argv: list[str] | None = None) -> int:
         for game in used_games(found):
             updates += game_updates(game, arguments.state)
             updates += workshop_updates(
-                arguments.state, game, workshop_items(found, game)
+                arguments.state, game, item_sources(found, game)
             )
     except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
         print(

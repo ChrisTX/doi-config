@@ -12,6 +12,7 @@ Usage: nwi-server COMMAND ARGUMENTS..., the commands:
     unmount          unmount a server's layers (mount.py)
     health           the trial of new versions of the layers (health.py)
     notify           the admins' notifications (notify.py)
+    workshop         VPK signatures and the approval of workshop items (workshop.py)
 """
 
 import sys
@@ -27,6 +28,7 @@ from . import (
     notify,
     server_config,
     update,
+    workshop_cli,
 )
 
 COMMANDS: dict[str, Callable[[list[str]], int]] = {
@@ -41,6 +43,7 @@ COMMANDS: dict[str, Callable[[list[str]], int]] = {
     "unmount": mount.unmount_main,
     "health": health.main,
     "notify": notify.main,
+    "workshop": workshop_cli.main,
 }
 
 

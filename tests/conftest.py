@@ -75,6 +75,8 @@ def state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> State:
     monkeypatch.setattr(health, "STATE", root / "state")
     monkeypatch.setattr(health, "LAYERS", root / "layers")
     monkeypatch.setattr(notify, "QUEUE", root / "run/notify")
+    monkeypatch.setattr(notify, "UPDATE_QUEUE", root / "run/notify-update")
+    monkeypatch.delenv("NWI_NOTIFY_DIR", raising=False)
     for variable in (
         "NWI_TRIES",
         "NWI_KEEP_VERSIONS",

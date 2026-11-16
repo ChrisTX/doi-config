@@ -4,5 +4,7 @@ PartOf=nwi-servers.target
 
 [Path]
 DirectoryNotEmpty=/run/nwi-server/notify
+# The update's, which it writes as its own user (nwi-update.service)
+DirectoryNotEmpty=/run/nwi-server/notify-update
 MakeDirectory=yes
 DirectoryMode=0700
