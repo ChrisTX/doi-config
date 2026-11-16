@@ -31,7 +31,8 @@ RUN /usr/local/lib/nwi-server-kit/enable-repos.sh "$TESTING" \
     /srv/nwi-data/dumps /srv/nwi-data/logs /srv/nwi-data/sourcemod/logs /srv/nwi-data/sourcemod/data
 
 # The packages from the repository, verified with its key: DepotDownloader (steamdepotdownloader), which
-# downloads the games, SourceMod and the plugins. SourceMod's optional dependencies, those of
+# downloads the games, SourceMod and the plugins, the tools' Python libraries (python-cryptography for
+# the workshop items' VPK signatures). SourceMod's optional dependencies, those of
 # its MySQL, PostgreSQL, GeoIP, regex and webternet extensions. SourceMod and Metamod:Source go into
 # /opt/nwi-layer, the image's files of the game's folder, which the server's entrypoint copies into
 # it on every start.
@@ -44,7 +45,7 @@ RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key
   && cp /etc/pacman.conf /etc/pacman.conf.orig \
   && printf '\n[%s]\nServer = file:///mnt/repo\n' "$REPO_NAME" >>/etc/pacman.conf \
   && pacman -Syu --noconfirm --needed steamdepotdownloader metamod-source sourcemod sourcemod-scripting \
-    python-a2s python-srctools \
+    python-a2s python-cryptography python-srctools \
     sourcemod-sourcebans-pp sourcemod-sourcebans-pp-discord-forward sourcemod-advertisements \
     sourcemod-multicolors sourcemod-smjansson sourcemod-steamworks \
     lib32-mariadb-connector-c lib32-postgresql-libs lib32-libmaxminddb lib32-pcre2 lib32-curl \
