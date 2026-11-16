@@ -7,6 +7,8 @@ import pytest
 
 from nwi_server_kit import layers, update
 
+from .conftest import State
+
 
 @pytest.fixture
 def installs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
@@ -74,3 +76,13 @@ def test_install_version(tmp_path: Path, installs: dict[str, Path]) -> None:
     assert stamp == layers.stamp(
         (installs["metamod"] / "addons/metamod/bin/metamod.so").stat().st_mtime
     )
+
+
+def test_an_update_of_some_configs_keeps_the_others_layers(state: State) -> None:
+    """With NWI_SERVER_CONFIGS, e.g. the test instance's update of one config, a layer that its
+    servers don't need may be another server's: it stays. A full update removes it."""
+    version = state.version("item-5", "20260101T000000.1", good=True)
+    update.collect_all(state.layers, set(), unneeded=False)
+    assert version.is_dir()
+    update.collect_all(state.layers, set())
+    assert not version.parent.exists()

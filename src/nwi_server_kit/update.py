@@ -504,13 +504,17 @@ def link_servers(state: Path, found: list[games.Server]) -> None:
         )
 
 
-def collect_all(state: Path, needed: set[Path]) -> None:
-    """Remove the layers' old versions, and the layers and downloads no server needs any more, those
+def collect_all(state: Path, needed: set[Path], unneeded: bool = True) -> None:
+    """Remove the layers' old versions, and with UNNEEDED the layers no server needs any more, those
     not in NEEDED, but no version a server uses."""
     used = layers.in_use()
     keep = layers.keep_versions()
     for layer in sorted([*state.glob("*.v"), *state.glob("*/*.v")]):
-        if layer.resolve() not in needed and layers.remove_layer(layer, used):
+        if (
+            unneeded
+            and layer.resolve() not in needed
+            and layers.remove_layer(layer, used)
+        ):
             print(f"Removed {layer}, which no server needs", file=sys.stderr)
             continue
         for removed in layers.collect(layer, keep, used):
@@ -565,8 +569,11 @@ def update(state: Path, image: bool = False) -> None:
             needed.add(layers.folder(state / game, "workshop"))
     if image:
         link_servers(state, found)
-    collect_all(state, {path.resolve() for path in needed})
-    for kind in ("depots", "items"):
+    # An update of some configs only (NWI_SERVER_CONFIGS, e.g. a test instance's) can't tell what the
+    # others need: it removes no layers or downloads of theirs
+    unneeded = os.environ.get("NWI_SERVER_CONFIGS") is None
+    collect_all(state, {path.resolve() for path in needed}, unneeded)
+    for kind in ("depots", "items") if unneeded else ():
         for download in sorted((state / "downloads" / kind).glob("*")):
             if f"{kind}/{download.name}" not in downloaded:
                 shutil.rmtree(download)
