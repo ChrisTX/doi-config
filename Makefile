@@ -11,7 +11,7 @@ DATADIR ?= $(PREFIX)/share
 TOOLSDIR = $(LIBDIR)/nwi-server-kit
 
 # The tools of the servers and of their admins; the checks of this repository's files stay in it
-TOOLS = dump_cvars.py games.py server_config.py soak_watch.py
+TOOLS = dump_cvars.py soak_watch.py
 UNITS = $(wildcard deploy/systemd/*)
 QUADLET = $(wildcard deploy/quadlet/*)
 DOCS = README.md CONTRIBUTING.md docs/Clients.md docs/Cvars.md

@@ -13,7 +13,7 @@
 //     doi-config/basic_mode_<category>.cfg         all game modes of the category
 //     doi-config/basic_mode_<category>-<mode>.cfg  the game mode, whatever the playlist
 //     doi-config/playlists/<playlist>-<mode>.cfg   the playlist's own settings of the game mode, made
-//                                                  by tools/make_mods.py
+//                                                  by nwi-server make-mods
 //     doi-config/mode_<playlist name>.cfg          all game modes of the playlist
 //     doi-config/mode_<playlist name>-<mode>.cfg   the game mode in the playlist
 //

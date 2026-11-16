@@ -1,4 +1,4 @@
-# The game's playlists as the servers have them (see tools/make_mods.py). Replacements, which
+# The game's playlists as the servers have them (see nwi-server make-mods). Replacements, which
 # nwi_playlist_unlock loads instead of the game's playlists, lift their restrictions: any map and game
 # mode, no forced settings and any number of slots (the game's defaults without
 # require_maxplayers_min and _max). The settings each playlist forced are taken over as configs instead,

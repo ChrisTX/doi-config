@@ -9,7 +9,7 @@ folder:
     hostname        the server's name in the server browser; SourceTV's is "<hostname> | SourceTV"
     startup_map     the first map and its game mode, e.g. "bastogne stronghold"
     playlist        optional: the playlist (+sv_playlist), e.g. "nwi/coop_commando"; its config of the
-                    settings we take over, doi-config/playlists/<playlist>.cfg, which tools/make_mods.py
+                    settings we take over, doi-config/playlists/<playlist>.cfg, which nwi-server make-mods
                     makes, runs in server.cfg
     ruleset         optional, with a playlist: its ruleset (+sv_ruleset), e.g. "american_campaign" of
                     nwi/coop_commando; the playlist's default one without

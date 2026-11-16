@@ -269,7 +269,7 @@ cmd_update() {
 		echo "Error: no image $image, build it first: $0 build" >&2
 		exit 1
 	fi
-	# The configs' games and items (tools/games.py), without the servers' environment files: all
+	# The configs' games and items (nwi-server games), without the servers' environment files: all
 	# configs' without configs
 	if ((${#configs[@]})); then
 		env=(-e NWI_SERVER_CONFIGS="${configs[*]}")
@@ -312,7 +312,7 @@ cmd_up() {
 		fi
 	done
 	check_config "$config"
-	game=$(python3 "$repo/tools/server_config.py" game "$repo/servers/$config/server.toml")
+	game=$(PYTHONPATH="$repo/src" python3 -m nwi_server_kit server-config game "$repo/servers/$config/server.toml")
 	read_admins
 	if [[ -z $db_only ]] && ! podman image exists "$server_image"; then
 		echo "Error: no image $server_image, build it first (see README.md)" >&2

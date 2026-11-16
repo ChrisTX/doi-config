@@ -94,11 +94,11 @@ repos:
         pass_filenames: false
         files: \.cfg$|^tools/(cvars\.json|check_configs\.py)$|^game/addons/sourcemod/scripting/
 
-      # The servers' settings: their keys, and the configs and lists they name (tools/server_config.py)
+      # The servers' settings: their keys, and the configs and lists they name (nwi-server server-config)
       - id: server-config
-        name: the servers' settings (tools/server_config.py)
+        name: the servers' settings (nwi-server server-config)
         language: system
-        entry: tools/server_config.py check
+        entry: env PYTHONPATH=src python3 -m nwi_server_kit server-config check
         files: ^servers/[^/]+/server\.toml$
 
       # The C++ of the Ghidra tools (src/hl2sdk_ghidra/sdk_types.cpp), which hl2sdk-ghidra types compiles

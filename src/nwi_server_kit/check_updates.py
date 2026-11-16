@@ -1,11 +1,10 @@
 """Check whether the games or the workshop items have updates, without downloading them.
 
-The games and items of the servers (tools/games.py), in the state folder STATE as
-tools/update_layers.sh updates them: STATE/<game>/depots and STATE/<game>/workshop. A game that isn't
-installed counts as an update.
+The games and items of the servers (games.py), in the state folder STATE of the layers as
+nwi-server update keeps it (update.py). A game that isn't installed counts as an update.
 
-A game: each depot of its dedicated server for Linux, as its record has it (STATE/<game>/depots,
-tools/update_game.sh), against the public branch's manifest as DepotDownloader lists it. The depots,
+A game: each depot of its dedicated server for Linux, as its record has it (STATE/<game>/depots),
+against the public branch's manifest as DepotDownloader lists it. The depots,
 not the build ID, as the shared depot 1006, the Steam client library (steamclient.so), changes without
 a new build of the game.
 
@@ -18,7 +17,7 @@ doesn't (workshop.py).
 Exit status: 0 if there are updates, which it lists, 1 if there are none, 255 if it can't tell, e.g.
 without a connection. For systemd's ExecCondition=, which skips the unit on 1 and fails it on 255.
 
-Usage: check_updates.py STATE
+Usage: nwi-server check-updates STATE
 """
 
 import argparse

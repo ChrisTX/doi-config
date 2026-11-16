@@ -13,7 +13,7 @@ commands (tools/cvars.json, see tools/dump_cvars.py) and those of the plugins of
 - the configs of the game modes keep to nwi_mode_config.sp: the configs it runs (basic_mode_*.cfg,
   mode_*.cfg) only set cvars with nwi_mode_cvar, which no other config uses, so that the settings of a
   game mode are undone when it changes,
-- an exec'd config of doi-config exists, but for the playlists' configs, which tools/make_mods.py makes.
+- an exec'd config of doi-config exists, but for the playlists' configs, which nwi-server make-mods makes.
 
 Usage: check_configs.py   (in the repository; exit status 1 on findings, or if a file was reformatted)
 """

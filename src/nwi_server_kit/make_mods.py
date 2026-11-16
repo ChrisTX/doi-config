@@ -84,10 +84,10 @@ With --check, nothing is made: every map script of the game and of the workshop 
 those whose braces had to be repaired, or can't be, are listed, the latter with an exit status of 1. A
 broken script of a workshop map can be repaired with a mod that has the map in its fix list.
 
-Usage: make_mods.py --game DIR --workshop DIR OUTPUT MODS...
-       make_mods.py --game DIR --workshop DIR --check
+Usage: nwi-server make-mods --game DIR --workshop DIR OUTPUT MODS...
+       nwi-server make-mods --game DIR --workshop DIR --check
 
---game is the game's install, with its game's folder, e.g. doi/, in it (tools/games.py), --workshop
+--game is the game's install, with its game's folder, e.g. doi/, in it (games.py), --workshop
 the folder of the workshop items (steamapps/workshop/content/<app>/<item> in it). MODS are the mods' .toml files, or folders of them.
 OUTPUT is replaced.
 """
@@ -681,7 +681,7 @@ def make_replacements(game: Path, replaces: list[Replace], output: Path) -> None
         path = output / "cfg/doi-config/playlists" / f"{name}.playlist"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
-            f"// Made by tools/make_mods.py from the game's scripts/playlists/{name}.playlist,\n"
+            f"// Made by nwi-server make-mods from the game's scripts/playlists/{name}.playlist,\n"
             f"// as {mods} replaces it\n" + format_keyvalues([(root_key, root)]),
             encoding="utf-8",
         )
@@ -765,7 +765,7 @@ class Playlist:
             )
         folder = output / "cfg/doi-config/playlists"
         header = (
-            f"// Made by tools/make_mods.py from the game's scripts/playlists/{self.name}.playlist:\n"
+            f"// Made by nwi-server make-mods from the game's scripts/playlists/{self.name}.playlist:\n"
             f"// the settings it forces that mods/{mod}.toml takes over"
         )
         path = folder / f"{self.name}.cfg"
