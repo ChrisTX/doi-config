@@ -52,7 +52,6 @@ playlist = "nwi/coop_commando"
 startup_map = "bastogne stronghold"
 mapcycle = "doi-config/mapcycle_coop.txt"
 workshop = "doi-config/workshop-ids-coop.txt"
-launch_options = ["-tickrate", "128"]
 configs_after = ["doi-config/basic_coop.cfg"]
 ```
 
@@ -610,10 +609,11 @@ without the unlocker, e.g. with
 
 ### Tickrate
 
-The servers run at 128 tick (`-tickrate 128` on their command lines, see
-`nwi-server@.service` and `deploy/container/entrypoint.sh`), where Day of
-Infamy's default is 64. `basic_settings.cfg` makes clients send and get 128
-updates per second, whatever their own settings, which default to 64.
+The servers run at 128 tick by default, where Day of Infamy's default is 64:
+`tickrate` of a server's `server.toml`, e.g. `tickrate = 64`, sets it
+(`-tickrate` on its command line), and its `server.cfg` makes clients send and
+get as many updates per second, whatever their own settings, which default to
+64.
 
 At 128 tick without a fix, grenades bounce excessively, which once made the
 servers go back to 64 tick: at every map start, the game sets the step of its

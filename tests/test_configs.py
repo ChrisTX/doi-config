@@ -48,9 +48,12 @@ def test_server_cfg(tmp_path: Path) -> None:
     cfg = server_config.server_cfg(settings).splitlines()
     assert 'hostname "Coop"' in cfg
     assert 'tv_name "Coop | SourceTV"' in cfg
-    assert cfg[-4:] == [
+    # The tickrate's updates (128 by default) after the settings all servers share
+    assert cfg[-6:] == [
         'exec "doi-config/playlists/nwi/coop_commando.cfg"',
         'exec "doi-config/basic_settings.cfg"',
+        'sv_mincmdrate "128"',
+        'sv_minupdaterate "128"',
         'exec "doi-config/basic_coop.cfg"',
         'mapcyclefile "cfg/mapcycle_coop.txt"',
     ]
@@ -69,6 +72,10 @@ def test_server_cfg(tmp_path: Path) -> None:
         (
             'hostname = "a"\nstartup_map = "b"\nruleset = "x"\n',
             "a ruleset needs a playlist",
+        ),
+        (
+            'hostname = "a"\nstartup_map = "b"\ntickrate = 256\n',
+            "tickrate is from 1 to 128",
         ),
     ],
 )

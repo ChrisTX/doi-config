@@ -5,3 +5,5 @@ game = "insurgency"
 hostname = "Insurgency test"
 startup_map = "ministry_coop checkpoint"
 lan = true
+# Insurgency's own: nwi_physics_timestep's fix of 128 tick is only tested with Day of Infamy
+tickrate = 64

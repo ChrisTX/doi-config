@@ -6,5 +6,4 @@ playlist = "nwi/mp_casual_with_bots"
 startup_map = "crete frontline"
 mapcycle = "doi-config/mapcycle_soak_bots.txt"
 lan = true
-launch_options = ["-tickrate", "128"]
 configs_after = ["doi-config/basic_pvp.cfg", "doi-config/soak_bots.cfg"]

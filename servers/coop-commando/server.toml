@@ -5,5 +5,4 @@ playlist = "nwi/coop_commando"
 startup_map = "bastogne stronghold"
 mapcycle = "doi-config/mapcycle_coop.txt"
 workshop = "doi-config/workshop-ids-coop.txt"
-launch_options = ["-tickrate", "128"]
 configs_after = ["doi-config/basic_coop.cfg"]

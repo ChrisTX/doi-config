@@ -6,5 +6,4 @@ startup_map = "crete invasion"
 theater = "revival_vietnam"
 mapcycle = "doi-config/mapcycle_pvp.txt"
 workshop = "doi-config/workshop-ids-private.txt"
-launch_options = ["-tickrate", "128"]
 configs_after = ["doi-config/basic_pvp.cfg"]

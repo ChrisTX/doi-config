@@ -131,7 +131,7 @@ def test_command(root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """server.toml's options, then LAUNCH_OPTIONS', which win."""
     (root / "doi/server.toml").write_text(
         'hostname = "Test"\nstartup_map = "bastogne stronghold"\n'
-        'launch_options = ["-tickrate", "128"]\n'
+        'tickrate = 64\nlaunch_options = ["-nobots"]\n'
     )
     monkeypatch.setenv("SERVER_PORT", "27115")
     monkeypatch.setenv("LAUNCH_OPTIONS", "+developer 2  +sv_cheats 1")
@@ -152,10 +152,11 @@ def test_command(root: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         "64",
         "+sv_lan",
         "0",
+        "-tickrate",
+        "64",
         "+map",
         "bastogne stronghold",
-        "-tickrate",
-        "128",
+        "-nobots",
         "+developer",
         "2",
         "+sv_cheats",

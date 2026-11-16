@@ -22,13 +22,16 @@ folder:
                     them for the game modes, e.g. maxplayers 33 of basic_coop.cfg
     lan             optional: true for a server only for its local network (+sv_lan 1), false by
                     default
-    launch_options  optional: more options of the server's command line, e.g. ["-tickrate", "128"]
+    tickrate        optional: the server's ticks per second (-tickrate), 128 by default, e.g. 64, the
+                    game's own; the clients send and get as many updates per second, whatever their
+                    own settings (sv_mincmdrate, sv_minupdaterate in server.cfg)
+    launch_options  optional: more options of the server's command line, e.g. ["-nobots"]
     configs_before  optional: configs to run before ours
     configs_after   optional: configs to run after ours, e.g. ["doi-config/basic_coop.cfg"]
 
 The server.cfg it makes runs, in this order, so that a later one's setting replaces an earlier one's:
 configs_before, doi-config/tv_settings.cfg, the playlist's config, doi-config/basic_settings.cfg,
-configs_after. The game modes' configs run at every map start, after these (nwi_mode_config.sp).
+the tickrate's updates, configs_after. The game modes' configs run at every map start, after these (nwi_mode_config.sp).
 
 The playlist and its ruleset are on the command line, before +map, so that the game applies the
 playlist's "cvars" on the first map as on every map change: before server.cfg, which our settings
@@ -66,11 +69,15 @@ KEYS = {
     "workshop": str,
     "maxplayers": int,
     "lan": bool,
+    "tickrate": int,
     "launch_options": list,
     "configs_before": list,
     "configs_after": list,
 }
 REQUIRED = ("hostname", "startup_map")
+# The servers' ticks per second without a tickrate, and the most a server.toml may set
+TICKRATE = 128
+MAX_TICKRATE = 128
 KINDS = {
     str: "a string",
     int: "a number",
@@ -95,6 +102,9 @@ def load(path: Path) -> dict:
             wrong = not all(isinstance(item, str) for item in value)
         if wrong:
             errors.append(f"{path}: {key} is {KINDS[kind]}")
+    tickrate = settings.get("tickrate", TICKRATE)
+    if isinstance(tickrate, int) and not 1 <= tickrate <= MAX_TICKRATE:
+        errors.append(f"{path}: tickrate is from 1 to {MAX_TICKRATE}, not {tickrate}")
     if settings.get("game", DEFAULT) not in SERVER_APPS:
         games = ", ".join(SERVER_APPS)
         errors.append(f"{path}: game is one of {games}, not {settings['game']}")
@@ -129,8 +139,12 @@ def server_cfg(settings: dict) -> str:
     if "playlist" in settings:
         configs.append(f"doi-config/playlists/{settings['playlist']}.cfg")
     configs.append("doi-config/basic_settings.cfg")
-    configs += settings.get("configs_after", [])
     lines += [f"exec {quote(config)}" for config in configs]
+    # The clients' updates per second, the tickrate's, whatever their own settings: the maximums
+    # (sv_maxcmdrate, sv_maxupdaterate) follow the tickrate by themselves
+    tickrate = settings.get("tickrate", TICKRATE)
+    lines += [f'sv_mincmdrate "{tickrate}"', f'sv_minupdaterate "{tickrate}"']
+    lines += [f"exec {quote(config)}" for config in settings.get("configs_after", [])]
     if "mapcycle" in settings:
         lines.append(f"mapcyclefile {quote('cfg/' + settings['mapcycle'])}")
     return "\n".join(lines) + "\n"
@@ -164,6 +178,7 @@ def options(root: Path) -> list[str]:
     _, settings = server_settings(root)
     options = ["+maxplayers", str(settings.get("maxplayers", 64))]
     options += ["+sv_lan", "1" if settings.get("lan", False) else "0"]
+    options += ["-tickrate", str(settings.get("tickrate", TICKRATE))]
     if "workshop" in settings:
         options.append("-workshop")
     if "ruleset" in settings:
