@@ -82,6 +82,13 @@ class Branch:
         defines = manifest.get("defines", []) + linux.get("defines", [])
         defines += linux.get(arch, {}).get("defines", [])
         flags += [f"-D{define}" for define in defines if define != "NO_MALLOC_OVERRIDE"]
+        flags += manifest.get("linux", {}).get("cflags", [])
+        # The engines' codes, as Metamod:Source and SourceMod build with them: SE_<engine> of every
+        # manifest, SOURCE_ENGINE the branch's, e.g. for sdk_types.cpp's #if SOURCE_ENGINE >= SE_ORANGEBOX
+        for path in sorted(self.manifest.parent.glob("*.json")):
+            other = json.loads(path.read_text())
+            flags.append(f"-DSE_{other['define']}={other['code']}")
+        flags.append(f"-DSOURCE_ENGINE={manifest['code']}")
         return [*flags, f"-I{self.folder}"]
 
 

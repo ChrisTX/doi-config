@@ -162,22 +162,33 @@ def test_manifest_flags(tmp_path: Path) -> None:
     manifest.write_text(
         json.dumps(
             {
+                "code": 21,
+                "define": "DOI",
                 "include_paths": ["public", "game/shared"],
-                "defines": ["SOURCE_ENGINE=1"],
+                "defines": ["SHARED=1"],
                 "linux": {
+                    "cflags": ["-Wno-deprecated-volatile"],
                     "defines": ["NO_MALLOC_OVERRIDE", "_LINUX"],
                     "x86": {"defines": ["X86=1"]},
                 },
             }
         )
     )
+    (manifest.parent / "orangebox.json").write_text(
+        json.dumps({"code": 3, "define": "ORANGEBOX"})
+    )
     branch = sdk.Branch.find("doi", tmp_path, tmp_path / "manifests")
+    # The engines' codes of all manifests, SOURCE_ENGINE the branch's
     assert branch.flags("x86") == [
         f"-I{folder}/public",
         f"-I{folder}/game/shared",
-        "-DSOURCE_ENGINE=1",
+        "-DSHARED=1",
         "-D_LINUX",
         "-DX86=1",
+        "-Wno-deprecated-volatile",
+        "-DSE_DOI=21",
+        "-DSE_ORANGEBOX=3",
+        "-DSOURCE_ENGINE=21",
         f"-I{folder}",
     ]
     with pytest.raises(ValueError, match="no SDK"):

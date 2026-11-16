@@ -28,6 +28,13 @@ saves them as `OUTPUT.gdt`: every type, and each function's signature as a funct
 `/SdkFunctions`, named by its mangled name, so that overloads (and GCC's several names of
 constructors and destructors) stay apart. `GHIDRA_HEADLESS_MAXMEM` is Ghidra's memory, 16G unless set.
 
+`sdk_types.cpp` includes the headers of the interfaces Metamod:Source and SourceMod hook, which every
+branch has, and picks what differs by the engine, as SourceMod does: `SOURCE_ENGINE` and the `SE_*`
+codes of hl2sdk-manifests, e.g. `IServerGameTags` only from the Orange Box on. It builds against every
+branch of the `hl2sdk` package, from Episode One to CS:GO, for x86 and, where the branch has one, the
+64-bit server (`--arch x86_64`). The game's own classes, e.g. `CBaseEntity`, aren't in it: they're
+the game's, not the SDK's, and differ between them.
+
 ```bash
 hl2sdk-ghidra types doi ~/ghidra/sdk-types-doi
 hl2sdk-ghidra types --arch x86_64 tf2 ~/ghidra/sdk-types-tf2

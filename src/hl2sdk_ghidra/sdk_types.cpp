@@ -1,6 +1,8 @@
 // The Source SDK's types for Ghidra, through their DWARF: hl2sdk-ghidra types compiles this with
 // full debug information against a branch of hl2sdk (e.g. doi or insurgency), together with tier1's
-// KeyValues, convar and bitbuf, whose functions bring their signatures.
+// KeyValues, convar and bitbuf, whose functions bring their signatures. The headers are those of the
+// interfaces every branch has, from Episode One on; SOURCE_ENGINE and SE_* are the engines' codes, as
+// Metamod:Source and SourceMod build with them (sdk.py).
 #include "tier1/KeyValues.h"
 #include "tier1/bitbuf.h"
 #include "tier1/convar.h"
@@ -11,7 +13,12 @@
 
 #include "edict.h"
 #include "eiface.h"
+#if __has_include("game/server/iplayerinfo.h")
 #include "game/server/iplayerinfo.h"
+#else
+// Episode One's place
+#include "dlls/iplayerinfo.h"
+#endif
 #include "globalvars_base.h"
 #include "iclient.h"
 #include "icvar.h"
@@ -41,6 +48,9 @@ ICvar *cvar_interface;
 INetChannel *net_channel;
 IBotManager *bot_manager;
 IPlayerInfo *player_info;
+#if SOURCE_ENGINE >= SE_ORANGEBOX
+// Since the Orange Box
 IServerGameTags *server_game_tags;
+#endif
 IServerPluginCallbacks *server_plugin_callbacks;
 IGameEvent *game_event;
