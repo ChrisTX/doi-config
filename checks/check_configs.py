@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Format and check the game's configs of this repository (game/cfg, servers/*/cfg).
+"""Format and check the game's configs of this repository (game/cfg, and servers' own cfg folders of
+servers/ and testing/servers/).
 
 Formats each line as the game's own configs write it: the cvar or command bare, its arguments quoted,
 e.g. mp_roundtime "600", exec "doi-config/bot_logic.cfg". Then checks against the server's cvars and
@@ -34,7 +35,11 @@ TOKEN = re.compile(r'"(?P<quoted>[^"]*)"|(?P<comment>//.*)|(?P<bare>[^\s"]+)')
 
 def configs() -> list[Path]:
     return sorted(
-        [*(REPO / "game/cfg").rglob("*.cfg"), *(REPO / "servers").glob("*/cfg/*.cfg")]
+        [
+            *(REPO / "game/cfg").rglob("*.cfg"),
+            *(REPO / "servers").glob("*/cfg/**/*.cfg"),
+            *(REPO / "testing/servers").glob("*/cfg/**/*.cfg"),
+        ]
     )
 
 

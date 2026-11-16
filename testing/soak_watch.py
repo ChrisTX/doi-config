@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Watch a soak test server, e.g. servers/soak-bots, and log it as TSV.
+"""Watch a soak test server, e.g. testing/servers/soak-bots (test-instance.sh soak), and log it as TSV.
 
 At each interval it logs the time, the map, the bots, the server's memory (resident set, of srcds in
 the container) and the number of sanitiser reports in the container's output, and adds the bots again

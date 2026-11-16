@@ -7,19 +7,28 @@
 #                     with --testing with Arch Linux's testing repositories, for packages built against
 #                     them, as on a machine that uses them
 #   update [CONFIG...]
-#                     update the games, the workshop items and the mods of the configs of servers/ (all
+#                     update the games, the workshop items and the mods of the configs (all of servers/
 #                     by default, which includes Insurgency's test server) in the state folder with the
 #                     image's updater (entrypoint.sh update), which the server mounts; the first
 #                     downloads the games and the items
 #   up [--db-only] [--developer LEVEL] [CONFIG] [-- OPTION...]
-#                     start the test instance of a config of servers/ (coop-commando by default), anew;
+#                     start the test instance of a config (coop-commando by default), anew;
 #                     with --db-only only its database, for the systemd units on this machine; with
 #                     --developer the server's developer messages of LEVEL (+developer LEVEL, 1 or 2),
 #                     and with OPTION... more options of its command line, e.g. -- +sv_cheats 1, which
 #                     the systemd units get too (LAUNCH_OPTIONS of nwi-server start)
+#   soak [--hours HOURS] [LOG]
+#                     the soak test: update and start soak-bots (testing/servers), from the sanitiser
+#                     image with SANITISER, log it with testing/soak_watch.py for HOURS (8 by default)
+#                     to LOG (soak-<time>.tsv in the working folder) and the server's output next to it
+#                     (LOG without .tsv, .log), then remove it
 #   down              remove the test instance, its database and volumes
 #   rcon COMMAND...   run a command on the server over RCON
 #   logs              follow the server's log
+#
+# A config is one of servers/, or of testing/servers/, the tests' own, e.g. soak-bots, which the
+# containers get mounted among the image's (servers/<config>): they run in the container only. A
+# config's own cfg folder goes into the game's, e.g. a test's configs and mapcycle.
 #
 # The local pacman repository with the packages, which aurutils builds into, found like aurutils finds
 # it (aur repo --status, or the one file:// repository of pacman.conf without aurutils); its package of
@@ -146,11 +155,26 @@ cmd_build() {
 		--build-arg REPO_NAME="$repo_name" "${testing[@]}" -f "$repo/deploy/container/Containerfile" -t "$image" "$repo" "$@"
 }
 
-# A config of servers/: its server.toml has the server's settings
-check_config() {
-	if [[ ! -f $repo/servers/$1/server.toml ]]; then
-		echo "Error: no config $1 in servers/" >&2
-		exit 1
+# A config's folder, of servers/ or testing/servers/: its server.toml has the server's settings
+config_folder() {
+	local folder
+	for folder in "$repo/servers/$1" "$repo/testing/servers/$1"; do
+		if [[ -f $folder/server.toml ]]; then
+			echo "$folder"
+			return
+		fi
+	done
+	echo "Error: no config $1 in servers/ or testing/servers/" >&2
+	exit 1
+}
+
+# The mounts of the tests' configs among the image's, for a container
+test_mounts=()
+add_test_mount() {
+	local folder
+	folder=$(config_folder "$1")
+	if [[ $folder == "$repo/testing/servers/"* ]]; then
+		test_mounts+=(-v "$folder:/opt/nwi-server-kit/servers/$1:ro")
 	fi
 }
 
@@ -263,7 +287,7 @@ cmd_update() {
 	configs=("$@")
 	local config
 	for config in "${configs[@]}"; do
-		check_config "$config"
+		add_test_mount "$config"
 	done
 	if ! podman image exists "$image"; then
 		echo "Error: no image $image, build it first: $0 build" >&2
@@ -275,8 +299,8 @@ cmd_update() {
 		env=(-e NWI_SERVER_CONFIGS="${configs[*]}")
 	fi
 	mkdir -p "$state"
-	podman run --rm --userns "$userns" --health-cmd none "${env[@]}" -v "$state:/srv/state" "$image" \
-		update
+	podman run --rm --userns "$userns" --health-cmd none "${env[@]}" "${test_mounts[@]}" \
+		-v "$state:/srv/state" "$image" update
 }
 
 cmd_up() {
@@ -311,8 +335,14 @@ cmd_up() {
 			exit 2
 		fi
 	done
-	check_config "$config"
-	game=$(PYTHONPATH="$repo/src" python3 -m nwi_server_kit server-config game "$repo/servers/$config/server.toml")
+	local folder
+	folder=$(config_folder "$config")
+	add_test_mount "$config"
+	if [[ -n $db_only && ${#test_mounts[@]} != 0 ]]; then
+		echo "Error: $config is a test's config, which runs in the container only" >&2
+		exit 1
+	fi
+	game=$(PYTHONPATH="$repo/src" python3 -m nwi_server_kit server-config game "$folder/server.toml")
 	read_admins
 	if [[ -z $db_only ]] && ! podman image exists "$server_image"; then
 		echo "Error: no image $server_image, build it first (see README.md)" >&2
@@ -400,7 +430,7 @@ cmd_up() {
 		extra_env+=(-e SANITISER="$SANITISER")
 	fi
 	podman run -d --pod "$pod" --name "$pod-server" --env-file "$dir/server.env" -e SERVER_NAME="$config" \
-		"${extra_env[@]}" \
+		"${extra_env[@]}" "${test_mounts[@]}" \
 		-v "$state/servers/$config/game:/srv/game:O" \
 		-v "$state/servers/$config/workshop/steamapps/workshop:/srv/game/steamapps/workshop:O" \
 		-v "$state/servers/$config/mods:/srv/mods:ro" \
@@ -440,10 +470,27 @@ cmd_logs() {
 	podman logs -f "$pod-server"
 }
 
+cmd_soak() {
+	local hours=8 log
+	if [[ ${1:-} == --hours ]]; then
+		hours=${2:?--hours needs a number}
+		shift 2
+	fi
+	log=${1:-soak-$(date +%Y%m%d-%H%M).tsv}
+	cmd_update soak-bots
+	cmd_up soak-bots
+	# The server's output next to the log, and the test instance removed, also when it's stopped early
+	output=${log%.tsv}.log
+	trap 'podman logs "$pod-server" >"$output" 2>&1 || true; cmd_down' EXIT
+	echo "Watching the soak test for $hours hours: $log, the server's output in $output"
+	RCON_PASSWORD=$(sed -n 's/^RCON_PASSWORD=//p' "$dir/server.env") \
+		python3 "$repo/testing/soak_watch.py" --container "$pod-server" --hours "$hours" "$log"
+}
+
 (($#)) || usage
 command=$1
 shift
 case $command in
-	build | update | up | down | rcon | logs) "cmd_$command" "$@" ;;
+	build | update | up | down | rcon | logs | soak) "cmd_$command" "$@" ;;
 	*) usage ;;
 esac

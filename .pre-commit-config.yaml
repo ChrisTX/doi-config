@@ -99,7 +99,7 @@ repos:
         name: the servers' settings (nwi-server server-config)
         language: system
         entry: env PYTHONPATH=src python3 -m nwi_server_kit server-config check
-        files: ^servers/[^/]+/server\.toml$
+        files: ^(testing/)?servers/[^/]+/server\.toml$
 
       # The C++ of the Ghidra tools (src/hl2sdk_ghidra/sdk_types.cpp), which hl2sdk-ghidra types compiles
       # against the SDK, and the C of the tests' stand-in of the Steamworks API, formatted with clang-format

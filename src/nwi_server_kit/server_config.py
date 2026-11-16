@@ -46,7 +46,8 @@ Usage, with GAME the game's folder of the install ROOT (nwi_server_kit.games):
                                     line (nwi-server start)
     nwi-server server-config game FILE      print the game of a server.toml
     nwi-server server-config check FILE...  check server.toml files: their keys, and that the configs and lists
-                                    they name exist in game/cfg of the configs (NWI_CONFIG, see
+                                    they name exist in game/cfg of the configs, or in the
+                                    server's own cfg folder (NWI_CONFIG, see
                                     nwi_server_kit.games)
 """
 
@@ -211,8 +212,14 @@ def check(paths: list[Path]) -> int:
         named = settings.get("configs_before", []) + settings.get("configs_after", [])
         named += [settings[key] for key in ("mapcycle", "workshop") if key in settings]
         for name in named:
-            if not (cfg / name).is_file():
-                print(f"{path}: there's no game/cfg/{name}")
+            # The configs' own, or the server's, which its folder brings along (e.g. a test's)
+            if (
+                not (cfg / name).is_file()
+                and not (path.parent / "cfg" / name).is_file()
+            ):
+                print(
+                    f"{path}: there's no game/cfg/{name}, nor cfg/{name} of the server"
+                )
                 status = 1
     return status
 

@@ -489,17 +489,20 @@ podman logs nwi-test-server 2>&1 |
   grep -E 'runtime error:|ERROR: AddressSanitizer'
 ```
 
-The `soak-bots` server is for long runs without players: 20 bots a team on the
-frontline maps at 128 tick, the maps changing as in a game. Meanwhile
-`testing/soak_watch.py` logs the map, the bots, srcds' memory and the number of
-reports every five minutes as TSV, and adds the bots again when a map change
-lost them. AddressSanitizer takes a lot more memory and time than
+The soak test runs the `soak-bots` server for hours without players: 20 bots a
+team on the frontline maps at 128 tick, the maps changing as in a game. Its
+config is a test's, in `testing/servers/soak-bots`, with its own settings and
+mapcycle in its `cfg` folder; the test instance mounts it among the image's
+configs, so it runs in the container only. `test-instance.sh soak` updates and
+starts it, with `testing/soak_watch.py` logging the map, the bots, srcds' memory
+and the number of sanitiser reports every five minutes as TSV, adding the bots
+again when a map change lost them. At the end, or when it's stopped, it keeps
+the server's output next to the log and removes the test instance.
+AddressSanitizer takes a lot more memory and time than
 UndefinedBehaviorSanitizer, so a long run with it is best left overnight:
 
 ```bash
-env=~/.local/state/nwi-test/server.env
-RCON_PASSWORD=$(sed -n 's/^RCON_PASSWORD=//p' "$env") \
-  testing/soak_watch.py --container nwi-test-server --hours 8 soak.tsv
+SANITISER=address testing/test-instance.sh soak --hours 8 soak.tsv
 ```
 
 ## Server notes
