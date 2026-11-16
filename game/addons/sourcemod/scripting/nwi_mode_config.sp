@@ -29,7 +29,8 @@
 // one, which doesn't set it. The values are those of the server's configuration (server.cfg) or of
 // the game, whatever the cvars had before a game mode's config first set them.
 //
-// Other plugins get the game mode from the natives and the forward of nwi_mode_config.inc.
+// Other plugins get the game mode from the natives and the forward of nwi_mode_config.inc, and set
+// cvars until the game mode changes, as nwi_mode_cvar does, with NWI_SetModeCvar.
 
 #include <sourcemod>
 #include <nwi>
@@ -87,6 +88,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
     CreateNative("NWI_GetGameMode", Native_GetGameMode);
     CreateNative("NWI_GetGameModeCategory", Native_GetGameModeCategory);
+    CreateNative("NWI_SetModeCvar", Native_SetModeCvar);
     RegPluginLibrary(NWI_MODE_CONFIG_LIBRARY);
     return APLRes_Success;
 }
@@ -223,12 +225,27 @@ public Action Command_ModeCvar(int args)
     char name[CVAR_LENGTH], value[CVAR_LENGTH];
     GetCmdArg(1, name, sizeof(name));
     GetCmdArg(2, value, sizeof(value));
-    ConVar cvar = FindConVar(name);
-    if (cvar == null)
-    {
+    if (!SetModeCvar(name, value))
         LogError("nwi_mode_cvar: there's no cvar %s", name);
-        return Plugin_Handled;
-    }
+    return Plugin_Handled;
+}
+
+public int Native_SetModeCvar(Handle plugin, int params)
+{
+    char name[CVAR_LENGTH], value[CVAR_LENGTH];
+    GetNativeString(1, name, sizeof(name));
+    GetNativeString(2, value, sizeof(value));
+    return SetModeCvar(name, value);
+}
+
+// Sets a cvar until the game mode changes, keeping the value it had before; false if there's no cvar
+bool SetModeCvar(const char[] cvarName, const char[] value)
+{
+    ConVar cvar = FindConVar(cvarName);
+    if (cvar == null)
+        return false;
+    char name[CVAR_LENGTH];
+    strcopy(name, sizeof(name), cvarName);
     // Cvars' names are case-insensitive
     for (int i = 0; name[i] != '\0'; i++)
         name[i] = CharToLower(name[i]);
@@ -242,7 +259,7 @@ public Action Command_ModeCvar(int args)
         g_names.PushString(name);
     }
     cvar.SetString(value);
-    return Plugin_Handled;
+    return true;
 }
 
 // Gives the cvars set since the game mode changed their values back, the last set first

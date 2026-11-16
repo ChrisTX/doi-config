@@ -16,9 +16,11 @@
 // Each side has at most the slots of a team (nwi.inc), which the friendly bots share with the players.
 // Day of Infamy's own scaling between doi_bot_count_default_*_min_players and _max_players is linear
 // in the players too, but caps nothing, e.g. 19 enemies at 8 players with 3 + 2 a player, more than a
-// team's 16 slots: so the plugin sets both to its count, and the configs set doi_bot_count_override,
-// which makes the game use them rather than the map's. In Insurgency it sets the game mode's set bot
-// count, ins_bot_count_<mode> (e.g. ins_bot_count_checkpoint), which has no friendly bots.
+// team's 16 slots: so the plugin sets both to its count, and doi_bot_count_override, unless it's on
+// already, which makes the game use them rather than the map's. In Insurgency it sets the game mode's
+// set bot count, ins_bot_count_<mode> (e.g. ins_bot_count_checkpoint), which overrides the game's own
+// scaling above 0 and has no friendly bots. It sets them all as nwi_mode_cvar does (NWI_SetModeCvar),
+// so they come back when the game mode changes, whether a config set them or not.
 
 #include <sourcemod>
 #include <sdktools>
@@ -91,17 +93,14 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
         AdjustDifficulty();
 }
 
-// Sets a cvar silently, without announcing the change to the players
+// Sets a cvar until the game mode changes (nwi_mode_config.smx)
 void SetVarValue(const char[] name, int value)
 {
-    ConVar cvar = FindConVar(name);
-    // A cvar a game update removed would stop the remaining changes with a native error
-    if (cvar == null)
-    {
+    char text[16];
+    IntToString(value, text, sizeof(text));
+    // A cvar a game update removed
+    if (!NWI_SetModeCvar(name, text))
         LogError("Can't find the cvar %s", name);
-        return;
-    }
-    cvar.SetInt(value, false, false);
 }
 
 // BASE and PER_PLAYER bots a player, at most LIMIT and none fewer than 0
@@ -124,6 +123,9 @@ void AdjustDifficulty()
         // The friendly bots share their team's slots with the players
         int friendlies = Scaled(g_friendlyBase.IntValue, g_friendlyPerPlayer.IntValue, players,
             slots - players);
+        ConVar override = FindConVar("doi_bot_count_override");
+        if (override != null && !override.BoolValue)
+            SetVarValue("doi_bot_count_override", 1);
         // The same count for the fewest and the most players, so the game's own scaling by players
         // doesn't change it
         SetVarValue("doi_bot_count_default_enemy_min_players", enemies);

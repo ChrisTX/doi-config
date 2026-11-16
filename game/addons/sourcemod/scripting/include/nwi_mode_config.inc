@@ -33,6 +33,10 @@ native bool NWI_GetGameMode(char[] mode, int maxlength);
 // nwi_mode_category empty)
 native bool NWI_GetGameModeCategory(char[] category, int maxlength);
 
+// Sets a cvar until the game mode changes, as nwi_mode_cvar does: the value it had before the game
+// mode's first change of it comes back when the game mode changes. False if there's no cvar of the name.
+native bool NWI_SetModeCvar(const char[] cvar, const char[] value);
+
 // Called when a map starts in another game mode than the previous map, and at the first map start
 // (previous empty), after the game mode's configs were queued to run
 forward void NWI_OnGameModeChanged(const char[] mode, const char[] category, const char[] previous);
@@ -61,6 +65,7 @@ public void __pl_nwi_mode_config_SetNTVOptional()
 {
     MarkNativeAsOptional("NWI_GetGameMode");
     MarkNativeAsOptional("NWI_GetGameModeCategory");
+    MarkNativeAsOptional("NWI_SetModeCvar");
 }
 #endif
 #endif

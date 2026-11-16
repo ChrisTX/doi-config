@@ -661,7 +661,6 @@ with `nwi_mode_cvar` (see [Configs](#configs)), so they change with the game
 mode, and a game mode without them isn't scaled:
 
 ```text
-nwi_mode_cvar "doi_bot_count_override" "1"
 nwi_mode_cvar "nwi_scaler_enabled" "1"
 nwi_mode_cvar "nwi_scaler_enemy_base" "3"
 nwi_mode_cvar "nwi_scaler_enemy_per_player" "2"
@@ -675,7 +674,9 @@ start with (`basic_mode_coop-<mode>.cfg`). Day of Infamy's own scaling of
 as well, but caps nothing: measured with `doi_fake_human_players`, 3 + 2 a
 player gives 19 enemies at 8 players, more than a team's 16 slots. In
 Insurgency, the plugin sets the game mode's `ins_bot_count_<mode>`, e.g.
-`ins_bot_count_checkpoint`; no Insurgency game mode has settings yet.
+`ins_bot_count_checkpoint`; no Insurgency game mode has settings yet. The plugin sets
+the counts, and Day of Infamy's `doi_bot_count_override` unless it's on
+already, as `nwi_mode_cvar` does, so they come back when the game mode changes.
 
 ### Mods
 
