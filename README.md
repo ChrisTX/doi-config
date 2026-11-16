@@ -356,20 +356,20 @@ Metamod:Source and the plugins from their packages, this repository and its
 compiled plugins. The game and the workshop items aren't part
 of it, as they may not be passed on: they're in a state folder on the host,
 which the image's updater fills with DepotDownloader, like `nwi-update.service` for
-the systemd units, and which the servers mount. The packages come from a local
-pacman repository, like the one of aurutils, verified with its signing key: the
-build context `repo` is its folder, `REPO_NAME` its name. With Podman, from the
-repository's root, for aurutils' `aur` repository in `/var/lib/aurutils-repo`:
+the systemd units, and which the servers mount. The packages come from the
+public repository `https://repo.rev-crew.info/aurutils`, verified with its key,
+`deploy/container/aurutils.asc`, or from a local pacman repository, like the one
+of aurutils (`REPO_NAME` its name, `REPO_SERVER=file:///mnt/repo`, the build
+context `repo` its folder). With Podman, from the repository's root:
 
 ```bash
-gpg --homedir /etc/pacman.d/gnupg --export -a <key> >repo-key.asc
-podman build --format docker --build-context repo=/var/lib/aurutils-repo \
-  --build-arg REPO_NAME=aur --secret id=repo-key,src=repo-key.asc \
+podman build --format docker --build-context repo=$(mktemp -d) \
+  --secret id=repo-key,src=deploy/container/aurutils.asc \
   -f deploy/container/Containerfile -t nwi-server .
 ```
 
-`tests/integration/instance.py build` does the same with the repository
-aurutils uses. The image's commands (`src/nwi_server_kit/container.py`) are the
+`tests/integration/instance.py build` does the same, and `build --local` with
+the local repository aurutils uses, e.g. for packages not published yet. The image's commands (`src/nwi_server_kit/container.py`) are the
 server, `update` and `check`: `nwi-server update --image` and
 `nwi-server check-updates` on the state folder, mounted at `/srv/state`, for the
 servers whose environment files are mounted at `/etc/nwi-server`. The image's
@@ -441,8 +441,9 @@ tests/integration/instance.py down
 The server is then at this machine's address, port 27015, which `up` prints.
 Not at `127.0.0.1`: rootless Podman passes connections from there on from the
 pod's own address, and the server drops them. `build` and `up` take the packages
-and SourceBans++'s tables from the local pacman repository, which they find like
-aurutils: `aur repo --status`, or without aurutils the one repository of
+and SourceBans++'s tables from the public repository, verified with its key, or
+with `NWI_TEST_REPO=local` from the local pacman repository, which they find
+like aurutils: `aur repo --status`, or without aurutils the one repository of
 pacman.conf with a `file://` server. `AUR_REPO` and `AUR_DBROOT` name its name
 and folder, as for aurutils. `build --testing` builds the image with Arch
 Linux's testing repositories, for packages built against them on a machine that

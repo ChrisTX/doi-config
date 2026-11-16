@@ -4,11 +4,16 @@
 # image has nothing of the game's, which may not be passed on. See README.md for building and running.
 #
 # Build arguments:
-#   REPO_NAME                      the name of the pacman repository with the packages (aur), which its
-#                                  database is named after (aur.db)
+#   REPO_NAME                      the name of the pacman repository with the packages (aurutils), which
+#                                  its database is named after (aurutils.db)
+#   REPO_SERVER                    its server, as pacman.conf has it: the public repository
+#                                  (https://repo.rev-crew.info/aurutils) by default, file:///mnt/repo for the
+#                                  local one of the build context "repo"
 #   TESTING                        any value: with Arch Linux's testing repositories, for packages built
 #                                  against them
-# Build context "repo": the pacman repository's folder, secret "repo-key": its signing key
+# Build context "repo": a local repository's folder, an empty one for the public repository; secret
+# "repo-key": the repository's signing key, the public one's deploy/container/aurutils.asc
+# (tests/integration/instance.py build passes them)
 # Built in Docker's format (podman build --format docker): OCI images have no HEALTHCHECK
 
 ARG TESTING=
@@ -37,13 +42,14 @@ RUN /usr/local/lib/nwi-server-kit/enable-repos.sh "$TESTING" \
 # /opt/nwi-layer, the image's files of the game's folder, which the server's entrypoint copies into
 # it on every start.
 USER 0:0
-ARG REPO_NAME=aur
+ARG REPO_NAME=aurutils
+ARG REPO_SERVER=https://repo.rev-crew.info/aurutils
 RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key \
   pacman-key --init \
   && pacman-key --add /run/secrets/repo-key \
   && pacman-key --lsign-key "$(gpg --show-keys --with-colons /run/secrets/repo-key | awk -F: '/^fpr/ { print $10; exit }')" \
   && cp /etc/pacman.conf /etc/pacman.conf.orig \
-  && printf '\n[%s]\nServer = file:///mnt/repo\n' "$REPO_NAME" >>/etc/pacman.conf \
+  && printf '\n[%s]\nSigLevel = Required\nServer = %s\n' "$REPO_NAME" "$REPO_SERVER" >>/etc/pacman.conf \
   && pacman -Syu --noconfirm --needed steamdepotdownloader metamod-source sourcemod sourcemod-scripting \
     python-a2s python-cryptography python-srctools \
     sourcemod-sourcebans-pp sourcemod-sourcebans-pp-discord-forward sourcemod-advertisements \

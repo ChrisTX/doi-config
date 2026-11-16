@@ -4,10 +4,11 @@ SourceMod's tables, the server registered in SourceBans++ and optionally an admi
 the live servers: the passwords are generated, and without its config the Discord forward stays silent.
 
 Usage:
-    instance.py build [--testing] [PODMAN BUILD OPTION...]
-        build the image (podman build, see README.md) from the local pacman repository; with
-        --testing with Arch Linux's testing repositories, for packages built against them, as on a
-        machine that uses them
+    instance.py build [--local] [--testing] [PODMAN BUILD OPTION...]
+        build the image (podman build, see README.md) with the packages of the public repository, or
+        with --local (or NWI_TEST_REPO=local) of the local pacman repository, e.g. for packages not
+        published yet; with --testing with Arch Linux's testing repositories, for packages built
+        against them, as on a machine that uses them
     instance.py update [CONFIG...]
         update the games, the workshop items and the mods of the configs (all of servers/ by default,
         which includes Insurgency's test server) in the state folder with the image's updater
@@ -34,9 +35,11 @@ A config is one of servers/, or of tests/integration/servers/, the tests' own, e
 containers get mounted among the image's (servers/<config>): they run in the container only. A config's
 own cfg folder goes into the game's, e.g. a test's configs and mapcycle.
 
-The local pacman repository with the packages, which aurutils builds into, is found like aurutils finds
-it (aur repo --status, or the one file:// repository of pacman.conf without aurutils); its package of
-the SourceBans++ web panel has the tables, and the signature of its database names its key.
+The packages come from the public repository (https://repo.rev-crew.info/aurutils), verified with its
+key, deploy/container/aurutils.asc, or from the local pacman repository, which aurutils builds into,
+found like aurutils finds it (aur repo --status, or the one file:// repository of pacman.conf without
+aurutils), whose database's signature names its key. The repository's package of the SourceBans++ web
+panel has the database's tables.
 
 The settings, of the environment or of ${XDG_CONFIG_HOME:-~/.config}/nwi-server-kit/test-instance.env,
 one VAR=value a line, e.g. TEST_ADMIN=[U:1:123], the environment's taking precedence:
@@ -56,6 +59,8 @@ one VAR=value a line, e.g. TEST_ADMIN=[U:1:123], the environment's taking preced
                           see README.md), with its runtime preloaded
     LAUNCH_OPTIONS        options of the server's command line for every up, separated by spaces,
                           before those of up's own
+    NWI_TEST_REPO         public (the default) or local: the repository of build and of the database's
+                          tables
 """
 
 import os
@@ -65,8 +70,10 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
+import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -82,6 +89,7 @@ SETTINGS = (
     "TEST_DB_PORT",
     "SANITISER",
     "LAUNCH_OPTIONS",
+    "NWI_TEST_REPO",
 )
 IMAGE = "localhost/nwi-server"
 SANITISER_IMAGE = "localhost/nwi-server-sanitiser"
@@ -99,6 +107,12 @@ SOURCEMOD_SQL = Path(
     "/usr/lib/sourcemod/addons/sourcemod/configs/sql-init-scripts/mysql"
 )
 GNUPG = "/etc/pacman.d/gnupg"
+# The public repository and its key, pinned in the repository
+PUBLIC_REPO = "aurutils"
+PUBLIC_URL = "https://repo.rev-crew.info/aurutils"
+PUBLIC_KEY = REPOSITORY / "deploy/container/aurutils.asc"
+PUBLIC_FINGERPRINT = "50D39A5279BF71B8046B3A70713B08F8AD610C32"
+SOURCEBANS = "sourcebans-pp"
 
 
 class InstanceError(RuntimeError):
@@ -354,26 +368,48 @@ class Instance:
         self.server_image = SANITISER_IMAGE if settings.get("SANITISER") else IMAGE
         self.db_port = int(settings.get("TEST_DB_PORT") or 3306)
 
+    @property
+    def local(self) -> bool:
+        repo = self.settings.get("NWI_TEST_REPO", "public")
+        if repo not in ("public", "local"):
+            raise InstanceError(f"NWI_TEST_REPO is public or local, not {repo}")
+        return repo == "local"
+
     def build(self, args: list[str]) -> None:
-        testing = []
-        if args[:1] == ["--testing"]:
-            testing, args = ["--build-arg", "TESTING=1"], args[1:]
-        name, root = find_repo(self.settings)
-        fingerprint = repo_key(name, root)
-        with tempfile.NamedTemporaryFile("w", suffix=".asc") as key:
-            key.write(
-                run(
-                    "gpg",
-                    "--homedir",
-                    GNUPG,
-                    "--no-permission-warning",
-                    "--export",
-                    "-a",
-                    fingerprint,
-                    capture=True,
+        testing: list[str] = []
+        local = self.local
+        while args[:1] in (["--testing"], ["--local"]):
+            if args[0] == "--testing":
+                testing = ["--build-arg", "TESTING=1"]
+            else:
+                local = True
+            args = args[1:]
+        with tempfile.TemporaryDirectory() as work:
+            repo: list[str] = []
+            if local:
+                name, root = find_repo(self.settings)
+                key = Path(work) / "repo-key.asc"
+                key.write_text(
+                    run(
+                        "gpg",
+                        "--homedir",
+                        GNUPG,
+                        "--no-permission-warning",
+                        "--export",
+                        "-a",
+                        repo_key(name, root),
+                        capture=True,
+                    )
                 )
-            )
-            key.flush()
+                repo = [
+                    "--build-arg",
+                    f"REPO_NAME={name}",
+                    "--build-arg",
+                    "REPO_SERVER=file:///mnt/repo",
+                ]
+            else:
+                # The public repository needs no folder: an empty one for the build context
+                root, key = Path(work), PUBLIC_KEY
             run(
                 "podman",
                 "build",
@@ -382,9 +418,8 @@ class Instance:
                 "--build-context",
                 f"repo={root}",
                 "--secret",
-                f"id=repo-key,src={key.name}",
-                "--build-arg",
-                f"REPO_NAME={name}",
+                f"id=repo-key,src={key}",
+                *repo,
                 *testing,
                 "-f",
                 str(REPOSITORY / "deploy/container/Containerfile"),
@@ -393,6 +428,28 @@ class Instance:
                 str(REPOSITORY),
                 *args,
             )
+
+    def sourcebans_package(self, work: Path) -> Path:
+        """The package of SourceBans++'s web panel: the local repository's newest, or the public one's,
+        downloaded and verified with its key."""
+        if self.local:
+            _, root = find_repo(self.settings)
+            packages = sorted(
+                root.glob(f"{SOURCEBANS}-[0-9]*.pkg.tar.zst"), key=version_key
+            )
+            if not packages:
+                raise InstanceError(
+                    f"{root} has no {SOURCEBANS} package with SourceBans++'s tables"
+                )
+            return packages[-1]
+        database = work / f"{PUBLIC_REPO}.db"
+        download(f"{PUBLIC_URL}/{PUBLIC_REPO}.db", database)
+        name = package_file(database, SOURCEBANS)
+        package = work / name
+        download(f"{PUBLIC_URL}/{name}", package)
+        download(f"{PUBLIC_URL}/{name}.sig", Path(f"{package}.sig"))
+        verify(package, work)
+        return package
 
     def update(self, configs: list[str]) -> None:
         mounts = config_mounts(configs)
@@ -422,22 +479,19 @@ class Instance:
         """The tables of SourceBans++ (from the web panel's package, its placeholders filled in),
         SourceMod's admins and client preferences (from the image, or this machine's SourceMod for the
         systemd units), the test server and the admins."""
-        _, root = find_repo(self.settings)
-        packages = sorted(
-            root.glob("sourcebans-pp-[0-9]*.pkg.tar.zst"), key=version_key
-        )
-        if not packages:
-            raise InstanceError(
-                f"{root} has no sourcebans-pp package with SourceBans++'s tables"
-            )
         init = self.dir / "init"
         init.mkdir(parents=True, exist_ok=True)
+        # The downloads apart from the database's scripts: MariaDB's entrypoint takes an archive among
+        # them for a backup to restore
+        downloads = self.dir / "downloads"
+        downloads.mkdir(exist_ok=True)
+        package = self.sourcebans_package(downloads)
         # One at a time: the tables have to come before their data
         tables = "".join(
             run(
                 "bsdtar",
                 "-xOf",
-                str(packages[-1]),
+                str(package),
                 f"usr/share/sourcebans-pp/install/includes/sql/{sql}",
                 capture=True,
             )
@@ -765,6 +819,62 @@ class Instance:
                     check=False,
                 )
             self.down()
+
+
+def download(url: str, target: Path) -> None:
+    try:
+        with urllib.request.urlopen(url, timeout=60) as answer:
+            target.write_bytes(answer.read())
+    except OSError as error:
+        raise InstanceError(f"{url}: {error}") from error
+
+
+def package_file(database: Path, name: str) -> str:
+    """The file of a package of a pacman repository's database, by its name."""
+    with tarfile.open(database) as archive:
+        for member in archive:
+            if not member.name.endswith("/desc"):
+                continue
+            file = archive.extractfile(member)
+            text = file.read().decode() if file else ""
+            values = dict(re.findall(r"%([A-Z]+)%\n([^\n]*)", text))
+            if values.get("NAME") == name and "FILENAME" in values:
+                return values["FILENAME"]
+    raise InstanceError(f"the public repository has no {name}")
+
+
+def verify(path: Path, work: Path) -> None:
+    """Verify a file's signature (<file>.sig) with the public repository's key, by its fingerprint."""
+    with tempfile.TemporaryDirectory(dir=work) as home:
+        run(
+            "gpg",
+            "--homedir",
+            home,
+            "--quiet",
+            "--import",
+            str(PUBLIC_KEY),
+            capture=True,
+        )
+        status = subprocess.run(
+            [
+                "gpg",
+                "--homedir",
+                home,
+                "--status-fd",
+                "1",
+                "--verify",
+                f"{path}.sig",
+                str(path),
+            ],
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        ).stdout
+    if f"[GNUPG:] VALIDSIG {PUBLIC_FINGERPRINT} " not in status:
+        raise InstanceError(
+            f"{path.name} isn't signed with the public repository's key"
+        )
 
 
 def version_key(path: Path) -> list[int | str]:

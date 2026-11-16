@@ -1,7 +1,9 @@
 """The test instance's parts that don't need Podman (tests/integration/instance.py): its settings,
 the admins' SteamIDs, up's options, the files it writes and the configs it finds."""
 
+import io
 import subprocess
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -160,3 +162,28 @@ def test_version_key() -> None:
 def test_usage(capsys: pytest.CaptureFixture[str]) -> None:
     assert instance.main(["bogus"]) == 2
     assert "instance.py up" in capsys.readouterr().err
+
+
+def test_package_file(tmp_path: Path) -> None:
+    """A package's file of a repository's database (a tar of each package's desc)."""
+    database = tmp_path / "aurutils.db"
+    with tarfile.open(database, "w:gz") as archive:
+        for name, file in (
+            ("sourcebans-pp", "sourcebans-pp-2.2.3-5-any.pkg.tar.zst"),
+            ("sourcemod", "sourcemod-1.12-1-x86_64.pkg.tar.zst"),
+        ):
+            desc = f"%FILENAME%\n{file}\n\n%NAME%\n{name}\n".encode()
+            info = tarfile.TarInfo(f"{name}-1/desc")
+            info.size = len(desc)
+            archive.addfile(info, io.BytesIO(desc))
+    found = instance.package_file(database, "sourcebans-pp")
+    assert found == "sourcebans-pp-2.2.3-5-any.pkg.tar.zst"
+    with pytest.raises(instance.InstanceError, match="no metamod"):
+        instance.package_file(database, "metamod")
+
+
+def test_repository_setting() -> None:
+    assert not instance.Instance({}).local
+    assert instance.Instance({"NWI_TEST_REPO": "local"}).local
+    with pytest.raises(instance.InstanceError, match="public or local"):
+        _ = instance.Instance({"NWI_TEST_REPO": "mine"}).local
