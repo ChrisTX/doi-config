@@ -749,6 +749,9 @@ class Instance:
         shutil.rmtree(self.dir, ignore_errors=True)
 
     def down(self) -> None:
+        # The server's shutdown takes up to about 10 seconds, Podman's own grace before it kills: the
+        # Quadlet unit's (StopTimeout=30)
+        run("podman", "pod", "stop", "--ignore", "-t", "30", POD, capture=True)
         run("podman", "pod", "rm", "-f", "--ignore", POD, capture=True)
         for name in VOLUMES:
             subprocess.run(
