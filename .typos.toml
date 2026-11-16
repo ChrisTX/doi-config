@@ -36,7 +36,7 @@ UndefinedBehaviorSanitizer = "UndefinedBehaviorSanitizer"
 
 [files]
 extend-exclude = [
-  # The game's cvars and commands, by their names (testing/dump_cvars.py)
+  # The game's cvars and commands, by their names (checks/dump_cvars.py)
   "checks/cvars.json",
   # Licence texts, as they are
   "LICENSES/",

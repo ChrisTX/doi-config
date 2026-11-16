@@ -21,10 +21,11 @@ clang's `clang-format` formats the C++ of hl2sdk-ghidra, `src/hl2sdk_ghidra/sdk_
 
 What runs where:
 
-- `src/`: the packages, everything a server, its updates and its admins run; `tests/` has their tests (pytest). In `src/nwi_server_kit`, the modules are the library, and `cli/` has the command line of each: its arguments, what it prints and its exit status.
+- `src/`: the packages, everything a server, its updates and its admins run. In `src/nwi_server_kit`, the modules are the library, and `cli/` has the command line of each: its arguments, what it prints and its exit status.
 - `deploy/`: the systemd units, the container image, the Quadlet units and the package (`deploy/arch/PKGBUILD`).
-- `checks/`: what the git hooks and GitHub Actions run on the repository's files, e.g. the check of the game's configs against the game's cvars (`checks/cvars.json`).
-- `testing/`: what developers run against test servers: the test instance (`testing/test-instance.sh`), the image with sanitiser builds, the soak test (`test-instance.sh soak`, its config in `testing/servers`) and the dump of a server's cvars. Neither `checks/` nor `testing/` is installed.
+- `checks/`: what the git hooks and GitHub Actions run on the repository's files, e.g. the check of the game's configs against the game's cvars (`checks/cvars.json`, which `checks/dump_cvars.py` makes of a running server).
+- `tests/unit/`: the tests of the packages (pytest).
+- `tests/integration/`: the tests with real servers: the test instance (`tests/integration/test-instance.sh`), the image with sanitiser builds, and the soak test (`test-instance.sh soak`, its config in `tests/integration/servers`). Neither `checks/` nor `tests/` is installed.
 
 The tools are a Python package, `src/nwi_server_kit`, with the commands `nwi-server` and `nwi-rcon`, and the Ghidra tools another, `src/hl2sdk_ghidra`, with the command `hl2sdk-ghidra` (see [its README](src/hl2sdk_ghidra/README.md)). Instead of the Python packages, its dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums, mypy's and pytest's included, of the development group. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, with the package installed from the checkout, which the hooks then use while it's active:
 
@@ -54,9 +55,9 @@ GitHub Actions runs the same checks on every push and pull request. The AUR isn'
 - Shell scripts are formatted with shfmt and pass shellcheck and shellharden. Write `cd … || exit` instead of disabling SC2164.
 - Python scripts are formatted with ruff and pass `ruff check`. Suppress a rule only where the code can't comply, with `# noqa: <rule>` and a comment saying why.
 - The Python code passes mypy, with the settings of `pyproject.toml`: functions without annotations are checked too. Narrow a type where it's ambiguous, e.g. a KeyValues value that may be a string or a block, rather than casting it or ignoring the error.
-- The tests in `tests/` pass: `python3 -m pytest`. They run the code on fake state in temporary folders, never the system's; a change of the layers, their trial (`health.py`) or what the watchdog records comes with tests. The tests of the Workshop uploads build a stand-in of the Steamworks API's library, `tests/fake_steam_api.c`, with the C compiler (`cc`).
+- The tests in `tests/unit/` pass: `python3 -m pytest`. They run the code on fake state in temporary folders, never the system's; a change of the layers, their trial (`health.py`) or what the watchdog records comes with tests. The tests of the Workshop uploads build a stand-in of the Steamworks API's library, `tests/unit/fake_steam_api.c`, with the C compiler (`cc`).
 - The SourceMod plugins (`game/addons/sourcemod/scripting/*.sp`) compile without warnings: `spcomp -E`.
-- C and C++ (`src/hl2sdk_ghidra/sdk_types.cpp`, `tests/fake_steam_api.c`) are formatted with `clang-format` (`.clang-format`).
+- C and C++ (`src/hl2sdk_ghidra/sdk_types.cpp`, `tests/unit/fake_steam_api.c`) are formatted with `clang-format` (`.clang-format`).
 - The Containerfile passes hadolint and `trivy config`.
 - systemd units pass systemd-lsp, the GitHub files yamllint, Markdown files rumdl, TOML files tombi (formatted with `tombi format`, checked with `tombi lint`).
 - Everything follows `.editorconfig`, checked by editorconfig-checker. Formatters fix files themselves; run the check again afterwards.

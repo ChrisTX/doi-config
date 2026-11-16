@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Format and check the game's configs of this repository (game/cfg, and servers' own cfg folders of
-servers/ and testing/servers/).
+servers/ and tests/integration/servers/).
 
 Formats each line as the game's own configs write it: the cvar or command bare, its arguments quoted,
 e.g. mp_roundtime "600", exec "doi-config/bot_logic.cfg". Then checks against the server's cvars and
-commands (checks/cvars.json, see testing/dump_cvars.py) and those of the plugins of this repository:
+commands (checks/cvars.json, see checks/dump_cvars.py) and those of the plugins of this repository:
 
 - every name is a cvar or a command,
 - a cvar gets one value, a number within its bounds where it has bounds,
@@ -38,7 +38,7 @@ def configs() -> list[Path]:
         [
             *(REPO / "game/cfg").rglob("*.cfg"),
             *(REPO / "servers").glob("*/cfg/**/*.cfg"),
-            *(REPO / "testing/servers").glob("*/cfg/**/*.cfg"),
+            *(REPO / "tests/integration/servers").glob("*/cfg/**/*.cfg"),
         ]
     )
 

@@ -19,15 +19,15 @@
 #                     and with OPTION... more options of its command line, e.g. -- +sv_cheats 1, which
 #                     the systemd units get too (LAUNCH_OPTIONS of nwi-server start)
 #   soak [--hours HOURS] [LOG]
-#                     the soak test: update and start soak-bots (testing/servers), from the sanitiser
-#                     image with SANITISER, log it with testing/soak_watch.py for HOURS (8 by default)
+#                     the soak test: update and start soak-bots (tests/integration/servers), from the sanitiser
+#                     image with SANITISER, log it with tests/integration/soak_watch.py for HOURS (8 by default)
 #                     to LOG (soak-<time>.tsv in the working folder) and the server's output next to it
 #                     (LOG without .tsv, .log), then remove it
 #   down              remove the test instance, its database and volumes
 #   rcon COMMAND...   run a command on the server over RCON
 #   logs              follow the server's log
 #
-# A config is one of servers/, or of testing/servers/, the tests' own, e.g. soak-bots, which the
+# A config is one of servers/, or of tests/integration/servers/, the tests' own, e.g. soak-bots, which the
 # containers get mounted among the image's (servers/<config>): they run in the container only. A
 # config's own cfg folder goes into the game's, e.g. a test's configs and mapcycle.
 #
@@ -39,13 +39,13 @@
 # NWI_STATE: the state folder with the game, the workshop items and the mods
 # (${XDG_STATE_HOME:-~/.local/state}/nwi-server, as for the Quadlet units of deploy/quadlet)
 # DISABLE_PLUGINS: plugins the server starts without, by name, e.g. nwi_cvar_unlocker for the game's own
-# bounds in testing/dump_cvars.py
+# bounds in checks/dump_cvars.py
 # TEST_ADMIN: SteamIDs that get root admin, separated by spaces, each as STEAM_0:…, STEAM_1:…, [U:1:…]
 # or SteamID64: in the database, and in admins_simple.ini through the server's environment file
 # (nwi-server prepare), so also on servers without the database
 # TEST_DB_PORT: the database's port on 127.0.0.1 with --db-only (3306)
 # SANITISER: undefined, address or address,undefined: up starts the server from the sanitiser image
-# (localhost/nwi-server-sanitiser, testing/sanitiser, see README.md), with its runtime preloaded
+# (localhost/nwi-server-sanitiser, tests/integration/sanitiser, see README.md), with its runtime preloaded
 # LAUNCH_OPTIONS: options of the server's command line for every up, separated by spaces, before those
 # of up's own
 #
@@ -67,7 +67,7 @@ if [[ -f $settings ]]; then
 	done <"$settings"
 fi
 
-repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")
+repo=$(realpath "$(dirname "${BASH_SOURCE[0]}")/../..")
 # Set by find_repo
 repo_name=''
 repo_root=''
@@ -156,16 +156,16 @@ cmd_build() {
 		--build-arg REPO_NAME="$repo_name" "${testing[@]}" -f "$repo/deploy/container/Containerfile" -t "$image" "$repo" "$@"
 }
 
-# A config's folder, of servers/ or testing/servers/: its server.toml has the server's settings
+# A config's folder, of servers/ or tests/integration/servers/: its server.toml has the server's settings
 config_folder() {
 	local folder
-	for folder in "$repo/servers/$1" "$repo/testing/servers/$1"; do
+	for folder in "$repo/servers/$1" "$repo/tests/integration/servers/$1"; do
 		if [[ -f $folder/server.toml ]]; then
 			echo "$folder"
 			return
 		fi
 	done
-	echo "Error: no config $1 in servers/ or testing/servers/" >&2
+	echo "Error: no config $1 in servers/ or tests/integration/servers/" >&2
 	exit 1
 }
 
@@ -174,7 +174,7 @@ test_mounts=()
 add_test_mount() {
 	local folder
 	folder=$(config_folder "$1")
-	if [[ $folder == "$repo/testing/servers/"* ]]; then
+	if [[ $folder == "$repo/tests/integration/servers/"* ]]; then
 		test_mounts+=(-v "$folder:/opt/nwi-server-kit/servers/$1:ro")
 	fi
 }
@@ -421,7 +421,7 @@ cmd_up() {
 		geoip=(-v /var/lib/GeoIP:/var/lib/GeoIP:ro)
 	fi
 	# The state's game and workshop items with an overlay of the container's own, its mods read-only
-	# Plugins nwi-server prepare disables, e.g. for testing/dump_cvars.py
+	# Plugins nwi-server prepare disables, e.g. for checks/dump_cvars.py
 	local -a extra_env=()
 	if [[ -n ${DISABLE_PLUGINS:-} ]]; then
 		extra_env=(-e DISABLE_PLUGINS="$DISABLE_PLUGINS")
@@ -485,7 +485,7 @@ cmd_soak() {
 	trap 'podman logs "$pod-server" >"$output" 2>&1 || true; cmd_down' EXIT
 	echo "Watching the soak test for $hours hours: $log, the server's output in $output"
 	RCON_PASSWORD=$(sed -n 's/^RCON_PASSWORD=//p' "$dir/server.env") \
-		python3 "$repo/testing/soak_watch.py" --container "$pod-server" --hours "$hours" "$log"
+		python3 "$repo/tests/integration/soak_watch.py" --container "$pod-server" --hours "$hours" "$log"
 }
 
 (($#)) || usage

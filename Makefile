@@ -7,7 +7,7 @@
 PREFIX ?= /usr
 LIBDIR ?= $(PREFIX)/lib
 DATADIR ?= $(PREFIX)/share
-# The checks (checks/) and the tests (tests/, testing/) aren't installed: they're for this repository
+# The checks (checks/) and the tests (tests/) aren't installed: they're for this repository
 UNITS = $(wildcard deploy/systemd/*)
 QUADLET = $(wildcard deploy/quadlet/*)
 DOCS = README.md CONTRIBUTING.md docs/Clients.md docs/Cvars.md

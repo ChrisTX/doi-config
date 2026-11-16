@@ -1,5 +1,5 @@
 # nwi-server-kit, the Python package of the servers' tools (src/nwi_server_kit) with its command
-# nwi-server, and the dependencies of it and the scripts of checks/ and testing/. uv sync makes .venv with the
+# nwi-server, and the dependencies of it and the scripts of checks/ and tests/integration/. uv sync makes .venv with the
 # versions of uv.lock and the package installed from the checkout (see CONTRIBUTING.md); the servers'
 # package (deploy/arch/PKGBUILD) installs it with the Arch Linux packages of the dependencies.
 
@@ -51,9 +51,9 @@ build-backend = "hatchling.build"
 packages = ["src/nwi_server_kit", "src/hl2sdk_ghidra"]
 
 [tool.mypy]
-files = ["src", "checks", "testing", "tests"]
+files = ["src", "checks", "tests"]
 python_version = "3.12"
-# The bodies of functions without annotations too, e.g. of the scripts of checks/ and testing/
+# The bodies of functions without annotations too, e.g. of the scripts of checks/ and tests/integration/
 check_untyped_defs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
@@ -80,10 +80,10 @@ follow_imports_for_stubs = true
 [tool.pytest]
 addopts = ["--strict-markers"]
 pythonpath = ["src"]
-testpaths = ["tests"]
+testpaths = ["tests/unit"]
 
 [tool.ruff]
-# The package, which the scripts of checks/ and testing/ import from src/
+# The package, which the scripts of checks/ and tests/integration/ import from src/
 src = ["src"]
 
 [tool.uv.sources]

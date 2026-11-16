@@ -30,10 +30,10 @@ The environment, the server's environment file (/etc/nwi-server/<server>.env):
     LAUNCH_OPTIONS    more options of the command line, separated by spaces, after server.toml's, so
                       that they win, e.g. +developer 2 for a test server
     DISABLE_PLUGINS   plugins the server starts without, by name, separated by spaces, e.g.
-                      nwi_cvar_unlocker for the game's own bounds of its cvars (testing/dump_cvars.py)
+                      nwi_cvar_unlocker for the game's own bounds of its cvars (checks/dump_cvars.py)
     TEST_ADMIN        SteamIDs, separated by spaces, that get root in admins_simple.ini, which
                       admin-flatfile.smx reads with or without a database, e.g. on a test server of
-                      no database (testing/test-instance.sh sets it; the live servers don't have it)
+                      no database (tests/integration/test-instance.sh sets it; the live servers don't have it)
     SOURCEBANS_WEBSITE, SOURCEBANS_SERVER_ID, SOURCEBANS_SERVER_IP
                       SourceBans++'s web panel, the server's ID in it (left at -1, SourceBans++ looks
                       it up by the server's address and port), and its address where the server's own

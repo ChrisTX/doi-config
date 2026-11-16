@@ -55,7 +55,7 @@ repos:
         language: system
         entry: ruff format
         types: [python]
-      # The types of the Python code, the package and the scripts of checks/ and testing/ as pyproject.toml has them,
+      # The types of the Python code, the package, the checks and the tests as pyproject.toml has them,
       # all at once: types cross the modules
       - id: mypy
         name: mypy (mypy)
@@ -63,7 +63,7 @@ repos:
         entry: mypy
         types: [python]
         pass_filenames: false
-      # The tests of the package (tests/), all of them on any change
+      # The tests of the package (tests/unit/), all of them on any change
       - id: pytest
         name: pytest (python-pytest)
         language: system
@@ -84,7 +84,7 @@ repos:
         files: ^game/addons/sourcemod/scripting/[^/]+\.sp$
 
       # The game's configs: formatted, the cvar bare and its arguments quoted, and checked against the
-      # game's cvars and commands (checks/cvars.json, made with testing/dump_cvars.py) and those of our
+      # game's cvars and commands (checks/cvars.json, made with checks/dump_cvars.py) and those of our
       # plugins, see checks/check_configs.py. It checks all configs, as a change of the cvars or the
       # plugins can make any of them wrong.
       - id: check-configs
@@ -99,7 +99,7 @@ repos:
         name: the servers' settings (nwi-server server-config)
         language: system
         entry: env PYTHONPATH=src python3 -m nwi_server_kit server-config check
-        files: ^(testing/)?servers/[^/]+/server\.toml$
+        files: ^(tests/integration/)?servers/[^/]+/server\.toml$
 
       # The C++ of the Ghidra tools (src/hl2sdk_ghidra/sdk_types.cpp), which hl2sdk-ghidra types compiles
       # against the SDK, and the C of the tests' stand-in of the Steamworks API, formatted with clang-format

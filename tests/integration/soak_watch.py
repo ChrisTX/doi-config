@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Watch a soak test server, e.g. testing/servers/soak-bots (test-instance.sh soak), and log it as TSV.
+"""Watch a soak test server, e.g. tests/integration/servers/soak-bots (test-instance.sh soak), and log it as TSV.
 
 At each interval it logs the time, the map, the bots, the server's memory (resident set, of srcds in
 the container) and the number of sanitiser reports in the container's output, and adds the bots again
@@ -15,7 +15,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 from nwi_server_kit import rcon
 
 # Lines of UBSan's and ASan's reports
