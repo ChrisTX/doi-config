@@ -4,87 +4,17 @@ Every Linux signature by symbol ("@name") has to exist in its library's symbol t
 update that removes or renames a function the plugins call or hook fails the update, rather than the
 plugins at the servers' start, where nwi_gamedata only logs what it lacks and the servers run without
 it (e.g. with the playlists' restrictions). The entries of the #default block that support the game,
-and those of the game's own block, count; signatures without a Linux symbol are left out.
+and those of the game's own block, count; signatures without a Linux symbol are left out. The gamedata
+is read as SourceMod reads it (hl2sdk_ghidra.gamedata).
 """
 
 import argparse
-import struct
 import sys
 from pathlib import Path
 
-from srctools.keyvalues import Keyvalues
+from hl2sdk_ghidra import elf, gamedata
 
 from .games import config_folder, game_folder
-
-
-def values(block: Keyvalues, name: str) -> list[str]:
-    """The values of the block's keys of the name, without its blocks of that name."""
-    return [key.value for key in block.find_all(name) if not key.has_children()]
-
-
-def symbols_of(gamedata: Keyvalues, game: str) -> list[tuple[str, str, str]]:
-    """The Linux symbols the gamedata names for the game: (entry, library, symbol). srctools compares
-    the keys' names in lower case, as SourceMod's gamedata does."""
-    found = []
-    for games in gamedata.find_all("Games"):
-        for block in games:
-            if not block.has_children():
-                continue
-            if block.name == "#default":
-                supported = [
-                    g for s in block.find_all("#supported") for g in values(s, "game")
-                ]
-                if supported and game not in supported:
-                    continue
-            elif block.name != game:
-                continue
-            for signatures in block.find_all("Signatures"):
-                for signature in signatures:
-                    if not signature.has_children():
-                        continue
-                    linux = values(signature, "linux")
-                    library = values(signature, "library")
-                    if linux and linux[0].startswith("@") and library:
-                        found.append((signature.real_name, library[0], linux[0][1:]))
-    return found
-
-
-def elf_symbols(path: Path) -> set[str]:
-    """The names of an ELF file's symbol tables (.symtab and .dynsym)."""
-    data = path.read_bytes()
-    if data[:4] != b"\x7fELF":
-        raise ValueError(f"{path} isn't an ELF file")
-    wide = data[4] == 2
-    order = "<" if data[5] == 1 else ">"
-    if wide:
-        (shoff,) = struct.unpack_from(order + "Q", data, 0x28)
-        shentsize, shnum = struct.unpack_from(order + "HH", data, 0x3A)
-    else:
-        (shoff,) = struct.unpack_from(order + "I", data, 0x20)
-        shentsize, shnum = struct.unpack_from(order + "HH", data, 0x2E)
-    sections = []
-    for i in range(shnum):
-        base = shoff + i * shentsize
-        if wide:
-            _, kind, _, _, offset, size, link, _, _, entsize = struct.unpack_from(
-                order + "IIQQQQIIQQ", data, base
-            )
-        else:
-            _, kind, _, _, offset, size, link, _, _, entsize = struct.unpack_from(
-                order + "IIIIIIIIII", data, base
-            )
-        sections.append((kind, offset, size, link, entsize))
-    names = set()
-    for kind, offset, size, link, entsize in sections:
-        # SHT_SYMTAB and SHT_DYNSYM, with the string table they link to
-        if kind not in (2, 11) or not entsize:
-            continue
-        strings_offset = sections[link][1]
-        for entry in range(offset, offset + size, entsize):
-            (name,) = struct.unpack_from(order + "I", data, entry)
-            end = data.index(b"\0", strings_offset + name)
-            names.add(data[strings_offset + name : end].decode("utf-8", "replace"))
-    return names
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -121,17 +51,18 @@ def main(argv: list[str] | None = None) -> int:
         "server": folder / "bin/server_srv.so",
         "engine": args.game_dir / "bin/engine_srv.so",
     }
-    # Signatures keep their backslashes, e.g. \\x2A, as SourceMod reads them
-    gamedata = Keyvalues.parse(
-        args.gamedata.read_text(encoding="utf-8"), args.gamedata, allow_escapes=False
-    )
+    # The game's engine as SourceMod names it is the game's name: doi or insurgency
+    found = gamedata.symbols(gamedata.entries([args.gamedata], game, game))
     missing = []
     loaded: dict[str, set[str]] = {}
-    for entry, library, symbol in symbols_of(gamedata, game):
+    for entry in found:
+        library = entry.library or "server"
+        if library not in libraries:
+            continue
         if library not in loaded:
-            loaded[library] = elf_symbols(libraries[library])
-        if symbol not in loaded[library]:
-            missing.append(f"{entry}: {symbol} isn't in {libraries[library]}")
+            loaded[library] = elf.symbols(libraries[library])
+        if entry.value not in loaded[library]:
+            missing.append(f"{entry.name}: {entry.value} isn't in {libraries[library]}")
     for line in missing:
         print(f"Error: {line}", file=sys.stderr)
     return 1 if missing else 0

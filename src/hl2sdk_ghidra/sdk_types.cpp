@@ -1,6 +1,6 @@
-// The Source SDK's types for Ghidra, through their DWARF: sdk_types.sh compiles this with full debug
-// information against a branch of hl2sdk (e.g. doi or insurgency), together with tier1's KeyValues,
-// convar and bitbuf, whose functions bring their signatures.
+// The Source SDK's types for Ghidra, through their DWARF: hl2sdk-ghidra types compiles this with
+// full debug information against a branch of hl2sdk (e.g. doi or insurgency), together with tier1's
+// KeyValues, convar and bitbuf, whose functions bring their signatures.
 #include "tier1/KeyValues.h"
 #include "tier1/bitbuf.h"
 #include "tier1/convar.h"
@@ -27,7 +27,7 @@ template class CUtlDict<void *, int>;
 
 // The interfaces Metamod:Source and SourceMod hook with SourceHook, whose vtable layouts come from the
 // SDK's headers at compile time: used, so their classes are in the DWARF with their vtable slots
-// (vtable_slots.py)
+// (hl2sdk-ghidra vtables)
 IServerGameDLL *server_game_dll;
 IServerGameClients *server_game_clients;
 IServerGameEnts *server_game_ents;

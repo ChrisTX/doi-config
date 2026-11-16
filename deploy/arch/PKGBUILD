@@ -6,7 +6,7 @@
 pkgname=nwi-server-kit-git
 pkgver=r0
 pkgrel=1
-pkgdesc='Tools and systemd units of Day of Infamy and Insurgency servers'
+pkgdesc='Tools and systemd units of Day of Infamy and Insurgency servers, and Ghidra tools for the Source SDK'
 arch=(any)
 url='https://github.com/ChrisTX/doi-config'
 license=(MIT)
@@ -26,6 +26,11 @@ depends=(
 )
 makedepends=(git make python-build python-installer python-hatchling)
 optdepends=(
+  'ghidra: hl2sdk-ghidra, the Ghidra tools, with PyGhidra of its wheel'
+  'python-jpype1: hl2sdk-ghidra'
+  'python-pyelftools: hl2sdk-ghidra vtables'
+  'python-capstone: hl2sdk-ghidra signature'
+  'python-pefile: hl2sdk-ghidra signature'
   'podman: the container image and the Quadlet units (deploy/quadlet)'
   'sourcemod-advertisements: the advertisements of the configs'
   'sourcemod-multicolors: the colours of the AFK Manager'

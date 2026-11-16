@@ -8,17 +8,18 @@ For problems with a server or a script, open an issue. Problems of the game, Sou
 
 ## Getting started
 
-The tools of the checks are in the Arch Linux repositories, apart from six from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, `hadolint`, `google-java-format`, `pmd`, `python-srctools`, the library the tools read the game's files with (KeyValues, VDF, VPK), and `python-a2s`, the watchdog's queries of the servers:
+The tools of the checks are in the Arch Linux repositories, apart from five from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, `hadolint`, `python-srctools`, the library the tools read the game's files with (KeyValues, VDF, VPK), `python-a2s`, the watchdog's queries of the servers, and `python-jpype1`, which PyGhidra runs Ghidra with for hl2sdk-ghidra. PyGhidra itself comes with Ghidra, as a wheel in `/opt/ghidra/Ghidra/Features/PyGhidra/pypkg/dist`, and the virtual environment below has it:
 
 ```bash
 sudo pacman -S --needed prek shfmt shellcheck shellharden ruff mypy \
   python-pytest systemd-lsp yamllint tombi rumdl typos trivy \
-  editorconfig-checker reuse clang ghidra jdk21-openjdk
+  editorconfig-checker reuse clang ghidra jdk21-openjdk python-pyelftools \
+  python-capstone python-pefile
 ```
 
-clang's `clang-format` formats the C++ of the Ghidra tools, `tools/ghidra/sdk_types.cpp`. The Ghidra scripts in `tools/ghidra` are formatted with google-java-format, compiled against Ghidra's jars and linted with PMD.
+clang's `clang-format` formats the C++ of hl2sdk-ghidra, `src/hl2sdk_ghidra/sdk_types.cpp`. Ghidra's own type stubs (`/opt/ghidra/docs/ghidra_stubs`) let mypy check hl2sdk-ghidra's use of Ghidra's API; the virtual environment has them.
 
-The tools are a Python package, `src/nwi_server_kit`, with the command `nwi-server`. Instead of the Python packages, its dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums, mypy's and pytest's included, of the development group. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, with the package installed from the checkout, which the hooks then use while it's active:
+The tools are a Python package, `src/nwi_server_kit`, with the command `nwi-server`, and the Ghidra tools another, `src/hl2sdk_ghidra`, with the command `hl2sdk-ghidra` (see [its README](src/hl2sdk_ghidra/README.md)). Instead of the Python packages, its dependencies can come from a virtual environment: `pyproject.toml` lists them, `uv.lock` pins their versions and checksums, mypy's and pytest's included, of the development group. [uv](https://docs.astral.sh/uv/) (the `uv` package) makes it in `.venv`, with the package installed from the checkout, which the hooks then use while it's active:
 
 ```bash
 uv sync
@@ -39,7 +40,7 @@ prek install
 prek run --all-files
 ```
 
-GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run, downloads the releases of hadolint, google-java-format and PMD, and makes the virtual environment of `uv.lock`, see `.github/workflows/check.yml`.
+GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run, downloads the release of hadolint, and makes the virtual environment of `uv.lock`, see `.github/workflows/check.yml`.
 
 ## Checks
 
@@ -48,7 +49,7 @@ GitHub Actions runs the same checks on every push and pull request. The AUR isn'
 - The Python code passes mypy, with the settings of `pyproject.toml`: functions without annotations are checked too. Narrow a type where it's ambiguous, e.g. a KeyValues value that may be a string or a block, rather than casting it or ignoring the error.
 - The tests in `tests/` pass: `python3 -m pytest`. They run the code on fake state in temporary folders, never the system's; a change of the layers, their trial (`health.py`) or what the watchdog records comes with tests.
 - The SourceMod plugins (`game/addons/sourcemod/scripting/*.sp`) compile without warnings: `spcomp -E`.
-- C++ (`tools/ghidra/sdk_types.cpp`) is formatted with `clang-format` (`.clang-format`).
+- C++ (`src/hl2sdk_ghidra/sdk_types.cpp`) is formatted with `clang-format` (`.clang-format`).
 - The Containerfile passes hadolint and `trivy config`.
 - systemd units pass systemd-lsp, the GitHub files yamllint, Markdown files rumdl, TOML files tombi (formatted with `tombi format`, checked with `tombi lint`).
 - Everything follows `.editorconfig`, checked by editorconfig-checker. Formatters fix files themselves; run the check again afterwards.

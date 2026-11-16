@@ -16,13 +16,28 @@ dependencies = [
 ]
 
 [project.scripts]
+hl2sdk-ghidra = "hl2sdk_ghidra.cli:main"
 nwi-server = "nwi_server_kit.cli:main"
+
+# hl2sdk-ghidra's (src/hl2sdk_ghidra): Ghidra through PyGhidra, with JPype (python-jpype1, AUR), and
+# the ELF's DWARF, the disassembler and Windows' PE files
+[project.optional-dependencies]
+ghidra = [
+  "pyghidra>=3.2",  # Ghidra 12.2's own (ghidra)
+  "JPype1>=1.5.2",  # (python-jpype1, AUR)
+  "pyelftools>=0.33",  # (python-pyelftools)
+  "capstone>=5.0.9",  # (python-capstone)
+  "pefile>=2024.8.26",  # (python-pefile)
+]
 
 # The checks of the git hooks that need the dependencies: in .venv, mypy and pytest see them
 # (CONTRIBUTING.md). The Arch Linux packages in parentheses.
 [dependency-groups]
 dev = [
+  # The types of Ghidra's API for mypy, of the installed Ghidra (ghidra)
+  "ghidra-stubs",
   "mypy>=2.4",  # (mypy)
+  "nwi-server-kit[ghidra]",
   "pytest>=9.2",  # (python-pytest)
 ]
 
@@ -31,7 +46,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/nwi_server_kit"]
+packages = ["src/nwi_server_kit", "src/hl2sdk_ghidra"]
 
 [tool.mypy]
 files = ["src", "tools", "tests"]
@@ -41,11 +56,23 @@ check_untyped_defs = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 
-# Libraries without types: python-a2s (srcds_watchdog.py), and those of the Ghidra tools (tools/ghidra:
-# python-pyelftools, python-capstone, python-pefile), which the virtual environment doesn't have
+# Libraries without types: python-a2s (srcds_watchdog.py), and those of hl2sdk-ghidra
+# (python-pyelftools, python-capstone, python-pefile)
 [[tool.mypy.overrides]]
 module = ["a2s", "a2s.*", "elftools.*", "capstone", "capstone.*", "pefile"]
 ignore_missing_imports = true
+
+# Java's classes through JPype, which have no stubs; and Ghidra's and PyGhidra's, which are checked
+# where they're installed, the virtual environment, and taken as they are without
+[[tool.mypy.overrides]]
+module = ["java", "java.*", "ghidra", "ghidra.*", "pyghidra", "pyghidra.*"]
+ignore_missing_imports = true
+
+# Ghidra's own stubs (ghidra-stubs) of its JIT emulator, which aren't valid Python ($ in names)
+[[tool.mypy.overrides]]
+module = ["ghidra.pcode.emu.jit.gen", "ghidra.pcode.emu.jit.gen.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
 
 # The tests of the package and of the scripts of tools/, which they import as modules
 [tool.pytest]
@@ -56,3 +83,6 @@ addopts = ["--strict-markers"]
 [tool.ruff]
 # The package, and the scripts' own modules, e.g. rcon.py, which they import from tools/
 src = ["src", "tools"]
+
+[tool.uv.sources]
+ghidra-stubs = { path = "/opt/ghidra/docs/ghidra_stubs/ghidra_stubs-12.2-py3-none-any.whl" }

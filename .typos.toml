@@ -14,6 +14,8 @@ extend-ignore-re = [
   "Multi-Colors",
   # The names of the maps' control points, spawn zones and entities in the mods' rules
   "\"[a-z][a-z0-9_]*_[a-z0-9_]*\"",
+  # PyGhidra's function that analyses a program
+  '\bpyghidra\.analyze\b',
 ]
 
 [default.extend-words]
