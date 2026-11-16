@@ -654,11 +654,13 @@ found in the game's server.dll but not tested on a Windows server.
 On 64-bit Windows, it takes SourceMod 1.13 to compile `nwi_gamedata`: what
 matters is the SourceMod whose compiler and include files built the plugin, not
 the one the server runs. There, the game's code reaches the physics environment
-relative to the instruction (x86-64's RIP), which SourceMod's gamedata can't
-follow, so `nwi_gamedata` works out its address itself and reads a 64-bit
-pointer there, which only 1.13's `LoadAddressFromAddress` can. A plugin built
-with 1.12 leaves the step as the game sets it, and above 64 tick logs an error
-that grenades bounce more. Linux and 32-bit Windows work with either version.
+and the playlists' globals relative to the instruction (x86-64's RIP), which
+SourceMod's gamedata can't follow, so `nwi_gamedata` works out their addresses
+itself and reads 64-bit pointers there, which only 1.13's
+`LoadAddressFromAddress` can. A plugin built with 1.12 leaves the step as the
+game sets it, and above 64 tick logs an error that grenades bounce more; the
+playlists' replacements are left out with an error too. Linux and 32-bit
+Windows work with either version.
 
 ### Server visibility
 
@@ -777,8 +779,12 @@ It replaces the patch of the server library that earlier versions of this
 repository applied in memory, with a library preloaded into srcds. Tested
 against that patch on a local `coop-commando` server: the playlist's limits,
 forced settings and maps were the same with either, and without both, the game
-enforced them. Not tested yet: the registration for the stats. Linux only so
-far, as the gamedata has no signatures for Windows yet.
+enforced them. Not tested yet: the registration for the stats, and Windows,
+whose gamedata (32-bit and 64-bit) was found in the game's server.dll. There,
+`Playlist::SetData` has no function of its own, so `nwi_gamedata` loads the
+replacement before each merge of the playlist's data instead, and on 64-bit
+Windows it needs SourceMod 1.13, as the physics step does (see
+[Tickrate](#tickrate)).
 
 After each game update, the update checks that the game still has the
 functions of the plugins' gamedata, by their symbols (`nwi-server

@@ -2,18 +2,22 @@
 // SPDX-License-Identifier: MIT OR GPL-3.0-only WITH LicenseRef-SourceMod-exception
 
 // What nwi_gamedata.sp calls and hooks in the game, for Day of Infamy and Insurgency, which share all of
-// it. Linux by symbol; Windows by signature, as its libraries have no symbols.
+// it. Linux by symbol; Windows by signature, as its libraries have no symbols. Where the two games'
+// Windows code differs, the signatures are in their own blocks below.
+//
+// Globals on Windows: the signature is the instruction that reads them, inside a function of the
+// game. 32-bit code has the global's address in the instruction (read at +1 or +2). 64-bit code has
+// its distance from the end of the instruction (RIP-relative), which SourceMod's Addresses can't
+// follow: they only add offsets and read pointers. There, nwi_gamedata works it out itself (with
+// SourceMod 1.13): the int32 at <global>::rip of the signature <global> is the distance from
+// <global>::rip_next, the end of the instruction.
 //
 // physenv: the server's physics environment (IPhysicsEnvironment *), read anew at each use. On Windows
 // it comes from PhysFrame, which starts by comparing it with 0 (cmp dword ptr [physenv], 0 at +6, its
 // address at +8). The slots of its timestep methods are those of the SDK's IPhysicsEnvironment
 // (public/vphysics_interface.h); on Windows, the virtual destructor takes one slot instead of GCC's two,
 // so they're one lower (PhysFrame calls Simulate through slot 34 on Windows, 35 on Linux). 64-bit
-// Windows has the same slots. There, PhysFrame compares physenv with 0 RIP-relative (cmp qword ptr
-// [rip + disp32], 0), which SourceMod's Addresses can't follow: they only add offsets and read
-// pointers. Its windows64 signature is that cmp, inside PhysFrame, and nwi_gamedata works physenv out
-// itself (with SourceMod 1.13): the int32 at PhysFrame::physenv is its distance from
-// PhysFrame::physenv_next, the end of the cmp.
+// Windows has the same slots; its physenv signature is PhysFrame's cmp qword ptr [rip + disp32], 0.
 //
 // CBaseServer::GetMasterServerPlayerCounts(int &humans, int &maximum, int &bots) computes the counts
 // the server reports; CSteam3Server::SendUpdatedServerDetails passes them on to Steam, which answers
@@ -25,11 +29,29 @@
 // Playlist::SetData(KeyValues *) copies the file's data to the Playlist's own (m_data) and goes on to
 // GenerateCoalescedData, which merges the ruleset's blocks into a copy that every Get*() reads. The
 // key is the playlist's name in sv_playlist, e.g. nwi/coop_commando. KeyValues::LoadFromFile takes the
-// IBaseFileSystem part of g_pFullFileSystem (IFileSystem), 4 bytes in, after IAppSystem's vtable
-// pointer. Linux only so far.
+// IBaseFileSystem part of g_pFullFileSystem (IFileSystem), after IAppSystem's vtable pointer: 4 bytes
+// in, 8 on 64-bit Windows. The Playlist's fields are at the same offsets on all platforms.
+//
+// Windows, both 32-bit and 64-bit: Playlist::SetData has no function of its own, MSVC inlined it into
+// CPlaylists::GeneratePlaylist, which copies the key before it. So nwi_gamedata hooks before each
+// Playlist::GenerateCoalescedData there instead (Functions), as GeneratePlaylist calls it after the
+// inlined SetData. Found by: GenerateCoalescedData by its warning "Attempting to generate coalesced
+// data without base data", UpdateCache by "Failed generating default playlist for %s",
+// KeyValues::LoadFromFile by its call with "scripts/voicecommands.txt", KeyValues::Clear by its body
+// (m_pSub at 0x18 and the type at 0x10 to 0; 0x30 and 0x20 on 64-bit). g_Playlists is the object
+// whose address UpdateCache passes as this (mov ecx, imm32 / lea rcx, [rip + disp32]),
+// g_pFullFileSystem the pointer that CPlaylists::LoadPlaylistToKV (inlined into UpdateCache in Day of
+// Infamy) passes to LoadFromFile.
+//
+// SendUpdatedServerDetails on Windows: the caller of GetMasterServerPlayerCounts whose only string is
+// an inlined ConVar::GetString's "FCVAR_NEVER_AS_STRING", as on Linux. CBaseServer::RecalculateTags,
+// its other caller there, has no function of its own on Windows.
 //
 // CServerUGCManager::IsEnabled: whether the server uses the workshop. In Day of Infamy, only
 // CDOIPersistence::RegisterServer asks, which then doesn't register the server for the game's stats.
+// On Windows, it's a ConVar check like many others (sv_workshop_enabled's GetInt() != 0), unique only
+// with the padding and the start of the next function: the call before RegisterServer's "You cannot
+// have a ranked server running Workshop modifications".
 "Games"
 {
     "#default"
@@ -46,12 +68,12 @@
             {
                 "library"   "server"
                 "linux"     "@physenv"
+                "windows64" "\x48\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x28\xF0\x0F\x84\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85"
             }
             "PhysFrame"
             {
                 "library"   "server"
                 "windows"   "\x55\x8B\xEC\x83\xEC\x1C\x83\x3D\x2A\x2A\x2A\x2A\x00\x53\x56\x57\x0F\x84\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85"
-                "windows64" "\x48\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x28\xF0\x0F\x84\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85"
             }
             "GetMasterServerPlayerCounts"
             {
@@ -64,11 +86,14 @@
             {
                 "library"   "engine"
                 "linux"     "@_ZN13CSteam3Server24SendUpdatedServerDetailsEv"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x20\x8B\xC1\x89\x45\xEC"
+                "windows64" "\x48\x8B\xC4\x41\x55\x48\x83\xEC\x60"
             }
             "g_Playlists"
             {
                 "library"   "server"
                 "linux"     "@g_Playlists"
+                "windows"   "\xB9\x2A\x2A\x2A\x2A\x50\x56\xE8\x2A\x2A\x2A\x2A\x6A\x01"
             }
             "g_pFullFileSystem"
             {
@@ -84,6 +109,7 @@
             {
                 "library"   "server"
                 "linux"     "@_ZN8Playlist7SetDataEP9KeyValues"
+                // None for Windows: inlined there, see the top
             }
             "Playlist::GenerateCoalescedData"
             {
@@ -99,6 +125,8 @@
             {
                 "library"   "server"
                 "linux"     "@_ZN9KeyValues5ClearEv"
+                "windows"   "\x56\x8B\xF1\x57\x8B\x7E\x18\x85\xFF\x74\x15"
+                "windows64" "\x48\x89\x5C\x24\x08\x57\x48\x83\xEC\x20\x48\x8B\x79\x30\x48\x8B\xD9"
             }
         }
         "Addresses"
@@ -109,6 +137,12 @@
                 {
                     "signature" "g_Playlists"
                 }
+                // mov ecx, imm32
+                "windows"
+                {
+                    "signature" "g_Playlists"
+                    "read"      "1"
+                }
             }
             // The IFileSystem *, read anew at each use
             "g_pFullFileSystem"
@@ -116,6 +150,13 @@
                 "linux"
                 {
                     "signature" "g_pFullFileSystem"
+                    "read"      "0"
+                }
+                // mov ecx, dword ptr [imm32]
+                "windows"
+                {
+                    "signature" "g_pFullFileSystem"
+                    "read"      "2"
                     "read"      "0"
                 }
             }
@@ -132,7 +173,7 @@
                     "read"      "8"
                     "read"      "0"
                 }
-                // None for windows64: nwi_gamedata finds it from PhysFrame's signature, see the top
+                // None for windows64, where nwi_gamedata finds the globals itself, see the top
             }
         }
         "Offsets"
@@ -149,28 +190,51 @@
                 "windows"   "37"
                 "windows64" "37"
             }
-            // Where physenv's distance is in PhysFrame's signature, and what it's relative to
-            "PhysFrame::physenv"
+            // The globals on 64-bit Windows: where their distance is in their signatures, and the end of
+            // the instruction, which it's relative to
+            "physenv::rip"
             {
                 "windows64" "3"
             }
-            "PhysFrame::physenv_next"
+            "physenv::rip_next"
             {
                 "windows64" "8"
+            }
+            "g_Playlists::rip"
+            {
+                "windows64" "3"
+            }
+            "g_Playlists::rip_next"
+            {
+                "windows64" "7"
+            }
+            "g_pFullFileSystem::rip"
+            {
+                "windows64" "3"
+            }
+            "g_pFullFileSystem::rip_next"
+            {
+                "windows64" "7"
             }
             // Playlist's fields: its key (char[260]) and its own data (KeyValues *)
             "Playlist::m_key"
             {
                 "linux"     "4"
+                "windows"   "4"
+                "windows64" "4"
             }
             "Playlist::m_data"
             {
                 "linux"     "664"
+                "windows"   "664"
+                "windows64" "664"
             }
             // The IBaseFileSystem part of an IFileSystem
             "IFileSystem::IBaseFileSystem"
             {
                 "linux"     "4"
+                "windows"   "4"
+                "windows64" "8"
             }
         }
         "Functions"
@@ -219,10 +283,18 @@
                     }
                 }
             }
+            // Where SetData is inlined: hooked before instead
+            "Playlist::GenerateCoalescedData"
+            {
+                "signature" "Playlist::GenerateCoalescedData"
+                "callconv"  "thiscall"
+                "return"    "void"
+                "this"      "address"
+            }
         }
     }
 
-    // What only Day of Infamy has
+    // What only Day of Infamy has, and its Windows signatures that differ from Insurgency's
     "doi"
     {
         "Signatures"
@@ -231,6 +303,37 @@
             {
                 "library"   "server"
                 "linux"     "@_ZN17CServerUGCManager9IsEnabledEv"
+                "windows"   "\xA1\x2A\x2A\x2A\x2A\xB9\x2A\x2A\x2A\x2A\xFF\x50\x34\x85\xC0\x0F\x95\xC0\xC3\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\x55\x8B\xEC\x83\xEC\x08"
+                "windows64" "\x48\x83\xEC\x28\x48\x8B\x05\x2A\x2A\x2A\x2A\x48\x8D\x0D\x2A\x2A\x2A\x2A\xFF\x50\x68\x85\xC0\x0F\x95\xC0\x48\x83\xC4\x28\xC3\xCC\x48\x89\x5C\x24\x10"
+            }
+            "g_Playlists"
+            {
+                "library"   "server"
+                "windows64" "\x48\x8D\x0D\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x84\xC0\x74\x3C"
+            }
+            "g_pFullFileSystem"
+            {
+                "library"   "server"
+                "windows"   "\x8B\x0D\x2A\x2A\x2A\x2A\x8D\x55\x9C\x6A\x00"
+                "windows64" "\x48\x8B\x0D\x2A\x2A\x2A\x2A\x4C\x8D\x4D\x90"
+            }
+            "CPlaylists::UpdateCache"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x81\xEC\x6C\x02\x00\x00\x53"
+                "windows64" "\x4C\x8B\xDC\x55\x49\x8D\xAB\xD8\xFD\xFF\xFF"
+            }
+            "Playlist::GenerateCoalescedData"
+            {
+                "library"   "server"
+                "windows"   "\x56\x8B\xF1\x8B\x8E\x98\x02\x00\x00"
+                "windows64" "\x40\x53\x48\x83\xEC\x20\x48\x8B\xD9\x48\x8B\x89\x98\x02\x00\x00"
+            }
+            "KeyValues::LoadFromFile"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x48\x53\x8B\x5D\x0C"
+                "windows64" "\x4C\x89\x4C\x24\x20\x48\x89\x4C\x24\x08"
             }
         }
         "Functions"
@@ -241,6 +344,43 @@
                 "callconv"  "thiscall"
                 "return"    "bool"
                 "this"      "ignore"
+            }
+        }
+    }
+
+    // Insurgency's Windows signatures that differ from Day of Infamy's
+    "insurgency"
+    {
+        "Signatures"
+        {
+            "g_Playlists"
+            {
+                "library"   "server"
+                "windows64" "\x48\x8D\x0D\x2A\x2A\x2A\x2A\x4D\x8B\xC5\x48\x8B\xD3"
+            }
+            "g_pFullFileSystem"
+            {
+                "library"   "server"
+                "windows"   "\x8B\x0D\x2A\x2A\x2A\x2A\x8D\x95\xFC\xFE\xFF\xFF\x6A\x00"
+                "windows64" "\x48\x8B\x05\x2A\x2A\x2A\x2A\x48\x85\xC0\x74\x06\x48\x8D\x50\x08\xEB\x02\x33\xD2\x4C\x8D\x44\x24\x30"
+            }
+            "CPlaylists::UpdateCache"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x81\xEC\x54\x01\x00\x00\x53\x56"
+                "windows64" "\x4C\x8B\xDC\x55\x49\x8D\xAB\x18\xFE\xFF\xFF"
+            }
+            "Playlist::GenerateCoalescedData"
+            {
+                "library"   "server"
+                "windows"   "\x56\x8B\xF1\x83\xBE\x98\x02\x00\x00\x00\x75\x10"
+                "windows64" "\x40\x53\x48\x83\xEC\x20\x48\x83\xB9\x98\x02\x00\x00\x00"
+            }
+            "KeyValues::LoadFromFile"
+            {
+                "library"   "server"
+                "windows"   "\x55\x8B\xEC\x83\xEC\x0C\x53\x8B\x5D\x0C\x56\x8B\x75\x08"
+                "windows64" "\x48\x89\x4C\x24\x08\x53\x55\x41\x54"
             }
         }
     }

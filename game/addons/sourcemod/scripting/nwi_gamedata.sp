@@ -16,6 +16,15 @@
 #pragma semicolon 1
 #pragma newdecls required
 
+// SourceMod 1.13's 64-bit Address, LoadAddressFromAddress and SDKType_Address: built with 1.12, an
+// Address is a 32-bit cell, and the globals of 64-bit Windows stay out of reach (see GameGlobal)
+#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
+#define NWI_INT64_ADDRESS
+#define SDKType_Pointer SDKType_Address
+#else
+#define SDKType_Pointer SDKType_PlainOldData
+#endif
+
 public Plugin myinfo =
 {
     name        = "NWI gamedata",
@@ -36,10 +45,6 @@ GlobalForward g_onSteamServerDetails;
 GlobalForward g_onStatsWorkshopCheck;
 // Whether the server is sending its details to Steam, while GetMasterServerPlayerCounts runs for it
 bool g_inServerDetails = false;
-#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
-// Where physenv is, on 64-bit Windows, where the gamedata's Addresses can't name it
-Address g_physenvSlot;
-#endif
 
 // The playlists: CPlaylists::UpdateCache, Playlist::GenerateCoalescedData and the KeyValues calls that
 // load a replacement (all or none), the Playlist's fields, and the folder of the replacements (none
@@ -91,13 +96,11 @@ public void OnPluginStart()
     }
     if (g_getStep == null || g_setStep == null)
         LogError("No physics timestep calls: the gamedata lacks their offsets");
-#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
-    g_physenvSlot = PhysicsEnvironmentSlot();
-#else
-    // 64-bit Windows, the only platform whose gamedata has PhysFrame::physenv: physenv takes
-    // SourceMod 1.13's includes and compiler, see PhysicsEnvironmentSlot. At 64 tick or below,
-    // nothing needs the physics step.
-    if (g_gamedata.GetOffset("PhysFrame::physenv") != -1 && GetTickInterval() < 0.015625)
+#if !defined NWI_INT64_ADDRESS
+    // 64-bit Windows, the only platform whose gamedata has physenv::rip: physenv takes SourceMod
+    // 1.13's includes and compiler, see GameGlobal. At 64 tick or below, nothing needs the physics
+    // step.
+    if (g_gamedata.GetOffset("physenv::rip") != -1 && GetTickInterval() < 0.015625)
         LogError("The physics step stays the tick's at %.0f tick, grenades bounce more than at 64: on 64-bit Windows, nwi_gamedata needs to be compiled with SourceMod 1.13, not %s",
             1.0 / GetTickInterval(), SOURCEMOD_VERSION);
 #endif
@@ -110,7 +113,8 @@ public void OnPluginStart()
 
     g_playlistsReady = PreparePlaylists();
     if (!g_playlistsReady)
-        LogError("No NWI_ReplacePlaylists: the gamedata lacks the playlists' functions for this platform");
+        LogError("No NWI_ReplacePlaylists: the gamedata lacks the playlists' functions for this platform%s",
+            g_gamedata.GetOffset("g_Playlists::rip") != -1 ? ", on 64-bit Windows nwi_gamedata needs to be compiled with SourceMod 1.13" : "");
 
     // Day of Infamy's check of the workshop before it registers the server for its stats
     g_onStatsWorkshopCheck = new GlobalForward("NWI_OnStatsWorkshopCheck", ET_Ignore, Param_CellByRef);
@@ -152,10 +156,10 @@ bool PreparePlaylists()
     if (!PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "KeyValues::LoadFromFile"))
         return false;
     PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_Plain);
-    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+    PrepSDKCall_AddParameter(SDKType_Pointer, SDKPass_Plain);
     PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
     PrepSDKCall_AddParameter(SDKType_String, SDKPass_Pointer);
-    PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+    PrepSDKCall_AddParameter(SDKType_Pointer, SDKPass_Plain, VDECODE_FLAG_ALLOWNULL);
     g_loadFromFile = EndPrepSDKCall();
     // void KeyValues::Clear(): its keys, its value
     StartPrepSDKCall(SDKCall_Raw);
@@ -163,8 +167,11 @@ bool PreparePlaylists()
         return false;
     g_clear = EndPrepSDKCall();
 
-    return g_gamedata.GetAddress("g_Playlists") != Address_Null
-        && Detour("Playlist::SetData", INVALID_FUNCTION, Detour_PlaylistSetDataPost);
+    // Linux: after Playlist::SetData. Windows has no SetData of its own, MSVC inlined it into
+    // CPlaylists::GeneratePlaylist: before each Playlist::GenerateCoalescedData instead
+    return GameGlobal("g_Playlists", false) != Address_Null
+        && (Detour("Playlist::SetData", INVALID_FUNCTION, Detour_PlaylistSetDataPost)
+            || Detour("Playlist::GenerateCoalescedData", Detour_GenerateCoalescedDataPre, INVALID_FUNCTION));
 }
 
 // Has the game make its playlists anew from their files, with the replacements
@@ -172,7 +179,7 @@ void RebuildPlaylists()
 {
     if (!g_playlistsReady)
         return;
-    SDKCall(g_updateCache, g_gamedata.GetAddress("g_Playlists"));
+    SDKCall(g_updateCache, GameGlobal("g_Playlists", false));
 }
 
 // After Playlist::SetData, which copied the playlist file's data to the Playlist and merged the
@@ -182,25 +189,81 @@ void RebuildPlaylists()
 // the game took before.
 MRESReturn Detour_PlaylistSetDataPost(Address playlist)
 {
+    if (ReplacePlaylistData(playlist))
+        SDKCall(g_generateCoalescedData, playlist);
+    return MRES_Ignored;
+}
+
+// Windows: before Playlist::GenerateCoalescedData, which GeneratePlaylist calls after its inlined
+// SetData and again after the ruleset, and the matchmaking for its copies of a Playlist. The merge
+// that follows reads the replacement, which is loaded anew each time, to the same result.
+MRESReturn Detour_GenerateCoalescedDataPre(Address playlist)
+{
+    ReplacePlaylistData(playlist);
+    return MRES_Ignored;
+}
+
+// Loads the playlist's replacement into the Playlist's own data, if the folder has one; true if it
+// did
+bool ReplacePlaylistData(Address playlist)
+{
     if (g_replacements[0] == '\0')
-        return MRES_Ignored;
+        return false;
     char key[260], path[PLATFORM_MAX_PATH];
     LoadString(playlist + view_as<Address>(g_playlistKey), key, sizeof(key));
     FormatEx(path, sizeof(path), "%s/%s.playlist", g_replacements, key);
     if (!FileExists(path, true, PLAYLIST_PATH_ID))
-        return MRES_Ignored;
-    Address data = LoadFromAddress(playlist + view_as<Address>(g_playlistData), NumberType_Int32);
-    Address fileSystem = g_gamedata.GetAddress("g_pFullFileSystem");
+        return false;
+    Address data = LoadPointer(playlist + view_as<Address>(g_playlistData));
+    Address fileSystem = GameGlobal("g_pFullFileSystem", true);
     if (data == Address_Null || fileSystem == Address_Null)
-        return MRES_Ignored;
+        return false;
     fileSystem += view_as<Address>(g_baseFileSystem);
     // Into the same KeyValues, which the Playlist owns
     SDKCall(g_clear, data);
-    if (SDKCall(g_loadFromFile, data, fileSystem, path, PLAYLIST_PATH_ID, 0))
-        SDKCall(g_generateCoalescedData, playlist);
-    else
-        LogError("Can't load %s: playlist %s is empty now", path, key);
-    return MRES_Ignored;
+    if (SDKCall(g_loadFromFile, data, fileSystem, path, PLAYLIST_PATH_ID, Address_Null))
+        return true;
+    LogError("Can't load %s: playlist %s is empty now", path, key);
+    return false;
+}
+
+// A pointer in the game's memory
+Address LoadPointer(Address address)
+{
+#if defined NWI_INT64_ADDRESS
+    return LoadAddressFromAddress(address);
+#else
+    return LoadFromAddress(address, NumberType_Int32);
+#endif
+}
+
+// A global of the game, from the gamedata's Addresses: the object, or with pointer the pointer stored
+// there. On 64-bit Windows, the game's code reaches globals relative to the instruction (RIP), which
+// Addresses can't follow: the int32 at <name>::rip of the signature <name> is the global's distance
+// from <name>::rip_next. Only that platform's gamedata has those offsets, and only SourceMod 1.13 has
+// 64-bit Addresses.
+Address GameGlobal(const char[] name, bool pointer)
+{
+#if defined NWI_INT64_ADDRESS
+    char key[64];
+    FormatEx(key, sizeof(key), "%s::rip", name);
+    int displacement = g_gamedata.GetOffset(key);
+    StrCat(key, sizeof(key), "_next");
+    int next = g_gamedata.GetOffset(key);
+    if (displacement != -1 && next != -1)
+    {
+        Address instruction = g_gamedata.GetMemSig(name);
+        if (instruction == Address_Null)
+            return Address_Null;
+        int distance = LoadFromAddress(instruction + view_as<Address>(displacement), NumberType_Int32);
+        Address global = instruction + view_as<Address>(next) + view_as<Address>(distance);
+        return pointer ? LoadAddressFromAddress(global) : global;
+    }
+#else
+    // The Addresses read the pointer themselves
+    #pragma unused pointer
+#endif
+    return g_gamedata.GetAddress(name);
 }
 
 // A string of the game's memory, cut at the buffer's end
@@ -309,34 +372,8 @@ MRESReturn Detour_PlayerCountsPost(DHookParam params)
 // The physics environment, which the game creates anew at every map start
 Address PhysicsEnvironment()
 {
-#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
-    if (g_physenvSlot != Address_Null)
-        return LoadAddressFromAddress(g_physenvSlot);
-#endif
-    return g_gamedata.GetAddress("physenv");
+    return GameGlobal("physenv", true);
 }
-
-#if SOURCEMOD_V_MAJOR > 1 || SOURCEMOD_V_MINOR >= 13
-// Where physenv is on 64-bit Windows, or null elsewhere. PhysFrame reaches it there relative to the
-// instruction (RIP), which the gamedata's Addresses can't follow: the int32 at PhysFrame::physenv of
-// PhysFrame's signature is physenv's distance from PhysFrame::physenv_next. Only that platform's
-// gamedata has those offsets. LoadAddressFromAddress, for its 64-bit pointer, is SourceMod 1.13's.
-Address PhysicsEnvironmentSlot()
-{
-    int displacement = g_gamedata.GetOffset("PhysFrame::physenv");
-    int next = g_gamedata.GetOffset("PhysFrame::physenv_next");
-    if (displacement == -1 || next == -1)
-        return Address_Null;
-    Address instruction = g_gamedata.GetMemSig("PhysFrame");
-    if (instruction == Address_Null)
-    {
-        LogError("No physics timestep calls: PhysFrame's signature doesn't match");
-        return Address_Null;
-    }
-    int distance = LoadFromAddress(instruction + view_as<Address>(displacement), NumberType_Int32);
-    return instruction + view_as<Address>(next) + view_as<Address>(distance);
-}
-#endif
 
 public any Native_GetPhysicsTimestep(Handle plugin, int numParams)
 {
