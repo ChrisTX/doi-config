@@ -20,7 +20,7 @@ from .conftest import PASSWORD, FakeServer
 LOG = 'L 11/17/2026 - 19:11:02: rcon from "10.0.2.100:50416": command "stats"\n'
 STATS = (
     "CPU   In    Out   Uptime  Users   FPS    Players\n"
-    " 31.45  2.50  40.00       3     0  127.98      21\n" + LOG
+    " 31.45 8899.77 8930.77       3     0  127.98      21\n" + LOG
 )
 STATUS = (
     "hostname: KIM JONG UN's BOOTCAMP | COOP COMMANDO\n"
@@ -69,8 +69,8 @@ def target(tmp_path: Path, port: int) -> metrics.Target:
 def test_parse() -> None:
     assert metrics.parse_stats(STATS) == {
         "CPU": 31.45,
-        "In": 2.5,
-        "Out": 40.0,
+        "In": 8899.77,
+        "Out": 8930.77,
         "Uptime": 3.0,
         "Users": 0.0,
         "FPS": 127.98,
@@ -127,7 +127,7 @@ def test_render(server: FakeServer, tmp_path: Path) -> None:
     assert 'nwi_server_tick_rate_target{server="coop",game="doi"} 64' in lines
     assert 'nwi_server_cpu_ratio{server="coop",game="doi"} 0.3145' in lines
     assert (
-        'nwi_server_network_out_bytes_per_second{server="coop",game="doi"} 40960'
+        'nwi_server_network_out_bytes_per_second{server="coop",game="doi"} 8930.77'
         in lines
     )
     assert 'nwi_server_players{server="coop",game="doi",kind="bot"} 19' in lines

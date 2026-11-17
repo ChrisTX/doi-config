@@ -13,7 +13,7 @@ Prometheus' text format (render()), by server and game:
     nwi_server_tick_rate            the server's frames per second, its tick when it keeps up
     nwi_server_tick_rate_target     its tickrate (server.toml's, 128 by default)
     nwi_server_cpu_ratio            its CPU use, of one core
-    nwi_server_network_*_bytes_per_second   its traffic in and out
+    nwi_server_network_*_bytes_per_second   its traffic in and out, which stats gives in bytes
     nwi_server_uptime_seconds
     nwi_server_players              by kind, human or bot
     nwi_server_max_players          its slots, as status reports them
@@ -273,14 +273,14 @@ def render(samples: list[Sample]) -> str:
             "gauge",
             "The server's incoming traffic",
             labels,
-            stats.get("In", 0) * 1024,
+            stats.get("In", 0),
         )
         add(
             "nwi_server_network_out_bytes_per_second",
             "gauge",
             "The server's outgoing traffic",
             labels,
-            stats.get("Out", 0) * 1024,
+            stats.get("Out", 0),
         )
         add(
             "nwi_server_uptime_seconds",
