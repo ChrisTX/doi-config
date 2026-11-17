@@ -856,7 +856,10 @@ and configure [geoipupdate](https://github.com/maxmind/geoipupdate), which needs
 a free MaxMind account and keeps current databases in `/var/lib/GeoIP`.
 The `sourcemod` package and the web panel of the
 [sourcebans-pp](https://aur.archlinux.org/packages/sourcebans-pp) package link
-their databases from there.
+their databases from there. The systemd units' servers read them there; the
+container image links them there too, so a container needs the host's folder:
+the test instance mounts it when it exists, and the Quadlet unit
+`nwi-server@.container` has the line to uncomment.
 
 ### ClamAV
 
