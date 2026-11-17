@@ -27,15 +27,15 @@
 // The playlists: CPlaylists (g_Playlists, the object) reads them in UpdateCache, which makes a Playlist
 // for each playlist and ruleset (CPlaylists::GeneratePlaylist: its key and ruleset first, then SetData).
 // Playlist::SetData(KeyValues *) copies the file's data to the Playlist's own (m_data) and goes on to
-// GenerateCoalescedData, which merges the ruleset's blocks into a copy that every Get*() reads. The
+// GenerateCoalescedData, which merges the ruleset's blocks into a copy that every Get*() reads; so do
+// SetRuleset and CINSRules::ValidateMatchmaking. nwi_gamedata hooks before each merge (Functions) and
+// loads the replacement into m_data there. The
 // key is the playlist's name in sv_playlist, e.g. nwi/coop_commando. KeyValues::LoadFromFile takes the
 // IBaseFileSystem part of g_pFullFileSystem (IFileSystem), after IAppSystem's vtable pointer: 4 bytes
 // in, 8 on 64-bit Windows. The Playlist's fields are at the same offsets on all platforms.
 //
 // Windows, both 32-bit and 64-bit: Playlist::SetData has no function of its own, MSVC inlined it into
-// CPlaylists::GeneratePlaylist, which copies the key before it. So nwi_gamedata hooks before each
-// Playlist::GenerateCoalescedData there instead (Functions), as GeneratePlaylist calls it after the
-// inlined SetData. Found by: GenerateCoalescedData by its warning "Attempting to generate coalesced
+// CPlaylists::GeneratePlaylist, which copies the key before it. Found by: GenerateCoalescedData by its warning "Attempting to generate coalesced
 // data without base data", UpdateCache by "Failed generating default playlist for %s",
 // KeyValues::LoadFromFile by its call with "scripts/voicecommands.txt", KeyValues::Clear by its body
 // (m_pSub at 0x18 and the type at 0x10 to 0; 0x30 and 0x20 on 64-bit). g_Playlists is the object
@@ -147,12 +147,6 @@
             {
                 "library"   "server"
                 "linux"     "@_ZN10CPlaylists11UpdateCacheEv"
-            }
-            "Playlist::SetData"
-            {
-                "library"   "server"
-                "linux"     "@_ZN8Playlist7SetDataEP9KeyValues"
-                // None for Windows: inlined there, see the top
             }
             "Playlist::GenerateCoalescedData"
             {
@@ -342,21 +336,6 @@
                 "return"    "void"
                 "this"      "ignore"
             }
-            "Playlist::SetData"
-            {
-                "signature" "Playlist::SetData"
-                "callconv"  "thiscall"
-                "return"    "void"
-                "this"      "address"
-                "arguments"
-                {
-                    "data"
-                    {
-                        "type"  "int"
-                    }
-                }
-            }
-            // Where SetData is inlined: hooked before instead
             "Playlist::GenerateCoalescedData"
             {
                 "signature" "Playlist::GenerateCoalescedData"

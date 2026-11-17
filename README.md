@@ -900,18 +900,17 @@ The replacements are loaded in memory, through `nwi_gamedata`
 (`NWI_ReplacePlaylists` of `nwi_gamedata.inc`): the game's files and their
 checksums stay as they are. The game reads its playlists before SourceMod is
 there, so `nwi_gamedata` has it read them again once the plugins are loaded,
-still before the first map's settings. A playlist without a replacement stays
-as the game has it.
+still before the first map's settings: before each merge of a playlist's
+data with its ruleset, it loads the replacement into the playlist's data. A
+playlist without a replacement stays as the game has it.
 
 It replaces the patch of the server library that earlier versions of this
 repository applied in memory, with a library preloaded into srcds. Tested
 against that patch on a local `coop-commando` server: the playlist's limits,
 forced settings and maps were the same with either, and without both, the game
 enforced them. Not tested yet: the registration for the stats, and Windows,
-whose gamedata (32-bit and 64-bit) was found in the game's server.dll. There,
-`Playlist::SetData` has no function of its own, so `nwi_gamedata` loads the
-replacement before each merge of the playlist's data instead, and on 64-bit
-Windows it needs SourceMod 1.13, as the physics step does (see
+whose gamedata (32-bit and 64-bit) was found in the game's server.dll. On
+64-bit Windows it needs SourceMod 1.13, as the physics step does (see
 [Tickrate](#tickrate)).
 
 After each game update, the update checks that the game still has the

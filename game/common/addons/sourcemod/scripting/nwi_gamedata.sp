@@ -55,11 +55,9 @@ ConVar g_botOnlyRounds;
 Handle g_stateTransition;
 Handle g_activePlayersOnTeam;
 
-// The playlists: CPlaylists::UpdateCache, Playlist::GenerateCoalescedData and the KeyValues calls that
-// load a replacement (all or none), the Playlist's fields, and the folder of the replacements (none
+// The playlists: CPlaylists::UpdateCache and the KeyValues calls that load a replacement (all or none), the Playlist's fields, and the folder of the replacements (none
 // while empty)
 Handle g_updateCache;
-Handle g_generateCoalescedData;
 Handle g_loadFromFile;
 Handle g_clear;
 int g_playlistKey;
@@ -186,11 +184,6 @@ bool PreparePlaylists()
     if (!PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "CPlaylists::UpdateCache"))
         return false;
     g_updateCache = EndPrepSDKCall();
-    // void Playlist::GenerateCoalescedData()
-    StartPrepSDKCall(SDKCall_Raw);
-    if (!PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "Playlist::GenerateCoalescedData"))
-        return false;
-    g_generateCoalescedData = EndPrepSDKCall();
     // bool KeyValues::LoadFromFile(IBaseFileSystem *, const char *file, const char *pathID,
     //     GetSymbolProc_t evaluateSymbol), without a function for the conditions ([$WIN32])
     StartPrepSDKCall(SDKCall_Raw);
@@ -208,11 +201,8 @@ bool PreparePlaylists()
         return false;
     g_clear = EndPrepSDKCall();
 
-    // Linux: after Playlist::SetData. Windows has no SetData of its own, MSVC inlined it into
-    // CPlaylists::GeneratePlaylist: before each Playlist::GenerateCoalescedData instead
     return GameGlobal("g_Playlists", false) != Address_Null
-        && (Detour("Playlist::SetData", INVALID_FUNCTION, Detour_PlaylistSetDataPost)
-            || Detour("Playlist::GenerateCoalescedData", Detour_GenerateCoalescedDataPre, INVALID_FUNCTION));
+        && Detour("Playlist::GenerateCoalescedData", Detour_GenerateCoalescedDataPre, INVALID_FUNCTION);
 }
 
 // Has the game make its playlists anew from their files, with the replacements
@@ -223,21 +213,11 @@ void RebuildPlaylists()
     SDKCall(g_updateCache, GameGlobal("g_Playlists", false));
 }
 
-// After Playlist::SetData, which copied the playlist file's data to the Playlist and merged the
-// ruleset's blocks: if the folder of the replacements has one for the playlist (<folder>/<key>.playlist),
-// it replaces the Playlist's own copy, and the merge runs again. The game's copies of a Playlist for its
-// matchmaking come from that copy. The checksum of the playlist stays that of the game's file, which
-// the game took before.
-MRESReturn Detour_PlaylistSetDataPost(Address playlist)
-{
-    if (ReplacePlaylistData(playlist))
-        SDKCall(g_generateCoalescedData, playlist);
-    return MRES_Ignored;
-}
-
-// Windows: before Playlist::GenerateCoalescedData, which GeneratePlaylist calls after its inlined
-// SetData and again after the ruleset, and the matchmaking for its copies of a Playlist. The merge
-// that follows reads the replacement, which is loaded anew each time, to the same result.
+// Before Playlist::GenerateCoalescedData, which merges the ruleset's blocks into the Playlist's own
+// copy of the playlist file's data, after Playlist::SetData copied it, after SetRuleset, and for the
+// matchmaking's copies of a Playlist: if the folder of the replacements has one for the playlist
+// (<folder>/<key>.playlist), it replaces that copy first. It's loaded anew for each merge, to the same
+// result. The checksum of the playlist stays that of the game's file, which the game took before.
 MRESReturn Detour_GenerateCoalescedDataPre(Address playlist)
 {
     ReplacePlaylistData(playlist);
