@@ -3,8 +3,7 @@ library, fake_steam_api.c, built with the C compiler: the structures and the fun
 cross the C ABI as with the SDK's."""
 
 import ctypes
-import shutil
-import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -16,25 +15,11 @@ SOURCE = Path(__file__).with_name("fake_steam_api.c")
 
 
 @pytest.fixture(scope="module")
-def library(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    compiler = shutil.which("cc") or shutil.which("clang") or shutil.which("gcc")
-    if compiler is None:
-        pytest.skip("no C compiler")
-    path = tmp_path_factory.mktemp("steam") / "libsteam_api.so"
-    subprocess.run(
-        [
-            compiler,
-            "-shared",
-            "-fPIC",
-            "-Wall",
-            "-Werror",
-            "-o",
-            str(path),
-            str(SOURCE),
-        ],
-        check=True,
-    )
-    return path
+def library(
+    tmp_path_factory: pytest.TempPathFactory,
+    build_library: Callable[[Path, Path], Path],
+) -> Path:
+    return build_library(SOURCE, tmp_path_factory.mktemp("steam") / "libsteam_api.so")
 
 
 @pytest.fixture

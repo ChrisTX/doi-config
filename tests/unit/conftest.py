@@ -1,14 +1,20 @@
 """The fixtures of the tests: a fake updater's state of layers and a fake /run, in a temporary folder,
-which layers.py, health.py and notify.py use instead of the system's."""
+which layers.py, health.py and notify.py use instead of the system's, and the C compiler, which builds
+the tests' stand-ins of libraries, and VPKs."""
 
+import hashlib
 import json
+import shutil
+import struct
+import subprocess
+import zlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
-from nwi_server_kit import health, layers, notify
+from nwi_server_kit import health, layers, notify, vpk
 
 
 @dataclass
@@ -96,3 +102,67 @@ def run(monkeypatch: pytest.MonkeyPatch) -> Callable[[str], str]:
         return invocation
 
     return start
+
+
+@pytest.fixture(scope="session")
+def build_library() -> Callable[[Path, Path], Path]:
+    """Build a shared library of a C source with the C compiler; the test is skipped without one."""
+    compiler = shutil.which("cc") or shutil.which("clang") or shutil.which("gcc")
+
+    def build(source: Path, library: Path) -> Path:
+        if compiler is None:
+            pytest.skip("no C compiler")
+        command = [compiler, "-shared", "-fPIC", "-Wall", "-Werror", "-o"]
+        subprocess.run([*command, str(library), str(source)], check=True)
+        return library
+
+    return build
+
+
+def build_vpk(path: Path, files: dict[str, bytes], split: bool = False) -> Path:
+    """An unsigned version 2 VPK of the files: their data embedded, or with SPLIT in an archive, as
+    <name>_dir.vpk and <name>_000.vpk; returns the directory."""
+    tree = b""
+    data = b""
+    by_extension: dict[str, dict[str, list[tuple[str, bytes]]]] = {}
+    for name, content in files.items():
+        folder, _, file_name = name.rpartition("/")
+        stem, _, extension = file_name.rpartition(".")
+        by_extension.setdefault(extension, {}).setdefault(folder or " ", []).append(
+            (stem, content)
+        )
+    for extension, folders in by_extension.items():
+        tree += extension.encode() + b"\0"
+        for folder, entries in folders.items():
+            tree += folder.encode() + b"\0"
+            for stem, content in entries:
+                tree += stem.encode() + b"\0"
+                archive = 0 if split else vpk.EMBEDDED
+                tree += struct.pack(
+                    "<IHHIIH",
+                    zlib.crc32(content),
+                    0,
+                    archive,
+                    len(data),
+                    len(content),
+                    0xFFFF,
+                )
+                data += content
+            tree += b"\0"
+        tree += b"\0"
+    tree += b"\0"
+    directory = path.with_name(path.stem + "_dir.vpk") if split else path
+    chunks = b""
+    if split:
+        directory.with_name(path.stem + "_000.vpk").write_bytes(data)
+        chunks = b"".join(
+            vpk.CHUNK.pack(0, 0, offset, len(part), hashlib.md5(part).digest())
+            for offset, part in vpk.chunk_parts(data)
+        )
+        data = b""
+    header = vpk.HEADER.pack(vpk.MAGIC, 2, len(tree), len(data), len(chunks), 48, 0)
+    unsigned = header + tree + data + chunks
+    unsigned += hashlib.md5(tree).digest() + hashlib.md5(chunks).digest()
+    unsigned += hashlib.md5(unsigned).digest()
+    directory.write_bytes(unsigned)
+    return directory

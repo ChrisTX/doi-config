@@ -1,10 +1,7 @@
 """VPK signatures (vpk.py), the approval of workshop items' versions and the servers' lists of them
 (workshop.py, cli/workshop.py, mount.leave_out, check_updates)."""
 
-import hashlib
 import json
-import struct
-import zlib
 from pathlib import Path
 
 import pytest
@@ -12,56 +9,7 @@ import pytest
 from nwi_server_kit import check_updates, mount, notify, vpk, workshop
 from nwi_server_kit.cli import workshop as workshop_cli
 
-from .conftest import State
-
-
-def build_vpk(path: Path, files: dict[str, bytes], split: bool = False) -> Path:
-    """An unsigned version 2 VPK of the files: their data embedded, or with SPLIT in an archive, as
-    <name>_dir.vpk and <name>_000.vpk; returns the directory."""
-    tree = b""
-    data = b""
-    by_extension: dict[str, dict[str, list[tuple[str, bytes]]]] = {}
-    for name, content in files.items():
-        folder, _, file_name = name.rpartition("/")
-        stem, _, extension = file_name.rpartition(".")
-        by_extension.setdefault(extension, {}).setdefault(folder or " ", []).append(
-            (stem, content)
-        )
-    for extension, folders in by_extension.items():
-        tree += extension.encode() + b"\0"
-        for folder, entries in folders.items():
-            tree += folder.encode() + b"\0"
-            for stem, content in entries:
-                tree += stem.encode() + b"\0"
-                archive = 0 if split else vpk.EMBEDDED
-                tree += struct.pack(
-                    "<IHHIIH",
-                    zlib.crc32(content),
-                    0,
-                    archive,
-                    len(data),
-                    len(content),
-                    0xFFFF,
-                )
-                data += content
-            tree += b"\0"
-        tree += b"\0"
-    tree += b"\0"
-    directory = path.with_name(path.stem + "_dir.vpk") if split else path
-    chunks = b""
-    if split:
-        directory.with_name(path.stem + "_000.vpk").write_bytes(data)
-        chunks = b"".join(
-            vpk.CHUNK.pack(0, 0, offset, len(part), hashlib.md5(part).digest())
-            for offset, part in vpk.chunk_parts(data)
-        )
-        data = b""
-    header = vpk.HEADER.pack(vpk.MAGIC, 2, len(tree), len(data), len(chunks), 48, 0)
-    unsigned = header + tree + data + chunks
-    unsigned += hashlib.md5(tree).digest() + hashlib.md5(chunks).digest()
-    unsigned += hashlib.md5(unsigned).digest()
-    directory.write_bytes(unsigned)
-    return directory
+from .conftest import State, build_vpk
 
 
 @pytest.fixture(scope="module")
