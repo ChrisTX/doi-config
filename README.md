@@ -838,6 +838,32 @@ The `sourcemod` package and the web panel of the
 [sourcebans-pp](https://aur.archlinux.org/packages/sourcebans-pp) package link
 their databases from there.
 
+### ClamAV
+
+The scan of new workshop versions (see [Workshop items](#workshop-items)) needs
+ClamAV's daemon on the server: the `clamav` package, with `clamav-daemon.service`
+and `clamav-freshclam.service` enabled, which keep its signatures current. Without
+a running `clamd`, the updater holds every new version. More signatures catch more:
+the servers also use SecuriteInfo's, e.g. through
+[fangfrisch](https://rseichter.github.io/fangfrisch/) or SecuriteInfo's own
+instructions, which need a free account.
+
+`clamd` scans a stream up to its `StreamMaxLength`, 100 MB by default, while maps
+are often 100 to 500 MB: a larger file isn't scanned by ClamAV, only by the
+structural checks, and the update's log says so. So raise the limits in
+`/etc/clamav/clamd.conf`, then restart `clamav-daemon.service`:
+
+```text
+# Workshop maps up to 1 GB (nwi-server-kit's scan streams each file)
+StreamMaxLength 1G
+MaxScanSize 1G
+MaxFileSize 1G
+```
+
+The updater reaches `clamd` over its socket (`LocalSocket`, `/run/clamav/clamd.ctl`
+by default), which every user may connect to. The scan streams each file there, so
+`clamd` needs no access to the state folder.
+
 ## Licence
 
 The configuration, scripts and units are licensed under the [MIT](LICENSE)
