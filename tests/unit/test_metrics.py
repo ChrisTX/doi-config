@@ -46,6 +46,12 @@ NETSTATS = (
 NO_PLUGIN = 'Unknown command "nwi_netstats"\n' + LOG
 
 
+@pytest.fixture(autouse=True)
+def no_cgroups(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No unit's control group, rather than this machine's."""
+    monkeypatch.setattr(metrics, "CGROUPS", tmp_path / "no-cgroups")
+
+
 @pytest.fixture
 def server() -> Iterator[FakeServer]:
     fake = FakeServer(
@@ -106,26 +112,42 @@ def test_collect(server: FakeServer, tmp_path: Path) -> None:
     assert sample.humans == 2
 
 
-def test_collect_down(tmp_path: Path) -> None:
-    """A server that doesn't answer, or a password that can't be read: down, not an error."""
+def test_collect_down(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A server that doesn't answer, or a password that can't be read: down, not an error. A hung
+    server, whose unit runs, keeps its unit's CPU time."""
+    unit = tmp_path / "cgroups/nwi-server@coop.service"
+    unit.mkdir(parents=True)
+    (unit / "cpu.stat").write_text("usage_usec 2500000\n")
+    monkeypatch.setattr(metrics, "CGROUPS", tmp_path / "cgroups")
     with socket.socket() as unused:
         unused.bind(("127.0.0.1", 0))
         port = unused.getsockname()[1]
-        assert metrics.collect(target(tmp_path, port)).stats is None
+        hung = metrics.collect(target(tmp_path, port))
+        assert hung.stats is None and hung.cpu_seconds == 2.5
     missing = metrics.Target("x", "doi", port, tmp_path / "none", 128)
     assert metrics.collect(missing).stats is None
 
 
-def test_render(server: FakeServer, tmp_path: Path) -> None:
+def test_render(
+    server: FakeServer, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The unit's CPU time of weeks, in full: rate() of a scrape's seconds needs every digit
+    unit = tmp_path / "cgroups/nwi-server@coop.service"
+    unit.mkdir(parents=True)
+    (unit / "cpu.stat").write_text("usage_usec 1234567891234\nuser_usec 1000000\n")
+    monkeypatch.setattr(metrics, "CGROUPS", tmp_path / "cgroups")
     up = metrics.collect(target(tmp_path, server.port))
     down = metrics.Sample(metrics.Target("pvp", "doi", 1, Path("x"), 128))
     text = metrics.render([up, down])
     lines = text.splitlines()
     assert 'nwi_server_up{server="coop",game="doi"} 1' in lines
     assert 'nwi_server_up{server="pvp",game="doi"} 0' in lines
+    assert (
+        'nwi_server_cpu_seconds_total{server="coop",game="doi"} 1234567.891234' in lines
+    )
+    assert "# TYPE nwi_server_cpu_seconds_total counter" in lines
     assert 'nwi_server_tick_rate{server="coop",game="doi"} 127.98' in lines
     assert 'nwi_server_tick_rate_target{server="coop",game="doi"} 64' in lines
-    assert 'nwi_server_cpu_ratio{server="coop",game="doi"} 0.3145' in lines
     assert (
         'nwi_server_network_out_bytes_per_second{server="coop",game="doi"} 8930.77'
         in lines
@@ -153,6 +175,8 @@ def test_render(server: FakeServer, tmp_path: Path) -> None:
     # Each family once, with its HELP and TYPE first; nothing of the down server but up and target
     assert text.count("# TYPE nwi_server_up gauge") == 1
     assert not any('server="pvp"' in line and "tick_rate{" in line for line in lines)
+    # Nor CPU time of a server whose unit isn't running
+    assert not any('server="pvp"' in line and "cpu_seconds" in line for line in lines)
     # A server without the plugin has no choke metrics, rather than none choked
     up.chokes = None
     assert "choke" not in metrics.render([up])

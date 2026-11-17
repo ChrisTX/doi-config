@@ -6,13 +6,15 @@ password of /run/nwi-server/rcon (rcon.py): stats for the server's frame rate, w
 CPU, its traffic and uptime, status for its map and its players, humans and bots, and the humans'
 ping and loss, sv_mincmdrate for its tickrate, which server.cfg sets to it (server_config.py), and
 nwi_netstats, of the plugin of the same name, for the human players' choke. It serves them in
-Prometheus' text format (render()), by server and game:
+Prometheus' text format (render()), by server and game, with the CPU time of its unit, which the
+game's stats don't have on Linux (always 0):
 
     nwi_server_up                   1 if the server answered RCON
     nwi_server_info                 1, with the map as a label
     nwi_server_tick_rate            the server's frames per second, its tick when it keeps up
     nwi_server_tick_rate_target     its tickrate (server.toml's, 128 by default)
-    nwi_server_cpu_ratio            its CPU use, of one core
+    nwi_server_cpu_seconds_total    its unit's CPU time, of all its processes, while it runs
+                                    (rate() makes it the share of a core)
     nwi_server_network_*_bytes_per_second   its traffic in and out, which stats gives in bytes
     nwi_server_uptime_seconds
     nwi_server_players              by kind, human or bot
@@ -45,6 +47,8 @@ from . import games, layers, rcon, server_config
 LOSSY = 0.05
 # The server's packets to a human player held back, from which on the player counts as choked
 CHOKED = 0.05
+# The control groups of the servers' units, nwi-server@<server>.service, with their CPU time (cpu.stat)
+CGROUPS = Path("/sys/fs/cgroup/system.slice/system-nwi\\x2dserver.slice")
 # A status line of a human player: # userid "name" uniqueid connected ping loss state rate adr, but
 # with a second number after the userid, unlike the bots' lines and status' own header: # 22 21 "name"
 PLAYER = re.compile(
@@ -74,6 +78,8 @@ class Sample:
 
     target: Target
     stats: dict[str, float] | None = None
+    # The CPU time of the server's unit, None if it isn't running
+    cpu_seconds: float | None = None
     map: str = ""
     humans: int = 0
     bots: int = 0
@@ -154,6 +160,19 @@ def parse_netstats(text: str, sample: Sample) -> None:
                     sample.chokes[direction].append(row[f"choke_{direction}"])
 
 
+def cpu_seconds(name: str) -> float | None:
+    """The CPU time of a server's unit (cpu.stat's usage_usec), None if it isn't running."""
+    try:
+        text = (CGROUPS / f"nwi-server@{name}.service" / "cpu.stat").read_text()
+    except OSError:
+        return None
+    for line in text.splitlines():
+        key, _, value = line.partition(" ")
+        if key == "usage_usec" and value.isdigit():
+            return int(value) / 1_000_000
+    return None
+
+
 def target(name: str, env: dict[str, str]) -> Target:
     """A server of the machine: its game and tick's target of its mount's record (mount.py), which
     the metrics' user can read, unlike the server's config; without one, as of a server that isn't
@@ -197,7 +216,7 @@ def targets() -> list[Target]:
 
 def collect(target: Target, host: str = "127.0.0.1") -> Sample:
     """Ask a server over RCON; a sample without stats if it doesn't answer."""
-    sample = Sample(target)
+    sample = Sample(target, cpu_seconds=cpu_seconds(target.name))
     try:
         password = target.password.read_text().strip()
         with rcon.connect(host, target.port, password) as sock:
@@ -206,7 +225,7 @@ def collect(target: Target, host: str = "127.0.0.1") -> Sample:
             tick = parse_cvar(rcon.run(sock, "sv_mincmdrate"))
             parse_netstats(rcon.run(sock, "nwi_netstats"), sample)
     except (OSError, ValueError, PermissionError):
-        return Sample(target)
+        return Sample(target, cpu_seconds=sample.cpu_seconds)
     sample.stats = stats
     if tick and tick.isdigit() and int(tick) > 0:
         sample.target.tick_target = int(tick)
@@ -215,6 +234,14 @@ def collect(target: Target, host: str = "127.0.0.1") -> Sample:
 
 def quote(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+
+def number(value: float) -> str:
+    """A value in full: whole numbers without a fraction, the others as Python's shortest repr, which
+    a counter needs, e.g. CPU seconds of weeks, that 6 digits of :g would round to tens of seconds."""
+    if float(value).is_integer():
+        return str(int(value))
+    return repr(float(value))
 
 
 def render(samples: list[Sample]) -> str:
@@ -226,7 +253,7 @@ def render(samples: list[Sample]) -> str:
     ) -> None:
         family = families.setdefault(name, (kind, help_text, []))
         text = ",".join(f'{key}="{quote(label)}"' for key, label in labels.items())
-        family[2].append(f"{name}{{{text}}} {value:g}")
+        family[2].append(f"{name}{{{text}}} {number(value)}")
 
     for sample in samples:
         labels = {"server": sample.target.name, "game": sample.target.game}
@@ -244,6 +271,14 @@ def render(samples: list[Sample]) -> str:
             labels,
             sample.target.tick_target,
         )
+        if sample.cpu_seconds is not None:
+            add(
+                "nwi_server_cpu_seconds_total",
+                "counter",
+                "The CPU time of the server's unit",
+                labels,
+                sample.cpu_seconds,
+            )
         if sample.stats is None:
             continue
         stats = sample.stats
@@ -260,13 +295,6 @@ def render(samples: list[Sample]) -> str:
             "The server's frames per second",
             labels,
             stats.get("FPS", 0),
-        )
-        add(
-            "nwi_server_cpu_ratio",
-            "gauge",
-            "The server's CPU use, of one core",
-            labels,
-            stats.get("CPU", 0) / 100,
         )
         add(
             "nwi_server_network_in_bytes_per_second",
