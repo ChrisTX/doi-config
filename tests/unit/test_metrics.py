@@ -1,6 +1,7 @@
 """The servers' metrics (metrics.py, nwi-server metrics), of a fake server's RCON that answers as
 Day of Infamy's: stats, status with bots and a human player, sv_mincmdrate, and log lines."""
 
+import json
 import socket
 import threading
 import time
@@ -11,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from nwi_server_kit import metrics, rcon
+from nwi_server_kit import layers, metrics, rcon
 
 from .conftest import PASSWORD, FakeServer
 
@@ -129,19 +130,30 @@ def test_quote() -> None:
 
 
 def test_targets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """The servers of /etc/nwi-server, with their environment files' port and game when their configs
-    can't be read."""
+    """The servers of /etc/nwi-server, with their mounts' game and tickrate, or without a mount, their
+    environment files' game when their configs can't be read."""
     servers = tmp_path / "servers"
     servers.mkdir()
     (servers / "coop.env").write_text("SERVER_PORT=27016\nSERVER_CONFIG_NAME=coop\n")
     (servers / "ins.env").write_text("GAME=insurgency\n")
+    # A mounted server of a config that the metrics can't read, nor GAME in its environment file
+    (servers / "ins-test.env").write_text("SERVER_PORT=27017\n")
+    in_use = tmp_path / "in-use"
+    in_use.mkdir()
+    (in_use / "ins-test").write_text(
+        json.dumps({"game": "insurgency", "tickrate": 64, "versions": []})
+    )
+    # A record of before the game and tickrate: as without one
+    (in_use / "ins").write_text(json.dumps({"versions": []}))
     monkeypatch.setenv("NWI_SERVERS_DIR", str(servers))
     monkeypatch.setenv("NWI_CONFIGS_DIR", str(tmp_path / "no-configs"))
     monkeypatch.setattr(rcon, "RCON_DIR", tmp_path / "rcon")
+    monkeypatch.setattr(layers, "IN_USE", in_use)
     found = metrics.targets()
     assert [(t.name, t.game, t.port, t.tick_target) for t in found] == [
         ("coop", "doi", 27016, 128),
         ("ins", "insurgency", 27015, 128),
+        ("ins-test", "insurgency", 27017, 64),
     ]
     assert found[0].password == tmp_path / "rcon/coop"
 

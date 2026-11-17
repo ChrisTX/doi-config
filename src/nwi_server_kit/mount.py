@@ -26,9 +26,10 @@ overlayfs writes there as root, whom the mapping doesn't have. They start empty 
 are mounted, so new versions of the lower layers always show.
 
 The versions a server uses are in /run/nwi-server/in-use/<name>, which the update keeps (layers.py),
-as JSON: all of them (versions), the core ones, which the server's busy time blesses, and of the
-workshop items with maps the maps (maps, of each map the item), which a map played to its end blesses
-(health.py). The server's watchdog writes how it goes to /run/nwi-server/health/<name>, made here as
+as JSON: the server's game and tickrate (game, tickrate), which the metrics read there (metrics.py),
+as the server's config isn't theirs to read, all its versions (versions), the core ones, which the
+server's busy time blesses, and of the workshop items with maps the maps (maps, of each map the
+item), which a map played to its end blesses (health.py). The server's watchdog writes how it goes to /run/nwi-server/health/<name>, made here as
 the server's. When the server stopped, nwi-server unmount, as systemd's ExecStopPost=, blames a
 failure on the versions on trial (health.py) before it unmounts the layers.
 """
@@ -42,7 +43,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import downloads, games, health, layers, workshop
+from . import downloads, games, health, layers, server_config, workshop
 from .server_config import load as load_settings
 from .update import INSTALLS, write_record
 
@@ -341,7 +342,13 @@ def _mount(name: str, unit: str, state: Path) -> None:
     }
     core = [*depot_versions, plugins, mods, configs, *installs]
     core += [version for version in items.values() if not maps_of(version)]
+    tickrate = server_config.TICKRATE
+    if server.config is not None:
+        toml = configs / "servers" / server.config / "server.toml"
+        tickrate = server_config.load(toml).get("tickrate", tickrate)
     used = {
+        "game": game,
+        "tickrate": tickrate,
         "versions": [
             canonical(path)
             for path in [

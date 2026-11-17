@@ -24,6 +24,7 @@ by the thousand. The game's choke isn't in status: it would take a plugin (GetCl
 """
 
 import itertools
+import json
 import re
 import statistics
 import threading
@@ -31,7 +32,7 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from . import games, rcon, server_config
+from . import games, layers, rcon, server_config
 
 # A human player's packets lost, from which on the player counts as lossy
 LOSSY = 0.05
@@ -116,10 +117,23 @@ def parse_status(text: str, sample: Sample) -> None:
 
 
 def target(name: str, env: dict[str, str]) -> Target:
-    """A server of the machine: its game and tick's target of its config, or without one that can be
-    read, its environment file's game and the default tickrate."""
+    """A server of the machine: its game and tick's target of its mount's record (mount.py), which
+    the metrics' user can read, unlike the server's config; without one, as of a server that isn't
+    mounted, of its config if it can be read, or else its environment file's game and the default
+    tickrate."""
     game = env.get("GAME", games.DEFAULT)
     tick = server_config.TICKRATE
+    try:
+        record = json.loads((layers.IN_USE / name).read_text())
+        return Target(
+            name,
+            str(record["game"]),
+            int(env.get("SERVER_PORT", "27015")),
+            rcon.RCON_DIR / name,
+            int(record["tickrate"]),
+        )
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
     try:
         server = games.server(name, env)
         game = server.game
