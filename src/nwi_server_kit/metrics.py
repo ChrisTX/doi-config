@@ -45,9 +45,10 @@ from . import games, layers, rcon, server_config
 LOSSY = 0.05
 # The server's packets to a human player held back, from which on the player counts as choked
 CHOKED = 0.05
-# A status line of a human player: # userid "name" uniqueid connected ping loss state rate adr
+# A status line of a human player: # userid "name" uniqueid connected ping loss state rate adr, but
+# with a second number after the userid, unlike the bots' lines and status' own header: # 22 21 "name"
 PLAYER = re.compile(
-    r'^#\s*\d+\s+"(?P<name>.*)"\s+(?P<id>\S+)\s+(?P<connected>[\d:]+)\s+'
+    r'^#\s*\d+\s+(?:\d+\s+)?"(?P<name>.*)"\s+(?P<id>\S+)\s+(?P<connected>[\d:]+)\s+'
     r"(?P<ping>\d+)\s+(?P<loss>\d+)\s+(?P<state>\S+)\s+(?P<rate>\d+)"
 )
 COUNTS = re.compile(r"^players\s*:\s*(\d+) humans?, (\d+) bots? \((\d+)/")

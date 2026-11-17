@@ -31,8 +31,10 @@ STATUS = (
     "# userid name uniqueid connected ping loss state rate adr\n"
     '# 2 "KIM JONG UN\'s BOOTCAMP | COOP C" BOT active\n'
     '# 3 "Mike" BOT active\n'
-    '#  9 "Player One" STEAM_1:0:123 05:12 40 0 active 196608 1.2.3.4:27005\n'
-    '# 10 "Player "Two"" STEAM_1:1:456 1:02:33 120 8 active 80000 5.6.7.8:27005\n' + LOG
+    # Human players' lines, as the game's: their userid, a second number, then their name
+    '#  9 21 "Player One" STEAM_1:0:123 05:12 40 0 active 196608 1.2.3.4:27005\n'
+    '# 10 22 "Player "Two"" STEAM_1:1:456 1:02:33 120 8 active 80000 5.6.7.8:27005\n'
+    "#end\n" + LOG
 )
 CVAR = (
     '"sv_mincmdrate" = "64" ( def. "64" ) replicated - This sets the minimum value\n'
