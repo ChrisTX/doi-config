@@ -1,0 +1,33 @@
+[Unit]
+Description=Serve the Day of Infamy or Insurgency servers' metrics for Prometheus and Netdata
+After=network.target
+
+[Service]
+# A user of its own, which reads the servers' RCON passwords (/run/nwi-server/rcon) as one of the
+# group nwi-rcon, and asks the servers over RCON at each scrape (nwi-server metrics)
+DynamicUser=yes
+SupplementaryGroups=nwi-rcon
+# On this machine only; another address, e.g. of an internal network that Prometheus or Netdata
+# scrape from, with a drop-in (systemctl edit nwi-metrics.service), and never a public one:
+#   [Service]
+#   ExecStart=
+#   ExecStart=/usr/bin/nwi-server metrics --listen 10.0.0.1:9734
+ExecStart=/usr/bin/nwi-server metrics --listen 127.0.0.1:9734
+Restart=on-failure
+PrivateTmp=yes
+PrivateDevices=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target

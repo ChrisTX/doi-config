@@ -205,6 +205,49 @@ systemctl enable --now nwi-server@coop-commando.service nwi-servers.target
 systemctl enable --now nwi-restart.timer nwi-update-check.timer
 ```
 
+### Metrics
+
+`nwi-metrics.service` serves how the servers run, for Prometheus or Netdata:
+each server's tick rate against its tickrate, its CPU, traffic and uptime, its
+human players and bots, and the human players' ping and packet loss (median and
+most, and how many lose more than 5%). At each scrape it asks the servers over
+RCON (`nwi-server metrics`, see `nwi-server metrics --help` for all of them).
+It listens on this machine only, `127.0.0.1:9734`; another address, of an
+internal network, goes into a drop-in (see the unit), never a public one, and
+its port into the firewall's internal ports.
+
+```bash
+systemctl enable --now nwi-metrics.service
+nwi-server metrics --once   # the metrics once, by hand
+```
+
+Prometheus scrapes it with:
+
+```yaml
+scrape_configs:
+  - job_name: nwi-servers
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["127.0.0.1:9734"]
+```
+
+and Netdata with its Prometheus collector, in `/etc/netdata/go.d/prometheus.conf`:
+
+```yaml
+jobs:
+  - name: nwi-servers
+    url: http://127.0.0.1:9734/metrics
+```
+
+A server that can't keep its tick, e.g. below 94% of it for a minute, is worth an
+alert (Prometheus):
+
+```yaml
+- alert: ServerTickRateLow
+  expr: nwi_server_tick_rate / nwi_server_tick_rate_target < 0.94
+  for: 1m
+```
+
 ### Config sources
 
 A server's configs, its `server.toml`, the configs of `game` and the mods,

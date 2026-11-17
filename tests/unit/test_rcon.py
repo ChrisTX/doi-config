@@ -3,10 +3,7 @@ game's does: an empty response before the authentication's answer, long answers 
 and the empty command's answer in two."""
 
 import socket
-import struct
-import threading
 from collections.abc import Iterator
-from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
@@ -14,65 +11,7 @@ import pytest
 from nwi_server_kit import rcon
 from nwi_server_kit.cli import rcon as rcon_cli
 
-PASSWORD = "secret"
-# The game sends an answer in packets of at most 4096 bytes
-PACKET = 4096
-
-
-@dataclass
-class FakeServer:
-    """A server's RCON on a port of 127.0.0.1, which answers a command with ANSWERS' text, or echoes
-    it; with CLOSE, it closes each connection at once."""
-
-    answers: dict[str, str] = field(default_factory=dict)
-    close: bool = False
-    commands: list[str] = field(default_factory=list)
-    port: int = 0
-
-    def __post_init__(self) -> None:
-        self.listener = socket.create_server(("127.0.0.1", 0))
-        self.port = self.listener.getsockname()[1]
-        threading.Thread(target=self.serve, daemon=True).start()
-
-    def serve(self) -> None:
-        while True:
-            try:
-                conn, _ = self.listener.accept()
-            except OSError:
-                return
-            with conn:
-                if not self.close:
-                    self.session(conn)
-
-    def session(self, conn: socket.socket) -> None:
-        try:
-            while True:
-                request_id, kind, body = rcon.receive(conn)
-                if kind == rcon.SERVERDATA_AUTH:
-                    rcon.send(conn, request_id, 0, "")
-                    accepted = body == PASSWORD
-                    rcon.send(
-                        conn,
-                        request_id if accepted else -1,
-                        rcon.SERVERDATA_AUTH_RESPONSE,
-                        "",
-                    )
-                    if not accepted:
-                        return
-                elif body:
-                    self.commands.append(body)
-                    answer = self.answers.get(body, f"echo {body}\n")
-                    for start in range(0, len(answer), PACKET):
-                        rcon.send(conn, request_id, 0, answer[start : start + PACKET])
-                else:
-                    # The empty command's answer: an empty packet, then one whose body is
-                    # 00 00 00 01 00 00 00 00, as Valve's documentation of the protocol has it
-                    rcon.send(conn, request_id, 0, "")
-                    quirk = b"\0\0\0\1\0\0\0\0"
-                    packet = struct.pack("<ii", request_id, 0) + quirk
-                    conn.sendall(struct.pack("<i", len(packet)) + packet)
-        except ConnectionError:
-            return
+from .conftest import PACKET, PASSWORD, FakeServer
 
 
 @pytest.fixture

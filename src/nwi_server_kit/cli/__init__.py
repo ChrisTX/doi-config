@@ -19,6 +19,7 @@ Usage: nwi-server COMMAND ARGUMENTS..., the commands:
     watchdog         run a server under systemd's watchdog, or query it once (watchdog.py)
     rcon             run a command on a server over RCON, also nwi-rcon (rcon.py)
     container        the container image's commands, its entrypoint (container.py)
+    metrics          serve the servers' metrics for Prometheus and Netdata (metrics.py)
 """
 
 import sys
@@ -32,6 +33,7 @@ from . import (
     health,
     launch,
     make_mods,
+    metrics,
     mount,
     notify,
     rcon,
@@ -59,6 +61,7 @@ COMMANDS: dict[str, Callable[[list[str]], int]] = {
     "watchdog": watchdog.main,
     "rcon": rcon.main,
     "container": container.main,
+    "metrics": metrics.main,
 }
 
 
