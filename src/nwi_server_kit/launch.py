@@ -89,6 +89,27 @@ def configure_plugins(game: Path) -> None:
         move_plugin(plugins / f"{name}.smx", disabled)
 
 
+# SourceMod's GeoIP extension, of 32-bit and 64-bit Linux and Windows servers
+GEOIP_EXTENSIONS = (
+    "geoip.ext.so",
+    "geoip.ext.dll",
+    "x64/geoip.ext.so",
+    "x64/geoip.ext.dll",
+)
+
+
+def configure_geoip(game: Path) -> None:
+    """Without a GeoIP database, SourceMod's GeoIP extension is removed from the server's own layer, so
+    that it can't run without one: a plugin that needs it then fails to load, saying it lacks the
+    extension, rather than locating no player. A server whose plugins need it says so in its
+    server.toml (geoip) and doesn't start without one (server_config.check_geoip)."""
+    if server_config.has_geoip(game):
+        return
+    extensions = game / "addons/sourcemod/extensions"
+    for name in GEOIP_EXTENSIONS:
+        (extensions / name).unlink(missing_ok=True)
+
+
 def add_test_admins(game: Path) -> None:
     """TEST_ADMIN's SteamIDs into admins_simple.ini, once each."""
     path = game / "addons/sourcemod/configs/admins_simple.ini"
@@ -202,6 +223,7 @@ def prepare(root: Path, name: str) -> None:
     if (game / "server.toml").is_file():
         server_config.prepare(root)
     configure_plugins(game)
+    configure_geoip(game)
     add_test_admins(game)
     configure_sourcebans(game)
     configure_secrets(game, name)

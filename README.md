@@ -862,6 +862,9 @@ the test instance mounts it when it exists, and the Quadlet unit
 `nwi-server@.container` has the line to uncomment. A server whose plugins need
 them says so with `geoip = true` in its `server.toml`: it then doesn't start
 without a database, rather than run with plugins that can't locate players.
+Without a database, every server starts without SourceMod's GeoIP extension,
+which `nwi-server prepare` removes from the server's own layer: a plugin that
+needs it then fails to load, saying so.
 
 ### ClamAV
 

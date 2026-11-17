@@ -183,3 +183,25 @@ def test_sanitiser(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SANITISER", "undefined")
     with pytest.raises(ValueError, match="ubsan"):
         launch.sanitiser_environment()
+
+
+def test_geoip_extension(root: Path, tmp_path: Path) -> None:
+    """Without a GeoIP database the extension goes, with one it stays."""
+    game = root / "doi"
+    extensions = game / "addons/sourcemod/extensions"
+    (extensions / "x64").mkdir(parents=True)
+    for name in launch.GEOIP_EXTENSIONS:
+        (extensions / name).touch()
+    (extensions / "sdktools.ext.2.doi.so").touch()
+    geoip = game / "addons/sourcemod/configs/geoip"
+    geoip.mkdir(parents=True)
+    # The package's link, to a database that isn't there
+    (geoip / "GeoLite2-City.mmdb").symlink_to(tmp_path / "GeoIP/GeoLite2-City.mmdb")
+    launch.configure_geoip(game)
+    assert not any((extensions / name).exists() for name in launch.GEOIP_EXTENSIONS)
+    assert (extensions / "sdktools.ext.2.doi.so").exists()
+    (tmp_path / "GeoIP").mkdir()
+    (tmp_path / "GeoIP/GeoLite2-City.mmdb").write_bytes(b"mmdb")
+    (extensions / "geoip.ext.so").touch()
+    launch.configure_geoip(game)
+    assert (extensions / "geoip.ext.so").exists()

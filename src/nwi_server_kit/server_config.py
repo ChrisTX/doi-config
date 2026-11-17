@@ -27,7 +27,8 @@ folder:
                     own settings (sv_mincmdrate, sv_minupdaterate in server.cfg)
     geoip           optional: true for a server whose plugins need SourceMod's GeoIP databases, which
                     then fails to start without one, false by default: e.g. the host's from geoipupdate,
-                    which the sourcemod package links (/var/lib/GeoIP, see README.md)
+                    which the sourcemod package links (/var/lib/GeoIP, see README.md); without one,
+                    every server starts without SourceMod's GeoIP extension (launch.configure_geoip)
     launch_options  optional: more options of the server's command line, e.g. ["-nobots"]
     configs_before  optional: configs to run before ours
     configs_after   optional: configs to run after ours, e.g. ["doi-config/basic_coop.cfg"]
@@ -166,11 +167,17 @@ def server_settings(root: Path) -> tuple[Path, dict]:
     return folder, settings
 
 
-def check_geoip(folder: Path) -> None:
-    """A ValueError if the game's folder has none of SourceMod's GeoIP databases: a link to a missing
-    one, e.g. of the sourcemod package without geoipupdate's, doesn't count."""
+def has_geoip(folder: Path) -> bool:
+    """Whether the game's folder has one of SourceMod's GeoIP databases: a link to a missing one, e.g.
+    of the sourcemod package without geoipupdate's, doesn't count."""
     geoip = folder / "addons/sourcemod/configs/geoip"
-    if not any((geoip / name).is_file() for name in GEOIP_DATABASES):
+    return any((geoip / name).is_file() for name in GEOIP_DATABASES)
+
+
+def check_geoip(folder: Path) -> None:
+    """A ValueError if the game's folder has no GeoIP database, see has_geoip()."""
+    geoip = folder / "addons/sourcemod/configs/geoip"
+    if not has_geoip(folder):
         raise ValueError(
             f"geoip is true, but {geoip} has no GeoIP database ({', '.join(GEOIP_DATABASES)}): "
             "install geoipupdate, or give the container the host's /var/lib/GeoIP (see README.md)"
