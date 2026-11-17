@@ -801,10 +801,11 @@ connects, counts the bots of a team as its human players. That keeps a server,
 say a casual PvP one, playing with bots until players join, and the round test
 uses it. Coop needs bots on the players' team for it, the game's AI teammates
 (`mp_coop_ai_teammates 1`). Its gamedata covers Windows as well, 32-bit and
-64-bit, tested with Day of Infamy under Wine: PvP and coop rounds on 32-bit,
-PvP rounds on 64-bit. In 64-bit coop, DHooks (a build of SourceMod 1.13 with a
-fix for detours without arguments) hands the detour of the count of a team's
-human players a wrong team, and the round is lost when it starts.
+64-bit, tested with Day of Infamy's PvP and coop rounds under Wine. On 64-bit
+Windows, it needs fixes of DHooks that SourceMod 1.13 doesn't have yet: its
+detours crash without arguments, and its post-callbacks hand the caller the
+return address instead of the function's return value, so the game would go on
+waiting for players, and the coop modes would lose their rounds at once.
 
 ### Difficulty scaler
 
