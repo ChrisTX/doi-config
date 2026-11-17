@@ -239,7 +239,9 @@
         }
         "Functions"
         {
-            // The three counts as pointers: the plugin writes them with StoreToAddress
+            // The three counts as pointers (int &), which the plugin reads with DHookParam.GetAddress
+            // and writes with StoreToAddress: as objectptr, so that GetAddress takes them, whole on
+            // 64-bit
             "GetMasterServerPlayerCounts"
             {
                 "signature" "GetMasterServerPlayerCounts"
@@ -250,15 +252,15 @@
                 {
                     "humans"
                     {
-                        "type"  "int"
+                        "type"  "objectptr"
                     }
                     "maximum"
                     {
-                        "type"  "int"
+                        "type"  "objectptr"
                     }
                     "bots"
                     {
-                        "type"  "int"
+                        "type"  "objectptr"
                     }
                 }
             }

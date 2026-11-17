@@ -348,7 +348,8 @@ MRESReturn Detour_PlayerCountsPost(DHookParam params)
     int values[3];
     for (int i = 0; i < 3; i++)
     {
-        counts[i] = params.Get(i + 1);
+        // The whole pointer: Get returns a cell, half of a 64-bit one
+        counts[i] = params.GetAddress(i + 1);
         values[i] = LoadFromAddress(counts[i], NumberType_Int32);
     }
     int humans = values[0], maximum = values[1], bots = values[2];
