@@ -77,6 +77,10 @@ def test_server_cfg(tmp_path: Path) -> None:
             'hostname = "a"\nstartup_map = "b"\ntickrate = 256\n',
             "tickrate is from 1 to 128",
         ),
+        (
+            'hostname = "a"\nstartup_map = "b"\ngeoip = "yes"\n',
+            "geoip is true or false",
+        ),
     ],
 )
 def test_load_refuses_broken_settings(tmp_path: Path, text: str, error: str) -> None:
@@ -131,3 +135,25 @@ def test_remove_clones(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         "kept",
         "named",
     ]
+
+
+def test_geoip(tmp_path: Path) -> None:
+    """A server with geoip needs a GeoIP database that's there, not a link to a missing one."""
+    install = tmp_path / "game"
+    folder = install / "doi"
+    (folder / "cfg").mkdir(parents=True)
+    (folder / "gameinfo.txt").touch()
+    (folder / "server.toml").write_text(
+        'hostname = "a"\nstartup_map = "b"\ngeoip = true\n'
+    )
+    with pytest.raises(ValueError, match="no GeoIP database"):
+        server_config.prepare(install)
+    geoip = folder / "addons/sourcemod/configs/geoip"
+    geoip.mkdir(parents=True)
+    (geoip / "GeoLite2-City.mmdb").symlink_to(tmp_path / "GeoIP/GeoLite2-City.mmdb")
+    with pytest.raises(ValueError, match="install geoipupdate"):
+        server_config.prepare(install)
+    (tmp_path / "GeoIP").mkdir()
+    (tmp_path / "GeoIP/GeoLite2-City.mmdb").write_bytes(b"mmdb")
+    server_config.prepare(install)
+    assert (folder / "cfg/server.cfg").is_file()

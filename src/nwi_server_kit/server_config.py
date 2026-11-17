@@ -25,6 +25,9 @@ folder:
     tickrate        optional: the server's ticks per second (-tickrate), 128 by default, e.g. 64, the
                     game's own; the clients send and get as many updates per second, whatever their
                     own settings (sv_mincmdrate, sv_minupdaterate in server.cfg)
+    geoip           optional: true for a server whose plugins need SourceMod's GeoIP databases, which
+                    then fails to start without one, false by default: e.g. the host's from geoipupdate,
+                    which the sourcemod package links (/var/lib/GeoIP, see README.md)
     launch_options  optional: more options of the server's command line, e.g. ["-nobots"]
     configs_before  optional: configs to run before ours
     configs_after   optional: configs to run after ours, e.g. ["doi-config/basic_coop.cfg"]
@@ -61,11 +64,19 @@ KEYS = {
     "maxplayers": int,
     "lan": bool,
     "tickrate": int,
+    "geoip": bool,
     "launch_options": list,
     "configs_before": list,
     "configs_after": list,
 }
 REQUIRED = ("hostname", "startup_map")
+# The GeoIP databases SourceMod's extension reads, in the game's addons/sourcemod/configs/geoip
+GEOIP_DATABASES = (
+    "GeoIP2-City.mmdb",
+    "GeoLite2-City.mmdb",
+    "GeoIP2-Country.mmdb",
+    "GeoLite2-Country.mmdb",
+)
 # The servers' ticks per second without a tickrate, and the most a server.toml may set
 TICKRATE = 128
 MAX_TICKRATE = 128
@@ -155,8 +166,21 @@ def server_settings(root: Path) -> tuple[Path, dict]:
     return folder, settings
 
 
+def check_geoip(folder: Path) -> None:
+    """A ValueError if the game's folder has none of SourceMod's GeoIP databases: a link to a missing
+    one, e.g. of the sourcemod package without geoipupdate's, doesn't count."""
+    geoip = folder / "addons/sourcemod/configs/geoip"
+    if not any((geoip / name).is_file() for name in GEOIP_DATABASES):
+        raise ValueError(
+            f"geoip is true, but {geoip} has no GeoIP database ({', '.join(GEOIP_DATABASES)}): "
+            "install geoipupdate, or give the container the host's /var/lib/GeoIP (see README.md)"
+        )
+
+
 def prepare(root: Path) -> None:
     folder, settings = server_settings(root)
+    if settings.get("geoip", False):
+        check_geoip(folder)
     (folder / "cfg" / "server.cfg").write_text(server_cfg(settings))
     workshop = folder / "subscribed_file_ids.txt"
     workshop.unlink(missing_ok=True)
