@@ -523,6 +523,19 @@ UndefinedBehaviorSanitizer, so a long run with it is best left overnight:
 SANITISER=address tests/integration/instance.py soak --hours 8 soak.tsv
 ```
 
+The round test has bots play a config's rounds and checks that they do:
+`instance.py rounds` updates and starts each config in turn, `coop-commando`
+and `soak-bots` by default, puts in its plugin
+(`tests/integration/plugins/nwi_test_rounds.sp`, which logs the game's round
+events), lets bots play with `nwi_bot_only_rounds` and checks, each in its
+time, that the game and a round start, that the bots take an objective and
+die, and that SourceMod reports no errors of our plugins
+(`tests/integration/rounds.py`). It takes a few minutes a config:
+
+```bash
+tests/integration/instance.py rounds
+```
+
 ## Server notes
 
 ### Engine hunk overflow

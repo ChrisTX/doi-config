@@ -24,6 +24,10 @@ Usage:
         with SANITISER, log it with tests/integration/soak_watch.py for HOURS (8 by default) to LOG
         (soak-<time>.tsv in the working folder) and the server's output next to it (LOG without .tsv,
         .log), then remove it
+    instance.py rounds [CONFIG...]
+        the round test: update and start each config (coop-commando and soak-bots by default) in turn,
+        let bots play its rounds and check that they do (tests/integration/rounds.py), then remove it;
+        exit status 1 if a config failed
     instance.py down
         remove the test instance, its database and volumes
     instance.py rcon COMMAND...
@@ -73,12 +77,18 @@ import sys
 import tarfile
 import tempfile
 import time
+import tomllib
 import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parents[2]
+# The package from the checkout, and the round test next to this file, also when run as a script
+sys.path[:0] = [str(REPOSITORY / "src"), str(REPOSITORY)]
+from nwi_server_kit import rcon as rcon_client
+from tests.integration import rounds as round_checks
+
 SETTINGS = (
     "AUR_REPO",
     "AUR_DBROOT",
@@ -823,6 +833,95 @@ class Instance:
                 )
             self.down()
 
+    def rounds(self, args: list[str]) -> int:
+        """The round test of each config, see the usage and tests/integration/rounds.py."""
+        configs = args or ["coop-commando", "soak-bots"]
+        self.update(configs)
+        failed = []
+        for config in configs:
+            settings = server_settings(config)
+            game = str(settings.get("game", "doi"))
+            startup_map = str(settings.get("startup_map", "")).split(" ")[0]
+            if not startup_map:
+                raise InstanceError(f"{config} has no startup_map")
+            self.up([config])
+            try:
+                result = self.round_test(config, game, startup_map)
+            finally:
+                self.down()
+            print(f"{config}: {'passed' if result.passed else 'FAILED'}")
+            for seconds, event in result.events:
+                print(f"  {seconds:4d} s  {event}")
+            if result.teams is not None:
+                teams = result.teams
+                print(
+                    f"  teams: {teams.bots[0]} and {teams.bots[1]} bots, "
+                    f"{teams.deaths} deaths, game state {teams.state}"
+                )
+            for failure in result.failures:
+                print(f"  {failure}")
+            if not result.passed:
+                failed.append(config)
+        if failed:
+            print(f"Failed: {', '.join(failed)}", file=sys.stderr)
+        return 1 if failed else 0
+
+    def round_test(
+        self, config: str, game: str, startup_map: str
+    ) -> "round_checks.Result":
+        """Put the test plugin into the running server, compiled by its spcomp, and run the test."""
+        server = f"{POD}-server"
+        sourcemod = f"/srv/game/{game}/addons/sourcemod"
+        run(
+            "podman",
+            "cp",
+            str(round_checks.PLUGIN),
+            f"{server}:/tmp/nwi_test_rounds.sp",
+        )
+        run(
+            "podman",
+            "exec",
+            server,
+            "spcomp",
+            "-o",
+            f"{sourcemod}/plugins/nwi_test_rounds.smx",
+            "/tmp/nwi_test_rounds.sp",
+            capture=True,
+        )
+        password = self.rcon_password()
+
+        def command(text: str) -> str:
+            sock = rcon_client.connect("127.0.0.1", 27015, password)
+            with sock:
+                return rcon_client.run(sock, text)
+
+        def read(pattern: str) -> str:
+            return run(
+                "podman",
+                "exec",
+                server,
+                "sh",
+                "-c",
+                f"cat {sourcemod}/logs/{pattern} 2>/dev/null || true",
+                capture=True,
+            )
+
+        command("sm plugins load nwi_test_rounds")
+        return round_checks.run(
+            command,
+            lambda: read("L*.log"),
+            lambda: read("errors_*.log"),
+            round_checks.is_coop(config_folder(config) / "server.toml"),
+            startup_map,
+            game,
+        )
+
+
+def server_settings(config: str) -> dict[str, object]:
+    """A config's server.toml."""
+    with (config_folder(config) / "server.toml").open("rb") as file:
+        return tomllib.load(file)
+
 
 def download(url: str, target: Path) -> None:
     try:
@@ -898,6 +997,7 @@ def main(argv: list[str] | None = None) -> int:
         "rcon",
         "logs",
         "soak",
+        "rounds",
     ):
         print(f"Usage:{usage}", file=sys.stderr)
         return 2
@@ -920,6 +1020,8 @@ def main(argv: list[str] | None = None) -> int:
             return instance.rcon(rest)
         elif command == "logs":
             return instance.logs()
+        elif command == "rounds":
+            return instance.rounds(rest)
         else:
             return instance.soak(rest)
     except InstanceError as error:

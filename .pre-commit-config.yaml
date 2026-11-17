@@ -71,9 +71,10 @@ repos:
         types: [python]
         pass_filenames: false
 
-      # The plugins compile, warnings as errors, with the include folder of the repository (AFK
-      # Manager's). spcomp takes one plugin per run. Nothing is written, the plugins are built on the
-      # server. Include files can't be compiled on their own, they're checked with the plugins.
+      # The plugins compile, the integration tests' too, warnings as errors, with the include folder
+      # of the repository (AFK Manager's). spcomp takes one plugin per run. Nothing is written, the
+      # plugins are built on the server. Include files can't be compiled on their own, they're
+      # checked with the plugins.
       - id: spcomp
         name: spcomp (sourcemod-scripting, AUR)
         language: system
@@ -81,7 +82,7 @@ repos:
           bash -c 'status=0; for f; do
           spcomp -E -i game/addons/sourcemod/scripting/include -o /dev/null "$f" || status=1;
           done; exit "$status"' --
-        files: ^game/addons/sourcemod/scripting/[^/]+\.sp$
+        files: ^(game/addons/sourcemod/scripting|tests/integration/plugins)/[^/]+\.sp$
 
       # The game's configs: formatted, the cvar bare and its arguments quoted, and checked against the
       # game's cvars and commands (checks/cvars.json, made with checks/dump_cvars.py) and those of our
