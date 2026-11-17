@@ -150,9 +150,14 @@ def source_settings(source: str) -> tuple[str, str]:
     return settings.get("URL", ""), settings.get("REF", "")
 
 
+def servers_dir() -> Path:
+    """The folder of the servers' environment files, <name>.env."""
+    return Path(os.environ.get("NWI_SERVERS_DIR", "/etc/nwi-server"))
+
+
 def server_envs() -> dict[str, dict[str, str]]:
     """The servers' environment files' variables by the servers' names."""
-    folder = Path(os.environ.get("NWI_SERVERS_DIR", "/etc/nwi-server"))
+    folder = servers_dir()
     envs = sorted(folder.glob("*.env")) if folder.is_dir() else []
     return {env.stem: read_env(env) for env in envs}
 

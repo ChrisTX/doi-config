@@ -3,7 +3,7 @@
 The password comes from RCON_PASSWORD, so it doesn't show up in the process list, or with --server
 from the server of nwi-server@.service on this machine: its password from /run/nwi-server/rcon/<server>,
 which the members of the group nwi-rcon can read (nwi-server prepare, launch.py), and its port, SERVER_PORT
-of /etc/nwi-server/<server>.env. With --ssh, the command runs on another machine instead, as nwi-rcon
+of /etc/nwi-server/<server>.env (NWI_SERVERS_DIR). With --ssh, the command runs on another machine instead, as nwi-rcon
 --server there: the password stays on it, and its RCON port needs no opening.
 
 nwi-rcon, also nwi-server rcon, e.g. nwi-rcon --server coop-commando status, or
@@ -15,10 +15,9 @@ import os
 import shlex
 import subprocess
 import sys
-from pathlib import Path
 
 from .. import rcon
-from ..games import read_env
+from ..games import read_env, servers_dir
 from ..rcon import connect, run
 
 
@@ -67,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.server is not None:
         try:
             password = (rcon.RCON_DIR / args.server).read_text().strip()
-            env = Path(f"/etc/nwi-server/{args.server}.env")
+            env = servers_dir() / f"{args.server}.env"
             settings = read_env(env) if env.is_file() else {}
         except OSError as error:
             print(f"nwi-rcon: {args.server}: {error}", file=sys.stderr)
@@ -79,11 +78,17 @@ def main(argv: list[str] | None = None) -> int:
         if not password:
             print("RCON_PASSWORD isn't set", file=sys.stderr)
             return 2
+    address = f"{args.host}:{port or 27015}"
     try:
         sock = connect(args.host, port or 27015, password)
+        with sock:
+            answer = run(sock, " ".join(args.command))
     except PermissionError as error:
         print(error, file=sys.stderr)
         return 1
-    with sock:
-        print(run(sock, " ".join(args.command)), end="")
+    # Refused, reset or timed out, e.g. while the server starts or stops
+    except OSError as error:
+        print(f"nwi-rcon: {address}: {error.strerror or error}", file=sys.stderr)
+        return 1
+    print(answer, end="")
     return 0
