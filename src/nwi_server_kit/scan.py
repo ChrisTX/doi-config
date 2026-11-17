@@ -13,7 +13,11 @@ The checks, of the item's files and of the files in its VPKs:
   dimensions and counts within the game's limits: BSP maps and their lumps, nav meshes, the models'
   MDL, VVD, VTX and PHY, VTF textures, WAV and MP3 sounds, binary particles (PCF); text files without
   NUL bytes but UTF-16 with its byte order mark;
-- VPKs that can be read, their entries within their archives and matching their CRCs.
+- VPKs that can be read, their entries within their archives and matching their CRCs;
+- ClamAV's signatures, those clamd has, e.g. SecuriteInfo's too, on every file and every file in a VPK
+  (clamd.py). A file larger than clamd scans (its StreamMaxLength) is noted, not held, as the checks
+  above still cover it. Without clamd the scan fails, so that a version isn't served unscanned by
+  mistake; NWI_CLAMD=off scans without ClamAV on purpose.
 
 It's a defence in depth, not a proof: a file that is malformed in a way the headers don't show
 passes. A false alarm is approved per version in workshop/approved.toml (unscanned, workshop.py).
@@ -21,10 +25,13 @@ passes. A false alarm is approved per version in workshop/approved.toml (unscann
 
 import re
 import struct
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
 from srctools.vpk import VPK
+
+from . import clamd
 
 # The folders of content and the types each has, by their extensions (a model's VTX files are
 # <name>.dx90.vtx and the like, so the last extension counts)
@@ -233,9 +240,39 @@ def numbered_archive(name: str) -> bool:
     return re.search(r"_\d{3}\.vpk$", name) is not None
 
 
-def scan(folder: Path) -> list[Finding]:
-    """The findings of an item's version, its folder: empty if it passes."""
+# clamd's socket by its settings (clamd.socket_path), the default of scan()
+CLAMD_SETTING = "setting"
+
+
+def clamav_finding(name: str, data: bytes, socket: str | None) -> list[Finding]:
+    """ClamAV's finding of a file, with clamd at socket (None: without ClamAV)."""
+    if socket is None:
+        return []
+    try:
+        signature = clamd.scan(socket, data)
+    except clamd.TooLarge:
+        print(
+            f"{name}: larger than clamd scans, checked without ClamAV",
+            file=sys.stderr,
+        )
+        return []
+    except clamd.ClamdError as error:
+        return [f"{name}: ClamAV didn't scan it: {error}"]
+    return [f"{name}: ClamAV: {signature}"] if signature else []
+
+
+def scan(folder: Path, socket: str | None = CLAMD_SETTING) -> list[Finding]:
+    """The findings of an item's version, its folder: empty if it passes. socket is clamd's, by
+    default by its settings (clamd.py), None without ClamAV."""
+    if socket == CLAMD_SETTING:
+        socket = clamd.socket_path()
     findings = []
+    if socket is not None:
+        try:
+            clamd.command(socket, "PING")
+        except clamd.ClamdError as error:
+            findings.append(f"ClamAV: {error}, NWI_CLAMD=off scans without it")
+            socket = None
     for path in sorted(folder.rglob("*")):
         relative = path.relative_to(folder)
         if not path.is_file() or relative.parts[0] == ".DepotDownloader":
@@ -246,13 +283,15 @@ def scan(folder: Path) -> list[Finding]:
             if problem:
                 findings.append(f"{name}: {problem}")
             elif not numbered_archive(path.name):
-                findings += scan_vpk(path, name)
+                findings += scan_vpk(path, name, socket)
             continue
-        findings += check_file(name, path.read_bytes(), TOP)
+        data = path.read_bytes()
+        findings += check_file(name, data, TOP)
+        findings += clamav_finding(name, data, socket)
     return findings
 
 
-def scan_vpk(path: Path, name: str) -> list[Finding]:
+def scan_vpk(path: Path, name: str, socket: str | None = None) -> list[Finding]:
     findings = []
     try:
         archive = VPK(path)
@@ -262,10 +301,11 @@ def scan_vpk(path: Path, name: str) -> list[Finding]:
             if not entry.verify():
                 findings.append(f"{name}/{inner}: its CRC doesn't match its contents")
                 continue
+            data = entry.read()
             findings += [
-                f"{name}/{finding}"
-                for finding in check_file(inner, entry.read(), set())
+                f"{name}/{finding}" for finding in check_file(inner, data, set())
             ]
+            findings += clamav_finding(f"{name}/{inner}", data, socket)
     except (OSError, ValueError, KeyError, struct.error, EOFError) as error:
         findings.append(f"{name}: can't be read as a VPK: {error}")
     return findings

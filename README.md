@@ -259,7 +259,16 @@ like) in the folders the game reads it from: no configs, plugins or libraries,
 which the server's search path would load as its own. And the formats the game
 parses (maps, nav meshes, models, textures, sounds, particles) have to hold
 together: every offset and size within the file, the dimensions within the
-game's limits, the VPKs' entries matching their checksums. A version with
+game's limits, the VPKs' entries matching their checksums. And ClamAV's
+signatures, those its daemon `clamd` has (e.g. SecuriteInfo's too), find nothing
+in any file, loose or in a VPK: each file is streamed to `clamd` over its socket,
+so it needs no access to the item's folders. A file larger than `clamd` scans
+(its `StreamMaxLength`) is noted, not held. Without `clamd` the scan fails, so
+that nothing is served unscanned by mistake; `NWI_CLAMD=off` in the updater's
+environment scans without ClamAV, and `NWI_CLAMD=<socket>` names another socket
+than `clamd`'s own (`LocalSocket` of `/etc/clamav/clamd.conf`). The container
+image has no `clamd` and scans without it, unless a container gets the host's
+socket and `NWI_CLAMD`. A version with
 findings is held for every source, approved or not, and the admins are told
 what was found. A false alarm, after a review, is approved per version with
 `nwi-server workshop approve --unscanned ITEM MANIFEST`. `nwi-server workshop

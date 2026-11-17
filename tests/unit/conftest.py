@@ -166,3 +166,9 @@ def build_vpk(path: Path, files: dict[str, bytes], split: bool = False) -> Path:
     unsigned += hashlib.md5(unsigned).digest()
     directory.write_bytes(unsigned)
     return directory
+
+
+@pytest.fixture(autouse=True)
+def no_clamd(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The tests scan without the system's clamd; those of ClamAV start a fake one."""
+    monkeypatch.setenv("NWI_CLAMD", "off")
