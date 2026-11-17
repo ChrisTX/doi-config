@@ -82,6 +82,36 @@
                 "windows"   "\x55\x8B\xEC\x56\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x8B\x55\x08"
                 "windows64" "\x48\x89\x5C\x24\x08\x48\x89\x74\x24\x10\x48\x89\x7C\x24\x18\x41\x56\x48\x83\xEC\x20\x4D\x8B\xF1\x49\x8B\xF0\x48\x8B\xDA\x48\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x89\x03"
             }
+            // Whether the game waits for players before it starts: while it does, no round starts
+            "CINSRules::ShouldBeWaitingForPlayers"
+            {
+                "library"   "server"
+                "linux"     "@_ZNK9CINSRules25ShouldBeWaitingForPlayersEv"
+            }
+            // The pregame state (1), which a dedicated server only leaves with a human player on it, and
+            // the change to another state, e.g. the game's start (2)
+            "CINSRules::State_Think_PREGAME"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9CINSRules19State_Think_PREGAMEEv"
+            }
+            "CINSRules::State_Transition"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9CINSRules16State_TransitionE16GameRulesState_t"
+            }
+            // A team's players who are playing, with or without its bots: the coop modes' rounds are lost
+            // without human players
+            "CINSRules::GetTotalActiveHumanPlayersOnTeam"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9CINSRules32GetTotalActiveHumanPlayersOnTeamEi"
+            }
+            "CINSRules::GetTotalActivePlayersOnTeam"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9CINSRules27GetTotalActivePlayersOnTeamEi"
+            }
             "SendUpdatedServerDetails"
             {
                 "library"   "engine"
@@ -261,6 +291,34 @@
                     "bots"
                     {
                         "type"  "objectptr"
+                    }
+                }
+            }
+            "CINSRules::ShouldBeWaitingForPlayers"
+            {
+                "signature" "CINSRules::ShouldBeWaitingForPlayers"
+                "callconv"  "thiscall"
+                "return"    "bool"
+                "this"      "ignore"
+            }
+            "CINSRules::State_Think_PREGAME"
+            {
+                "signature" "CINSRules::State_Think_PREGAME"
+                "callconv"  "thiscall"
+                "return"    "void"
+                "this"      "address"
+            }
+            "CINSRules::GetTotalActiveHumanPlayersOnTeam"
+            {
+                "signature" "CINSRules::GetTotalActiveHumanPlayersOnTeam"
+                "callconv"  "thiscall"
+                "return"    "int"
+                "this"      "address"
+                "arguments"
+                {
+                    "team"
+                    {
+                        "type"  "int"
                     }
                 }
             }

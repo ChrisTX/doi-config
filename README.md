@@ -681,6 +681,19 @@ It needs a pre-callback of DHooks (through `nwi_gamedata`), which the
 overflow in AMTL's hashes, which LTO miscompiled
 ([alliedmodders/amtl#142](https://github.com/alliedmodders/amtl/pull/142)).
 
+### Rounds with bots only
+
+The game doesn't start a round without human players, also with bots on the
+teams: it waits for players, and a dedicated server stays in its pregame
+state until one is on it. The coop modes also lose a round at once without
+human players on the players' team. `nwi_bot_only_rounds 1` (`nwi_gamedata`,
+off by default) lets bots play: while bots are on the playing teams, the game
+doesn't wait for players, starts without them, and, until a human player
+connects, counts the bots of a team as its human players. That keeps a server,
+say a casual PvP one, playing with bots until players join, and the round test
+uses it. Coop needs bots on the players' team for it, the game's AI teammates
+(`mp_coop_ai_teammates 1`). Its gamedata is Linux's only so far.
+
 ### Difficulty scaler
 
 The `nwi_difficulty_scaler` SourceMod plugin adjusts the number of bots to the

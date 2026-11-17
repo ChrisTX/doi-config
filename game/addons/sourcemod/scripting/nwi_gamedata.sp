@@ -45,6 +45,15 @@ GlobalForward g_onSteamServerDetails;
 GlobalForward g_onStatsWorkshopCheck;
 // Whether the server is sending its details to Steam, while GetMasterServerPlayerCounts runs for it
 bool g_inServerDetails = false;
+// The game rules' state the game starts with, after the pregame state (GameRulesState_t)
+#define GAME_STATE_STARTGAME 2
+
+// Rounds with bots only: the game doesn't wait for human players while bots are on the playing teams;
+// CINSRules::State_Transition, which starts the game from the pregame state, and
+// CINSRules::GetTotalActivePlayersOnTeam, a team's players with its bots
+ConVar g_botOnlyRounds;
+Handle g_stateTransition;
+Handle g_activePlayersOnTeam;
 
 // The playlists: CPlaylists::UpdateCache, Playlist::GenerateCoalescedData and the KeyValues calls that
 // load a replacement (all or none), the Playlist's fields, and the folder of the replacements (none
@@ -115,6 +124,31 @@ public void OnPluginStart()
     if (!g_playlistsReady)
         LogError("No NWI_ReplacePlaylists: the gamedata lacks the playlists' functions for this platform%s",
             g_gamedata.GetOffset("g_Playlists::rip") != -1 ? ", on 64-bit Windows nwi_gamedata needs to be compiled with SourceMod 1.13" : "");
+
+    // The game waits for human players before it starts a round, also with bots on the teams: with
+    // nwi_bot_only_rounds, it doesn't while there are bots, e.g. for a casual server that bots keep
+    // going until players join, and the integration tests' rounds
+    g_botOnlyRounds = CreateConVar("nwi_bot_only_rounds", "0",
+        "1: start rounds without human players while bots are on the playing teams, which the game waits for otherwise",
+        _, true, 0.0, true, 1.0);
+    StartPrepSDKCall(SDKCall_Raw);
+    if (PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "CINSRules::State_Transition"))
+    {
+        PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+        g_stateTransition = EndPrepSDKCall();
+    }
+    StartPrepSDKCall(SDKCall_Raw);
+    if (PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "CINSRules::GetTotalActivePlayersOnTeam"))
+    {
+        PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+        PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+        g_activePlayersOnTeam = EndPrepSDKCall();
+    }
+    if (g_stateTransition == null || g_activePlayersOnTeam == null
+        || !Detour("CINSRules::ShouldBeWaitingForPlayers", INVALID_FUNCTION, Detour_WaitingForPlayersPost)
+        || !Detour("CINSRules::State_Think_PREGAME", Detour_PregamePre, INVALID_FUNCTION)
+        || !Detour("CINSRules::GetTotalActiveHumanPlayersOnTeam", INVALID_FUNCTION, Detour_ActiveHumansPost))
+        LogError("No nwi_bot_only_rounds: the gamedata lacks the functions for this platform");
 
     // Day of Infamy's check of the workshop before it registers the server for its stats
     g_onStatsWorkshopCheck = new GlobalForward("NWI_OnStatsWorkshopCheck", ET_Ignore, Param_CellByRef);
@@ -368,6 +402,61 @@ MRESReturn Detour_PlayerCountsPost(DHookParam params)
             StoreToAddress(counts[i], changed[i], NumberType_Int32);
     }
     return MRES_Ignored;
+}
+
+// After CINSRules::ShouldBeWaitingForPlayers: with nwi_bot_only_rounds, bots on the playing teams end
+// the waiting as players do
+MRESReturn Detour_WaitingForPlayersPost(DHookReturn result)
+{
+    if (!g_botOnlyRounds.BoolValue || !result.Value || !BotsPlaying())
+        return MRES_Ignored;
+    result.Value = false;
+    return MRES_Override;
+}
+
+// Before CINSRules::State_Think_PREGAME: a dedicated server stays in the pregame state until a human
+// player is on it, whatever ShouldBeWaitingForPlayers says. With nwi_bot_only_rounds, bots and no human
+// players, the game starts (state 2) as it would with them.
+MRESReturn Detour_PregamePre(Address rules)
+{
+    if (!g_botOnlyRounds.BoolValue || !BotsPlaying() || HumansConnected())
+        return MRES_Ignored;
+    SDKCall(g_stateTransition, rules, GAME_STATE_STARTGAME);
+    return MRES_Supercede;
+}
+
+// After CINSRules::GetTotalActiveHumanPlayersOnTeam: the coop modes lose a round without human players
+// on the players' team. With nwi_bot_only_rounds and no human players, a team's bots count as its
+// humans, here and wherever else the game counts the active humans, e.g. for the capture speed.
+MRESReturn Detour_ActiveHumansPost(Address rules, DHookReturn result, DHookParam params)
+{
+    if (!g_botOnlyRounds.BoolValue || HumansConnected())
+        return MRES_Ignored;
+    result.Value = SDKCall(g_activePlayersOnTeam, rules, params.Get(1));
+    return MRES_Override;
+}
+
+// Whether a bot is on one of the playing teams (2 and 3), not SourceTV's
+bool BotsPlaying()
+{
+    for (int client = 1; client <= MaxClients; client++)
+    {
+        if (IsClientInGame(client) && IsFakeClient(client) && !IsClientSourceTV(client)
+            && GetClientTeam(client) >= 2)
+            return true;
+    }
+    return false;
+}
+
+// Whether a human player is connected, also one still loading
+bool HumansConnected()
+{
+    for (int client = 1; client <= MaxClients; client++)
+    {
+        if (IsClientConnected(client) && !IsFakeClient(client))
+            return true;
+    }
+    return false;
 }
 
 // The physics environment, which the game creates anew at every map start

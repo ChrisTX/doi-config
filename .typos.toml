@@ -33,6 +33,8 @@ sanitizers = "sanitizers"
 [default.extend-identifiers]
 # The name of Clang's and GCC's sanitizer of undefined behaviour
 UndefinedBehaviorSanitizer = "UndefinedBehaviorSanitizer"
+# DHooks' hook result that replaces the function's call (dhooks.inc), "supersede" as it spells it
+MRES_Supercede = "MRES_Supercede"
 
 [files]
 extend-exclude = [
