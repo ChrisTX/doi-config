@@ -137,17 +137,24 @@ public void OnPluginStart()
         PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
         g_stateTransition = EndPrepSDKCall();
     }
-    StartPrepSDKCall(SDKCall_Raw);
-    if (PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "CINSRules::GetTotalActivePlayersOnTeam"))
+    // Only Day of Infamy's coop modes count the active human players; Insurgency never does, and its
+    // Windows libraries lack the function
+    bool countHumans = NWI_GetGame() == NWIGame_DoI;
+    if (countHumans)
     {
-        PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
-        PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
-        g_activePlayersOnTeam = EndPrepSDKCall();
+        StartPrepSDKCall(SDKCall_Raw);
+        if (PrepSDKCall_SetFromConf(g_gamedata, SDKConf_Signature, "CINSRules::GetTotalActivePlayersOnTeam"))
+        {
+            PrepSDKCall_AddParameter(SDKType_PlainOldData, SDKPass_Plain);
+            PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
+            g_activePlayersOnTeam = EndPrepSDKCall();
+        }
     }
-    if (g_stateTransition == null || g_activePlayersOnTeam == null
+    if (g_stateTransition == null
         || !Detour("CINSRules::ShouldBeWaitingForPlayers", INVALID_FUNCTION, Detour_WaitingForPlayersPost)
         || !Detour("CINSRules::State_Think_PREGAME", Detour_PregamePre, INVALID_FUNCTION)
-        || !Detour("CINSRules::GetTotalActiveHumanPlayersOnTeam", INVALID_FUNCTION, Detour_ActiveHumansPost))
+        || countHumans && (g_activePlayersOnTeam == null
+            || !Detour("CINSRules::GetTotalActiveHumanPlayersOnTeam", INVALID_FUNCTION, Detour_ActiveHumansPost)))
         LogError("No nwi_bot_only_rounds: the gamedata lacks the functions for this platform");
 
     // Day of Infamy's check of the workshop before it registers the server for its stats
