@@ -4,7 +4,9 @@ runs, for monitoring and for debugging a busy evening.
 At each scrape, it asks every server of /etc/nwi-server (games.server_envs) over RCON, with its
 password of /run/nwi-server/rcon (rcon.py): stats for the server's frame rate, which is its tick, its
 CPU, its traffic and uptime, status for its map and its players, humans and bots, and the humans'
-ping and loss, and sv_mincmdrate for its tickrate, which server.cfg sets to it (server_config.py). It serves them in Prometheus' text format (render()), by server and game:
+ping and loss, sv_mincmdrate for its tickrate, which server.cfg sets to it (server_config.py), and
+nwi_netstats, of the plugin of the same name, for the human players' choke. It serves them in
+Prometheus' text format (render()), by server and game:
 
     nwi_server_up                   1 if the server answered RCON
     nwi_server_info                 1, with the map as a label
@@ -18,9 +20,14 @@ ping and loss, and sv_mincmdrate for its tickrate, which server.cfg sets to it (
     nwi_server_player_ping_seconds  of the human players: the median and the most
     nwi_server_player_loss_ratio    of the human players' packets: the median and the most
     nwi_server_players_lossy        the human players losing more than LOSSY of their packets
+    nwi_server_player_choke_ratio   of the human players' packets held back: the median and the most,
+                                    of the server's packets to them (out) and theirs (in)
+    nwi_server_players_choked       the human players of whose packets the server holds back more
+                                    than CHOKED
 
 The players' values are aggregates, not series per player, which a busy server's players would make
-by the thousand. The game's choke isn't in status: it would take a plugin (GetClientAvgChoke).
+by the thousand. The choke isn't in status: without the plugin nwi_netstats, which reads it
+(GetClientAvgChoke), the server has no choke metrics.
 """
 
 import itertools
@@ -36,6 +43,8 @@ from . import games, layers, rcon, server_config
 
 # A human player's packets lost, from which on the player counts as lossy
 LOSSY = 0.05
+# The server's packets to a human player held back, from which on the player counts as choked
+CHOKED = 0.05
 # A status line of a human player: # userid "name" uniqueid connected ping loss state rate adr
 PLAYER = re.compile(
     r'^#\s*\d+\s+"(?P<name>.*)"\s+(?P<id>\S+)\s+(?P<connected>[\d:]+)\s+'
@@ -70,6 +79,8 @@ class Sample:
     max_players: int = 0
     pings: list[float] = field(default_factory=list)
     losses: list[float] = field(default_factory=list)
+    # The human players' choke of nwi_netstats, by its direction, out and in; None without the plugin
+    chokes: dict[str, list[float]] | None = None
 
 
 def answer_lines(text: str) -> list[str]:
@@ -114,6 +125,32 @@ def parse_status(text: str, sample: Sample) -> None:
         elif (match := PLAYER.match(line)) and match["id"] != "BOT":
             sample.pings.append(int(match["ping"]) / 1000)
             sample.losses.append(int(match["loss"]) / 100)
+
+
+def parse_netstats(text: str, sample: Sample) -> None:
+    """nwi_netstats' choke of the human players into sample, by its header's columns; nothing without
+    the plugin, whose command the server doesn't know then."""
+    columns: list[str] | None = None
+    for line in answer_lines(text):
+        fields = line.split()
+        if fields[:1] == ["nwi_netstats"] and "userid" in fields:
+            columns = fields[1:]
+            sample.chokes = {"out": [], "in": []}
+        elif (
+            columns is not None
+            and sample.chokes is not None
+            and len(fields) == len(columns)
+        ):
+            try:
+                row = {
+                    name: float(value)
+                    for name, value in zip(columns, fields, strict=True)
+                }
+            except ValueError:
+                continue
+            for direction in ("out", "in"):
+                if f"choke_{direction}" in row:
+                    sample.chokes[direction].append(row[f"choke_{direction}"])
 
 
 def target(name: str, env: dict[str, str]) -> Target:
@@ -166,6 +203,7 @@ def collect(target: Target, host: str = "127.0.0.1") -> Sample:
             stats = parse_stats(rcon.run(sock, "stats"))
             parse_status(rcon.run(sock, "status"), sample)
             tick = parse_cvar(rcon.run(sock, "sv_mincmdrate"))
+            parse_netstats(rcon.run(sock, "nwi_netstats"), sample)
     except (OSError, ValueError, PermissionError):
         return Sample(target)
     sample.stats = stats
@@ -288,6 +326,28 @@ def render(samples: list[Sample]) -> str:
             f"The human players losing more than {LOSSY:.0%} of their packets",
             labels,
             sum(1 for loss in sample.losses if loss > LOSSY),
+        )
+        if sample.chokes is None:
+            continue
+        for direction, values in sample.chokes.items():
+            if values:
+                for stat, value in (
+                    ("median", statistics.median(values)),
+                    ("max", max(values)),
+                ):
+                    add(
+                        "nwi_server_player_choke_ratio",
+                        "gauge",
+                        "The human players' packets held back, of the server's (out) and theirs (in)",
+                        labels | {"direction": direction, "stat": stat},
+                        value,
+                    )
+        add(
+            "nwi_server_players_choked",
+            "gauge",
+            f"The human players of whose packets the server holds back more than {CHOKED:.0%}",
+            labels,
+            sum(1 for choke in sample.chokes["out"] if choke > CHOKED),
         )
     lines = []
     for name, (kind, help_text, samples_text) in families.items():

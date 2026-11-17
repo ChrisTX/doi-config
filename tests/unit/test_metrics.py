@@ -1,5 +1,6 @@
 """The servers' metrics (metrics.py, nwi-server metrics), of a fake server's RCON that answers as
-Day of Infamy's: stats, status with bots and a human player, sv_mincmdrate, and log lines."""
+Day of Infamy's: stats, status with bots and human players, sv_mincmdrate, the plugin nwi_netstats'
+choke, and log lines."""
 
 import json
 import socket
@@ -37,11 +38,22 @@ CVAR = (
     '"sv_mincmdrate" = "64" ( def. "64" ) replicated - This sets the minimum value\n'
     + LOG
 )
+NETSTATS = (
+    "nwi_netstats userid choke_out choke_in\n9 0.0000 0.0125\n10 0.2500 0.0000\n" + LOG
+)
+NO_PLUGIN = 'Unknown command "nwi_netstats"\n' + LOG
 
 
 @pytest.fixture
 def server() -> Iterator[FakeServer]:
-    fake = FakeServer(answers={"stats": STATS, "status": STATUS, "sv_mincmdrate": CVAR})
+    fake = FakeServer(
+        answers={
+            "stats": STATS,
+            "status": STATUS,
+            "sv_mincmdrate": CVAR,
+            "nwi_netstats": NETSTATS,
+        }
+    )
     yield fake
     fake.listener.close()
 
@@ -75,6 +87,13 @@ def test_parse() -> None:
     assert sample.pings == [0.04, 0.12] and sample.losses == [0.0, 0.08]
     assert metrics.parse_cvar(CVAR) == "64"
     assert metrics.parse_cvar(LOG) is None
+    metrics.parse_netstats(NETSTATS, sample)
+    assert sample.chokes == {"out": [0.0, 0.25], "in": [0.0125, 0.0]}
+    # Without the plugin, or a server that echoes the command: no choke, not none
+    for text in (NO_PLUGIN, "nwi_netstats\n"):
+        without = metrics.Sample(sample.target)
+        metrics.parse_netstats(text, without)
+        assert without.chokes is None
 
 
 def test_collect(server: FakeServer, tmp_path: Path) -> None:
@@ -120,9 +139,21 @@ def test_render(server: FakeServer, tmp_path: Path) -> None:
     )
     assert 'nwi_server_players_lossy{server="coop",game="doi"} 1' in lines
     assert 'nwi_server_info{server="coop",game="doi",map="bastogne"} 1' in lines
+    assert (
+        'nwi_server_player_choke_ratio{server="coop",game="doi",direction="out",stat="max"} 0.25'
+        in lines
+    )
+    assert (
+        'nwi_server_player_choke_ratio{server="coop",game="doi",direction="in",stat="median"} 0.00625'
+        in lines
+    )
+    assert 'nwi_server_players_choked{server="coop",game="doi"} 1' in lines
     # Each family once, with its HELP and TYPE first; nothing of the down server but up and target
     assert text.count("# TYPE nwi_server_up gauge") == 1
     assert not any('server="pvp"' in line and "tick_rate{" in line for line in lines)
+    # A server without the plugin has no choke metrics, rather than none choked
+    up.chokes = None
+    assert "choke" not in metrics.render([up])
 
 
 def test_quote() -> None:

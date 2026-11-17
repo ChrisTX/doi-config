@@ -209,9 +209,12 @@ systemctl enable --now nwi-restart.timer nwi-update-check.timer
 
 `nwi-metrics.service` serves how the servers run, for Prometheus or Netdata:
 each server's tick rate against its tickrate, its CPU, traffic and uptime, its
-human players and bots, and the human players' ping and packet loss (median and
-most, and how many lose more than 5%). At each scrape it asks the servers over
-RCON (`nwi-server metrics`, see `nwi-server metrics --help` for all of them).
+human players and bots, and the human players' ping, packet loss and choke
+(median and most, and how many lose more than 5% or get more than 5% of the
+server's packets held back). At each scrape it asks the servers over RCON
+(`nwi-server metrics`, see `nwi-server metrics --help` for all of them). The
+choke comes from the `nwi_netstats` plugin, as `status` doesn't show it: a
+server without it has no choke metrics.
 It listens on this machine only, `127.0.0.1:9734`; another address, of an
 internal network, goes into a drop-in (see the unit), never a public one, and
 its port into the firewall's internal ports.
@@ -939,7 +942,7 @@ by default), which every user may connect to. The scan streams each file there, 
 
 The configuration, scripts and units are licensed under the [MIT](LICENSE)
 licence. The SourceMod plugins written for these servers, `nwi_cvar_unlocker`,
-`nwi_difficulty_scaler`, `nwi_gamedata`, `nwi_mode_config`,
+`nwi_difficulty_scaler`, `nwi_gamedata`, `nwi_mode_config`, `nwi_netstats`,
 `nwi_physics_timestep`, `nwi_playlist_unlock` and `nwi_server_visibility`, are available under the MIT licence or the GPL-3.0-only with SourceMod's linking
 exception, at your choice, so they can be used in other SourceMod projects
 either way.
