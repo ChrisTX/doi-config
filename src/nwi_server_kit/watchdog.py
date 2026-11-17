@@ -91,7 +91,10 @@ def check(host: str, port: int, timeout: float) -> int:
     """Query the server once: 0 if it answered."""
     try:
         a2s.info((host, port), timeout=timeout)
-    # Whatever goes wrong with the query, the server didn't answer
+    # Whatever goes wrong with the query, the server didn't answer. python-a2s raises OSError
+    # (timeouts) and BrokenMessageError for a malformed answer, but this catches everything on
+    # purpose: the watchdog runs the server, and a failure of the query library, e.g. a bug with an
+    # answer it doesn't expect, must count as no answer, not end the watchdog
     except Exception as e:  # noqa: BLE001
         print(f"No answer from {host}:{port}: {e!r}", file=sys.stderr)
         return 1
@@ -134,7 +137,8 @@ def watch(
         try:
             info = a2s.info((host, port), timeout=timeout)
         # Whatever goes wrong with the query, the server didn't answer; the watchdog decides when
-        # that's too long. Before the first answer, the server is still starting.
+        # that's too long. Before the first answer, the server is still starting. Broad on
+        # purpose, see check()
         except Exception as e:  # noqa: BLE001
             if ready:
                 print(
