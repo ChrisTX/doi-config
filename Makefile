@@ -9,6 +9,8 @@ LIBDIR ?= $(PREFIX)/lib
 DATADIR ?= $(PREFIX)/share
 # The checks (checks/) and the tests (tests/) aren't installed: they're for this repository
 UNITS = $(wildcard deploy/systemd/*)
+# The user units of a player's machine: the scan of the game client's workshop items
+USER_UNITS = $(wildcard deploy/systemd-user/*)
 QUADLET = $(wildcard deploy/quadlet/*)
 DOCS = README.md CONTRIBUTING.md docs/Clients.md docs/Cvars.md
 
@@ -21,6 +23,7 @@ all:
 install:
 	python -m installer --destdir="$(DESTDIR)" --prefix="$(PREFIX)" dist/*.whl
 	install -Dm644 -t "$(DESTDIR)$(LIBDIR)/systemd/system" $(UNITS)
+	install -Dm644 -t "$(DESTDIR)$(LIBDIR)/systemd/user" $(USER_UNITS)
 	install -Dm644 deploy/sysusers.d/nwi-server.conf "$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf"
 	# Copied into ~/.config by whoever runs the containers: in Podman's folders, they'd be every user's
 	install -Dm644 -t "$(DESTDIR)$(DATADIR)/nwi-server-kit/quadlet" $(QUADLET)
@@ -30,6 +33,7 @@ uninstall:
 	rm -rf "$(DESTDIR)$(DATADIR)/nwi-server-kit" \
 		"$(DESTDIR)$(DATADIR)/doc/nwi-server-kit"
 	rm -f $(addprefix "$(DESTDIR)$(LIBDIR)/systemd/system/,$(addsuffix ",$(notdir $(UNITS)))) \
+		$(addprefix "$(DESTDIR)$(LIBDIR)/systemd/user/,$(addsuffix ",$(notdir $(USER_UNITS)))) \
 		"$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf"
 
 # The checks of the git hooks on all files (CONTRIBUTING.md)

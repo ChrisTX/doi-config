@@ -19,6 +19,13 @@ Usage:
         despite the scan's findings too, a reviewed false alarm
     nwi-server workshop scan FOLDER...
         scan items' folders, e.g. of a download or a mod's, as the update scans new versions (scan.py)
+    nwi-server workshop scan-client [--steam DIR] [--notify]
+        scan the game client's workshop items that Steam installed or updated since their last scan,
+        of Day of Infamy and Insurgency, with --notify with a desktop notification of findings
+        (client_scan.py; the user units nwi-client-scan.path and .service run it)
+    nwi-server workshop scan-item ITEM...
+        download items' current versions into a temporary folder and scan them, e.g. mods popular
+        with the players, as the servers scan theirs
     nwi-server workshop status [STATE]
         the versions the update held, per config source
     nwi-server workshop login
@@ -45,7 +52,7 @@ import time
 import tomllib
 from pathlib import Path
 
-from .. import games, scan, steam_ugc, steam_web, vpk, workshop
+from .. import clamd, client_scan, games, scan, steam_ugc, steam_web, vpk, workshop
 
 
 def show_code(url: str) -> None:
@@ -130,6 +137,36 @@ def configs_folder(argument: Path | None) -> Path:
     return single
 
 
+def scan_client(steam: Path | None, notify: bool) -> int:
+    """nwi-server workshop scan-client: exit status 1 with findings, 2 without clamd."""
+    root = steam or client_scan.steam_root()
+    try:
+        results = client_scan.scan_client(root, client_scan.state_file())
+    except clamd.ClamdError as error:
+        message = f"ClamAV: {error}, NWI_CLAMD=off scans without it"
+        print(message, file=sys.stderr)
+        if notify:
+            client_scan.notify("The workshop items weren't scanned", message)
+        return 2
+    status = 0
+    for result in results:
+        game = client_scan.APPS[result.app]
+        if not result.findings:
+            print(f"{game}: {result.item}: no findings")
+            continue
+        status = 1
+        for finding in result.findings:
+            print(f"{game}: {result.item}: {finding}")
+        if notify:
+            client_scan.notify(
+                f"A workshop item of {game} failed the scan",
+                f"{client_scan.item_page(result.item)}\n"
+                + "\n".join(result.findings[:5])
+                + "\nUnsubscribe from it before you play.",
+            )
+    return status
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="nwi-server workshop",
@@ -169,6 +206,15 @@ def main(argv: list[str] | None = None) -> int:
             )
     command = commands.add_parser("scan", help="scan items' folders")
     command.add_argument("folders", type=Path, nargs="+", metavar="FOLDER")
+    command = commands.add_parser("scan-item", help="download items and scan them")
+    command.add_argument("items", type=int, nargs="+", metavar="ITEM")
+    command = commands.add_parser("scan-client", help="scan the client's items")
+    command.add_argument(
+        "--steam", type=Path, help="Steam's folder (~/.local/share/Steam)"
+    )
+    command.add_argument(
+        "--notify", action="store_true", help="a desktop notification of findings"
+    )
     commands.add_parser("login", help="sign in for changing the collections")
     command = commands.add_parser("collection", help="a collection's items")
     command.add_argument("collection", type=int, metavar="ID")
@@ -255,6 +301,24 @@ def run(args: argparse.Namespace) -> int:
             else:
                 print(f"{folder}: no findings")
         return status
+    if args.command == "scan-item":
+        status = 0
+        for item in args.items:
+            try:
+                title, findings = client_scan.scan_item(item)
+            except (ValueError, RuntimeError, OSError) as error:
+                print(f"{item}: {error}", file=sys.stderr)
+                status = max(status, 2)
+                continue
+            for finding in findings:
+                print(f"{item} ({title}): {finding}")
+            if findings:
+                status = max(status, 1)
+            else:
+                print(f"{item} ({title}): no findings")
+        return status
+    if args.command == "scan-client":
+        return scan_client(args.steam, args.notify)
     if args.command in ("freeze", "approve"):
         configs = configs_folder(args.configs)
         approved = workshop.read_approved(configs)

@@ -244,15 +244,18 @@ def numbered_archive(name: str) -> bool:
 CLAMD_SETTING = "setting"
 
 
-def clamav_finding(name: str, data: bytes, socket: str | None) -> list[Finding]:
-    """ClamAV's finding of a file, with clamd at socket (None: without ClamAV)."""
+def clamav_finding(
+    name: str, data: bytes, socket: str | None, item: str = ""
+) -> list[Finding]:
+    """ClamAV's finding of a file, with clamd at socket (None: without ClamAV); item names the
+    item's folder in the note of a file too large for clamd."""
     if socket is None:
         return []
     try:
         signature = clamd.scan(socket, data)
     except clamd.TooLarge:
         print(
-            f"{name}: larger than clamd scans, checked without ClamAV",
+            f"{item}{name}: larger than clamd scans, checked without ClamAV",
             file=sys.stderr,
         )
         return []
@@ -261,9 +264,20 @@ def clamav_finding(name: str, data: bytes, socket: str | None) -> list[Finding]:
     return [f"{name}: ClamAV: {signature}"] if signature else []
 
 
-def scan(folder: Path, socket: str | None = CLAMD_SETTING) -> list[Finding]:
+def client_cache(name: str) -> bool:
+    """Whether a file is one the game client writes into an item's folder itself: the sound caches of
+    the item's VPKs (<vpk>.sound.cache) and of its sounds (sound/sound.cache)."""
+    return name == "sound/sound.cache" or (
+        "/" not in name and name.lower().endswith(".vpk.sound.cache")
+    )
+
+
+def scan(
+    folder: Path, socket: str | None = CLAMD_SETTING, client: bool = False
+) -> list[Finding]:
     """The findings of an item's version, its folder: empty if it passes. socket is clamd's, by
-    default by its settings (clamd.py), None without ClamAV."""
+    default by its settings (clamd.py), None without ClamAV. With client, the folder is a game
+    client's, whose own caches pass the checks of paths and formats, not ClamAV's."""
     if socket == CLAMD_SETTING:
         socket = clamd.socket_path()
     findings = []
@@ -286,8 +300,9 @@ def scan(folder: Path, socket: str | None = CLAMD_SETTING) -> list[Finding]:
                 findings += scan_vpk(path, name, socket)
             continue
         data = path.read_bytes()
-        findings += check_file(name, data, TOP)
-        findings += clamav_finding(name, data, socket)
+        if not (client and client_cache(name)):
+            findings += check_file(name, data, TOP)
+        findings += clamav_finding(name, data, socket, f"{folder.name}: ")
     return findings
 
 
@@ -305,7 +320,9 @@ def scan_vpk(path: Path, name: str, socket: str | None = None) -> list[Finding]:
             findings += [
                 f"{name}/{finding}" for finding in check_file(inner, data, set())
             ]
-            findings += clamav_finding(f"{name}/{inner}", data, socket)
+            findings += clamav_finding(
+                f"{name}/{inner}", data, socket, f"{path.parent.name}: "
+            )
     except (OSError, ValueError, KeyError, struct.error, EOFError) as error:
         findings.append(f"{name}: can't be read as a VPK: {error}")
     return findings

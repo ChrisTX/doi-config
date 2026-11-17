@@ -1,0 +1,11 @@
+[Unit]
+Description=Scan the game client's workshop items, as the servers scan theirs
+
+[Service]
+Type=oneshot
+# The versions not scanned yet, with a desktop notification of findings: exit status 1 with
+# findings, 2 without clamd (NWI_CLAMD=off in a drop-in scans without ClamAV)
+ExecStart=/usr/bin/nwi-server workshop scan-client --notify
+SuccessExitStatus=1
+Nice=10
+IOSchedulingClass=idle

@@ -276,6 +276,26 @@ scan FOLDER` scans a folder by hand, e.g. a mod before its upload. It's a
 defence in depth, not a proof: a file that's malformed in a way its headers
 don't show passes.
 
+The same scan protects a player's game client, with the package installed (and
+`clamd`, see [ClamAV](#clamav)). `nwi-server workshop scan-client` scans the
+workshop items Steam installed for Day of Infamy and Insurgency, in all of
+Steam's libraries, each version once, and `--notify` shows a desktop
+notification of an item with findings. The game client writes sound caches into
+its items' folders, which this scan lets pass, unlike the servers'. The user
+units run it whenever Steam installed or updated an item:
+
+```bash
+systemctl --user enable --now nwi-client-scan.path
+```
+
+They watch the records of Steam's default library
+(`~/.local/share/Steam/steamapps/workshop/appworkshop_<app>.acf`); a game in
+another library gets its record with `systemctl --user edit
+nwi-client-scan.path`, see the unit. It warns, it can't block: Steam installed
+the item already, so unsubscribe from it before you play. `nwi-server workshop
+scan-item ITEM...` downloads items' current versions into a temporary folder
+and scans them, without subscribing, e.g. mods popular with the players.
+
 In a checkout of the configs, `nwi-server workshop freeze` approves the current
 versions of all items of the servers' lists, and `nwi-server workshop approve
 ITEM [MANIFEST]` one version, the current one without MANIFEST, after a review.

@@ -1,0 +1,16 @@
+[Unit]
+Description=Scan the game client's workshop items when Steam installed or updated one
+
+# Steam writes an app's record of its workshop items after it installed or updated one. These are
+# the default library's; for a game in another library (Steam's libraryfolders.vdf), add its record
+# with a drop-in, e.g. systemctl --user edit nwi-client-scan.path:
+#   [Path]
+#   PathChanged=/mnt/games/SteamLibrary/steamapps/workshop/appworkshop_222880.acf
+[Path]
+# Day of Infamy
+PathChanged=%h/.local/share/Steam/steamapps/workshop/appworkshop_447820.acf
+# Insurgency
+PathChanged=%h/.local/share/Steam/steamapps/workshop/appworkshop_222880.acf
+
+[Install]
+WantedBy=default.target
