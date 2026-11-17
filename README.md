@@ -800,7 +800,11 @@ doesn't wait for players, starts without them, and, until a human player
 connects, counts the bots of a team as its human players. That keeps a server,
 say a casual PvP one, playing with bots until players join, and the round test
 uses it. Coop needs bots on the players' team for it, the game's AI teammates
-(`mp_coop_ai_teammates 1`). Its gamedata is Linux's only so far.
+(`mp_coop_ai_teammates 1`). Its gamedata covers Windows as well, 32-bit and
+64-bit, tested with Day of Infamy under Wine: PvP and coop rounds on 32-bit,
+PvP rounds on 64-bit. In 64-bit coop, DHooks (a build of SourceMod 1.13 with a
+fix for detours without arguments) hands the detour of the count of a team's
+human players a wrong team, and the round is lost when it starts.
 
 ### Difficulty scaler
 
