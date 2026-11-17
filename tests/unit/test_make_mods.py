@@ -360,3 +360,103 @@ def test_check_scripts(
     (game / "doi/maps/broken.txt").write_text('"cpsetup.txt" { "offensive" {')
     assert check_scripts(game, tmp_path / "workshop") == 1
     assert "4 map scripts, 1 repaired, 1 that can't be" in capsys.readouterr().err
+
+
+# An Insurgency map's night script: the day script's keys by #base, entities of every game mode with
+# an event's condition, and a game mode with its own navigation mesh
+INSURGENCY_SCRIPT = """\
+"#base" "ministry.txt"
+
+"cpsetup.txt"
+{
+    "theaterfile"   "default_checkpoint"
+    "entities"
+    {
+        "?halloween"
+        {
+            "prop_pumpkin" { "origin" "1 2 3" }
+        }
+    }
+    "checkpoint"
+    {
+        "navfile"   "ministry_coop"
+        "attackingteam" "security"
+        "controlpoint"  "a"
+        "controlpoint"  "b"
+        "spawnzones" { "1" "sz_a" }
+        "settings" { "respawn" "1" }
+    }
+}
+"""
+
+INSURGENCY_PLAYLIST = """\
+"playlist"
+{
+    "forced_cvars"
+    {
+        "ins_bot_count_checkpoint_min"  "4"
+        "checkpoint" { "mp_cp_capture_time" "30" }
+    }
+}
+"""
+
+
+@pytest.fixture
+def insurgency(tmp_path: Path) -> Path:
+    """An Insurgency install: insurgency/ with its gameinfo.txt, a night map's script and a playlist."""
+    install = tmp_path / "insurgency-game"
+    (install / "insurgency/maps").mkdir(parents=True)
+    (install / "insurgency/scripts/playlists/nwi").mkdir(parents=True)
+    (install / "insurgency/gameinfo.txt").touch()
+    (install / "insurgency/maps/ministry_night.txt").write_text(INSURGENCY_SCRIPT)
+    (install / "insurgency/scripts/playlists/nwi/coop.playlist").write_text(
+        INSURGENCY_PLAYLIST
+    )
+    return install
+
+
+def test_insurgency_scripts(insurgency: Path, tmp_path: Path) -> None:
+    """Insurgency's game modes and keys, and a copy that keeps the script's #base."""
+    assert check_scripts(insurgency, tmp_path / "no-workshop") == 0
+    mods = write_mods(
+        tmp_path / "mods",
+        night="""\
+[[copy]]
+maps = ["ministry_night"]
+from = "checkpoint"
+to = "push"
+remove_controlpoints = ["b"]
+""",
+    )
+    output = tmp_path / "output"
+    make(insurgency, tmp_path / "no-workshop", output, [mods])
+    text = (output / "custom/night/maps/ministry_night.txt").read_text()
+    assert text.startswith('"#base"\t"ministry.txt"\n"cpsetup.txt"\n')
+    script = made(output, "custom/night/maps/ministry_night.txt")
+    blocks = dict(next(value for _, value in script if not isinstance(value, str)))
+    assert [value for key, value in blocks["push"] if key == "controlpoint"] == ["a"]
+    assert dict(blocks["push"])["navfile"] == "ministry_coop"
+
+
+def test_insurgency_game_modes(insurgency: Path, tmp_path: Path) -> None:
+    """A game mode of Day of Infamy isn't one of Insurgency's; a playlist's game mode block is."""
+    mods = write_mods(
+        tmp_path / "mods",
+        wrong='[[copy]]\nmaps = ["ministry_night"]\nfrom = "checkpoint"\nto = "invasion"\n',
+    )
+    with pytest.raises(ModError, match="invasion isn't a game mode of insurgency"):
+        make(insurgency, tmp_path / "no-workshop", tmp_path / "output", [mods])
+    (mods / "wrong.toml").unlink()
+    write_mods(
+        mods,
+        playlists='[[playlist]]\nname = "nwi/coop"\ninclude = ["ins_bot_count_*", "mp_cp_*"]\n',
+    )
+    output = tmp_path / "output"
+    make(insurgency, tmp_path / "no-workshop", output, [mods])
+    folder = output / "cfg/doi-config/playlists/nwi"
+    assert (folder / "coop.cfg").read_text().splitlines()[3:] == [
+        'ins_bot_count_checkpoint_min "4"'
+    ]
+    assert (folder / "coop-checkpoint.cfg").read_text().splitlines()[3:] == [
+        'nwi_mode_cvar "mp_cp_capture_time" "30"'
+    ]

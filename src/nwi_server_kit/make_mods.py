@@ -6,6 +6,12 @@ in the order they're taken, the spawn zones and the entities. The game ships the
 e.g. offensive as invasion, which the map doesn't have, and adjusts the copy. The mods are made from
 the installed game, so they follow its updates, and this repository only holds the rules.
 
+Day of Infamy and Insurgency have game modes and keys of their own (GAMES), by the install's game
+folder: e.g. Insurgency's checkpoint and push, a game mode's own navfile, and entities of every game
+mode in the script itself. A script may take another's keys before its block, "#base" "<map>.txt",
+as Insurgency's night maps do; a mod's copy of it keeps that line, and copies only the file's own
+blocks.
+
 Each mods/<game>/<mod>.toml makes the mod folder custom/<mod> of the output, with the scripts of its maps:
 
     # A map's script comes from the game, unless the map is from the workshop: map = item ID
@@ -103,23 +109,6 @@ from srctools.vpk import VPK, FileInfo
 from .games import game_folder, item_folders
 from .games import item_folder as find_item
 
-# The game modes, the blocks of a map's script that copies are made from and to
-GAME_MODES = {
-    "assassination",
-    "entrenchment",
-    "firefight",
-    "frontline",
-    "intel",
-    "invasion",
-    "liberation",
-    "offensive",
-    "patrol",
-    "raid",
-    "sabotage",
-    "sandbox",
-    "stronghold",
-}
-
 PLAYLIST_KEYS = {"name", "include", "exclude"}
 REPLACE_KEYS = {"playlists", "exclude", "drop", "set", "ruleset"}
 RULESET_KEYS = {"rulesets", "exclude", "drop", "set"}
@@ -173,13 +162,72 @@ class Level:
         return self.blocks.get(key.lower(), self.other_blocks)
 
 
-# The levels of a map's script, from the scripts of the game and of workshop maps: the file holds one
-# block (named "cpsetup.txt"), the script, whose blocks are the game modes and the units. Below a game
-# mode, and in the units' blocks, any key goes.
-GAME_MODE_LEVEL = Level(
-    "a game mode",
-    values=frozenset(
-        {
+@dataclass(frozen=True)
+class Game:
+    """What a game's map scripts and playlists have: its game modes, the blocks of a map's script that
+    copies are made from and to, and a playlist's blocks of a game mode's settings; and the levels of
+    its map scripts, from the file down."""
+
+    name: str
+    game_modes: frozenset[str]
+    file_level: Level
+
+
+def game_rules(
+    name: str,
+    game_modes: set[str],
+    script_values: set[str],
+    script_blocks: set[str],
+    mode_values: set[str],
+    mode_blocks: set[str],
+) -> Game:
+    """A game's levels: the file holds one block (named "cpsetup.txt"), the script, after any
+    "#base" and "#include" of other scripts, whose keys the game merges in; the script's blocks are
+    the game modes and the game's other blocks, below which, and in the game modes' blocks, any key
+    goes."""
+    mode_level = Level(
+        "a game mode",
+        values=frozenset(mode_values),
+        blocks=dict.fromkeys(mode_blocks),
+    )
+    script_level = Level(
+        "the script",
+        values=frozenset(script_values),
+        blocks=dict.fromkeys(script_blocks) | dict.fromkeys(game_modes, mode_level),
+    )
+    file_level = Level(
+        "the file", values=frozenset({"#base", "#include"}), other_blocks=script_level
+    )
+    return Game(name, frozenset(game_modes), file_level)
+
+
+# The games, by their folders, with the keys of the map scripts of the game and of workshop maps
+GAMES = {
+    "doi": game_rules(
+        "doi",
+        game_modes={
+            "assassination",
+            "entrenchment",
+            "firefight",
+            "frontline",
+            "intel",
+            "invasion",
+            "liberation",
+            "offensive",
+            "patrol",
+            "raid",
+            "sabotage",
+            "sandbox",
+            "stronghold",
+        },
+        script_values={"nightlighting", "navfile", "compassoffset"},
+        script_blocks={
+            "theater_conditions",
+            "allowed_units",
+            "coop_base_units",
+            "coop_elite_units",
+        },
+        mode_values={
             "teamone",
             "teamtwo",
             "attackingteam",
@@ -187,30 +235,52 @@ GAME_MODE_LEVEL = Level(
             "roundtimer_frac",
             "teamonedefaultunit",
             "teamtwodefaultunit",
-        }
+        },
+        mode_blocks={
+            "spawnzones",
+            "entities",
+            "blockzones",
+            "ai",
+            "navspawns",
+            "cvars",
+        },
     ),
-    blocks=dict.fromkeys(
-        ("spawnzones", "entities", "blockzones", "ai", "navspawns", "cvars")
+    "insurgency": game_rules(
+        "insurgency",
+        game_modes={
+            "ambush",
+            "checkpoint",
+            "conquer",
+            "elimination",
+            "firefight",
+            "flashpoint",
+            "hunt",
+            "infiltrate",
+            "occupy",
+            "outpost",
+            "push",
+            "skirmish",
+            "strike",
+            "survival",
+            "training",
+        },
+        script_values={"nightlighting", "navfile", "compassoffset", "theaterfile"},
+        # Entities of every game mode, e.g. the night maps' props of events (?halloween)
+        script_blocks={"theater_conditions", "entities"},
+        # A game mode's own navigation mesh and lighting
+        mode_values={"attackingteam", "controlpoint", "navfile", "nightlighting"},
+        mode_blocks={"spawnzones", "entities", "navspawns", "cvars", "settings"},
     ),
-)
-SCRIPT_LEVEL = Level(
-    "the script",
-    values=frozenset({"nightlighting", "navfile", "compassoffset"}),
-    blocks=dict.fromkeys(
-        (
-            "theater_conditions",
-            "allowed_units",
-            "coop_base_units",
-            "coop_elite_units",
-        )
-    )
-    | dict.fromkeys(GAME_MODES, GAME_MODE_LEVEL),
-)
-FILE_LEVEL = Level("the file", other_blocks=SCRIPT_LEVEL)
+}
+
+
+def game_for(install: Path) -> Game:
+    """The game of an install, by its game's folder."""
+    return GAMES[game_folder(install).name]
 
 
 def parse_script(
-    text: str, source: str, level: Level | None = FILE_LEVEL
+    text: str, source: str, level: Level | None = GAMES["doi"].file_level
 ) -> tuple[Pairs, list[str]]:
     """Parse a map's script into its pairs, without its comments, and repair its braces: a key that
     its level doesn't have, but a level it's in, closes the blocks up to that level, e.g. a game mode in
@@ -280,7 +350,7 @@ def parse_script(
         index += 2
     if len(stack) > 1:
         raise ModError(f"{source}: {stack[-1][2]} isn't closed")
-    if len(file) != 1:
+    if sum(1 for _, value in file if not isinstance(value, str)) != 1:
         raise ModError(f"{source}: the file isn't one block")
     return file, repairs
 
@@ -362,7 +432,9 @@ def read_script(
     if wanted not in scripts:
         raise ModError(f"{name}: {where} has no {wanted}")
     source, read = scripts[wanted]
-    return parse_script(read().decode("utf-8", errors="replace"), source)
+    return parse_script(
+        read().decode("utf-8", errors="replace"), source, game_for(game).file_level
+    )
 
 
 def game_file(game: Path, path: str) -> tuple[str, bytes]:
@@ -383,13 +455,14 @@ def check_scripts(game: Path, workshop: Path) -> int:
     repaired, or can't be: they'd need a mod that has their maps in its fix list. Returns the number of
     scripts that can't be repaired."""
     folders = [game_folder(game), *item_folders(workshop)]
+    level = game_for(game).file_level
     checked = repaired = broken = 0
     for folder in folders:
         for source, read in map_scripts(folder).values():
             checked += 1
             try:
                 _, repairs = parse_script(
-                    read().decode("utf-8", errors="replace"), source
+                    read().decode("utf-8", errors="replace"), source, level
                 )
             except ModError as error:
                 broken += 1
@@ -417,7 +490,7 @@ class Copy:
     spawnzones: dict[str, str]
 
     @classmethod
-    def from_table(cls, table: dict, mod: str) -> "Copy":
+    def from_table(cls, table: dict, mod: str, game: Game) -> "Copy":
         unknown = set(table) - COPY_KEYS
         if unknown:
             raise ModError(
@@ -442,8 +515,8 @@ class Copy:
         except KeyError as error:
             raise ModError(f"{mod}: a copy has no {error.args[0]}") from None
         for mode in (copy.source, copy.target):
-            if mode not in GAME_MODES:
-                raise ModError(f"{mod}: {mode} isn't a game mode")
+            if mode not in game.game_modes:
+                raise ModError(f"{mod}: {mode} isn't a game mode of {game.name}")
         return copy
 
     def apply(self, blocks: Pairs, name: str) -> None:
@@ -741,7 +814,7 @@ class Playlist:
                     if self.takes(name):
                         settings[name] = value
                 # A game mode's block; others, like the plugins', aren't settings
-                elif name.lower() in GAME_MODES:
+                elif name.lower() in game_for(game).game_modes:
                     for setting, mode_value in value:
                         if isinstance(mode_value, str) and self.takes(setting):
                             modes.setdefault(name.lower(), {})[setting] = mode_value
@@ -800,7 +873,8 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> list[Rep
     fix = settings.get("fix", {})
     if not isinstance(fix, dict) or set(fix) - {"maps"}:
         raise ModError(f"{mod}: fix is a table with the maps' list only")
-    copies = [Copy.from_table(table, mod) for table in settings.get("copy", [])]
+    rules = game_for(game)
+    copies = [Copy.from_table(table, mod, rules) for table in settings.get("copy", [])]
     for table in settings.get("playlist", []):
         Playlist.from_table(table, mod).make(game, output, mod)
     replaces = [Replace.from_table(table, mod) for table in settings.get("replace", [])]
@@ -811,14 +885,18 @@ def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> list[Rep
         script, repairs = read_script(game, workshop, workshop_maps, name)
         for repair in repairs:
             print(f"{mod}: {name}: {repair}", file=sys.stderr)
-        root, contents = script[0]
+        # The script's block, after any "#base" and "#include", which the output keeps
+        includes = [(key, value) for key, value in script if isinstance(value, str)]
+        root, contents = next(
+            (key, value) for key, value in script if not isinstance(value, str)
+        )
         blocks = as_block(contents, f"{mod}: {name}")
         for copy in copies:
             if name in copy.maps:
                 copy.apply(blocks, name)
         path = output / "custom" / mod / "maps" / f"{name}.txt"
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(format_keyvalues([(root, blocks)]), encoding="utf-8")
+        path.write_text(format_keyvalues([*includes, (root, blocks)]), encoding="utf-8")
     if maps:
         print(f"{mod}: {len(maps)} maps", file=sys.stderr)
     return replaces
