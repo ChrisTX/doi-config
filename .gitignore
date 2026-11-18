@@ -16,3 +16,6 @@ deploy/arch/pkg/
 deploy/arch/*.pkg.tar.*
 # The package's built wheel (make, deploy/arch/PKGBUILD)
 dist/
+# The game's help texts of the cvars and commands, for editors on this machine only
+# (tests/integration/instance.py dump-cvars --with-descriptions)
+checks/cvars/descriptions/

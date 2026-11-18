@@ -28,6 +28,12 @@ Usage:
         the round test: update and start each config (coop-commando and soak-bots by default) in turn,
         let bots play its rounds and check that they do (tests/integration/rounds.py), then remove it;
         exit status 1 if a config failed
+    instance.py dump-cvars [--with-descriptions] GAME
+        dump the cvars and commands of GAME (doi, insurgency) into checks/cvars/<GAME>.json for
+        checks/check_configs.py (checks/dump_cvars.py): update and start its test server (coop-commando
+        or ins-test) without nwi_cvar_unlocker, for the game's own bounds and flags, then remove it;
+        with --with-descriptions their help texts too, into checks/cvars/descriptions/<GAME>.json,
+        which git ignores, for editors on this machine
     instance.py down
         remove the test instance, its database and volumes
     instance.py rcon COMMAND...
@@ -127,6 +133,10 @@ SOURCEBANS = "sourcebans-pp"
 
 class InstanceError(RuntimeError):
     """What stops a command, with the message for the user."""
+
+
+# The test server of each game whose cvars dump-cvars dumps
+DUMP_CONFIGS = {"doi": "coop-commando", "insurgency": "ins-test"}
 
 
 def read_settings(path: Path, environ: Mapping[str, str]) -> dict[str, str]:
@@ -833,6 +843,43 @@ class Instance:
                 )
             self.down()
 
+    def dump_cvars(self, args: list[str]) -> int:
+        """The dump of a game's cvars and commands, see the usage and checks/dump_cvars.py."""
+        descriptions = args[:1] == ["--with-descriptions"]
+        args = args[1:] if descriptions else args
+        if len(args) != 1 or args[0] not in DUMP_CONFIGS:
+            raise InstanceError(
+                f"dump-cvars [--with-descriptions] GAME: GAME is one of {', '.join(DUMP_CONFIGS)}"
+            )
+        game, config = args[0], DUMP_CONFIGS[args[0]]
+        disabled = self.settings.get("DISABLE_PLUGINS", "").split()
+        self.settings = {
+            **self.settings,
+            "DISABLE_PLUGINS": " ".join([*disabled, "nwi_cvar_unlocker"]),
+        }
+        self.update([config])
+        self.up([config])
+        cvars = REPOSITORY / "checks/cvars"
+        options = (
+            ["--descriptions", str(cvars / "descriptions" / f"{game}.json")]
+            if descriptions
+            else []
+        )
+        try:
+            with (cvars / f"{game}.json").open("w") as output:
+                return subprocess.run(
+                    [
+                        sys.executable,
+                        str(REPOSITORY / "checks/dump_cvars.py"),
+                        *options,
+                    ],
+                    env=os.environ | {"RCON_PASSWORD": self.rcon_password()},
+                    stdout=output,
+                    check=False,
+                ).returncode
+        finally:
+            self.down()
+
     def rounds(self, args: list[str]) -> int:
         """The round test of each config, see the usage and tests/integration/rounds.py."""
         configs = args or ["coop-commando", "soak-bots"]
@@ -998,6 +1045,7 @@ def main(argv: list[str] | None = None) -> int:
         "logs",
         "soak",
         "rounds",
+        "dump-cvars",
     ):
         print(f"Usage:{usage}", file=sys.stderr)
         return 2
@@ -1022,6 +1070,8 @@ def main(argv: list[str] | None = None) -> int:
             return instance.logs()
         elif command == "rounds":
             return instance.rounds(rest)
+        elif command == "dump-cvars":
+            return instance.dump_cvars(rest)
         else:
             return instance.soak(rest)
     except InstanceError as error:

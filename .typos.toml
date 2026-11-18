@@ -38,8 +38,8 @@ MRES_Supercede = "MRES_Supercede"
 
 [files]
 extend-exclude = [
-  # The game's cvars and commands, by their names (checks/dump_cvars.py)
-  "checks/cvars.json",
+  # The games' cvars and commands, by their names (checks/dump_cvars.py)
+  "checks/cvars/",
   # Licence texts, as they are
   "LICENSES/",
   # AFK Manager, vendored: its code, include, translations and the configuration generated from it

@@ -717,12 +717,22 @@ exceed: bounds and flags like cheat of the cvars in
 `addons/sourcemod/configs/nwi_cvar_unlocker.cfg`, with a section per game.
 
 `checks/check_configs.py`, a check before each commit, formats the configs (the
-cvar bare, its value quoted) and checks them against the game's cvars and
-commands in `checks/cvars.json`: unknown names, values out of their bounds, cheat
-cvars and the rules above. `checks/dump_cvars.py` makes `checks/cvars.json` from
-a running server, after a game update; for the game's own bounds, start it
-without the unlocker, e.g. with
-`DISABLE_PLUGINS=nwi_cvar_unlocker tests/integration/instance.py up`.
+cvar bare, its value quoted) and checks them against the cvars and commands of
+the games they run in, `checks/cvars/<game>.json`: those of `game/common`
+against both games', those of `game/<game>` and a server's own against their
+game's. It finds unknown names, values out of their bounds, cheat cvars and the
+rules above. After a game update, the test instance dumps a game's cvars anew
+from its test server, started without the unlocker for the game's own bounds:
+
+```bash
+tests/integration/instance.py dump-cvars doi
+tests/integration/instance.py dump-cvars --with-descriptions insurgency
+```
+
+With `--with-descriptions`, the help texts of the cvars and commands go into
+`checks/cvars/descriptions/<game>.json` too, for editors on your own machine.
+They're the game's and SourceMod's texts, so git ignores them: the repository
+only has the names, defaults, bounds and flags.
 
 ### Tickrate
 

@@ -3,19 +3,23 @@
 game's game/<game>, and servers' own cfg folders of servers/ and tests/integration/servers/).
 
 Formats each line as the game's own configs write it: the cvar or command bare, its arguments quoted,
-e.g. mp_roundtime "600", exec "doi-config/bot_logic.cfg". Then checks against the server's cvars and
-commands (checks/cvars.json, see checks/dump_cvars.py) and those of the plugins of this repository:
+e.g. mp_roundtime "600", exec "doi-config/bot_logic.cfg". Then checks each config against the cvars and
+commands of the game it runs in (checks/cvars/<game>.json, see checks/dump_cvars.py) and those of the
+plugins of this repository: a config of game/common against those of every game, of game/<game>
+against its game's, a server's own against its server.toml's game's. A finding of some of the games
+names them.
 
 - every name is a cvar or a command,
 - a cvar gets one value, a number within its bounds where it has bounds,
 - a cheat cvar is only set if nwi_cvar_unlocker removes its cheat flag (its config,
-  game/common/addons/sourcemod/configs/nwi_cvar_unlocker.cfg, Day of Infamy's section); its bounds replace the
-  game's, a bound it calculates (team_slots) isn't checked,
+  game/common/addons/sourcemod/configs/nwi_cvar_unlocker.cfg, the game's section); its bounds replace
+  the game's, a bound it calculates (team_slots) isn't checked,
 - the configs of the game modes keep to nwi_mode_config.sp: the configs it runs (basic_mode_*.cfg,
   mode_*.cfg) only set cvars with nwi_mode_cvar, which no other config uses, so that the settings of a
   game mode are undone when it changes,
-- an exec'd config of ours (nwi-config, doi-config) exists in game/, but for the playlists' configs
-  (nwi-config/playlists), which nwi-server make-mods makes.
+- an exec'd config of ours (nwi-config, doi-config) exists in the game's game/<game> or game/common,
+  or the server's own cfg, but for the playlists' configs (nwi-config/playlists), which nwi-server
+  make-mods makes.
 
 Usage: check_configs.py   (in the repository; exit status 1 on findings, or if a file was reformatted)
 """
@@ -23,12 +27,15 @@ Usage: check_configs.py   (in the repository; exit status 1 on findings, or if a
 import json
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 from srctools.keyvalues import Keyvalues
 
 REPO = Path(__file__).resolve().parent.parent
 SCRIPTING = REPO / "game/common/addons/sourcemod/scripting"
+CVARS = REPO / "checks/cvars"
+GAMES = ("doi", "insurgency")
 UNLOCKER = REPO / "game/common/addons/sourcemod/configs/nwi_cvar_unlocker.cfg"
 # A line's tokens: quoted, a comment, or bare
 TOKEN = re.compile(r'"(?P<quoted>[^"]*)"|(?P<comment>//.*)|(?P<bare>[^\s"]+)')
@@ -79,12 +86,27 @@ def plugin_names() -> tuple[set[str], set[str]]:
     return cvars, commands
 
 
-def unlocker() -> tuple[set[str], dict[str, float | None]]:
-    """The cvars nwi_cvar_unlocker removes the cheat flag of in Day of Infamy, and its upper bounds: a
+def games_of(path: Path) -> list[str]:
+    """The games a config runs in: every game for game/common's, the game of game/<game>, and of a
+    server's own its server.toml's (Day of Infamy without one)."""
+    parts = path.relative_to(REPO).parts
+    if parts[0] == "game":
+        return list(GAMES) if parts[1] == "common" else [parts[1]]
+    # servers/<server>/cfg/… or tests/integration/servers/<server>/cfg/…
+    server = REPO.joinpath(*parts[: parts.index("cfg")])
+    toml = server / "server.toml"
+    if not toml.is_file():
+        return ["doi"]
+    with toml.open("rb") as file:
+        return [str(tomllib.load(file).get("game", "doi"))]
+
+
+def unlocker(game: str) -> tuple[set[str], dict[str, float | None]]:
+    """The cvars nwi_cvar_unlocker removes the cheat flag of in the game, and its upper bounds: a
     number, None where the plugin calculates it, or missing where it keeps the game's."""
     root = Keyvalues.parse(UNLOCKER.read_text(), UNLOCKER)
     # The keys' names in lower case, as srctools gives them
-    config = root.find_key("nwi_cvar_unlocker").find_key("doi", or_blank=True)
+    config = root.find_key("nwi_cvar_unlocker").find_key(game, or_blank=True)
     cheats = {
         flags.name
         for flags in config.find_key("remove_flags", or_blank=True)
@@ -101,12 +123,14 @@ def unlocker() -> tuple[set[str], dict[str, float | None]]:
     return cheats, bounds
 
 
-def check(path: Path, data: dict, names: tuple[set[str], set[str]]) -> list[str]:
-    """The findings of a config."""
+def check(
+    path: Path, game: str, data: dict, names: tuple[set[str], set[str]]
+) -> list[str]:
+    """The findings of a config in a game, with the game's cvars and commands (DATA)."""
     cvars = data["cvars"]
     commands = set(data["commands"])
     plugin_cvars, plugin_commands = names
-    cheats, bounds = unlocker()
+    cheats, bounds = unlocker(game)
     relative = path.relative_to(REPO)
     mode_config = re.fullmatch(r"(basic_)?mode_.*\.cfg", path.name) is not None
     findings = []
@@ -161,7 +185,16 @@ def check(path: Path, data: dict, names: tuple[set[str], set[str]]) -> list[str]
             target = arguments[0] if arguments else ""
             ours = target.startswith(("nwi-config/", "doi-config/"))
             made = target.startswith("nwi-config/playlists/")
-            if ours and not made and not any((REPO / "game").glob(f"*/cfg/{target}")):
+            folders = [REPO / "game" / game, REPO / "game/common"]
+            parts = path.relative_to(REPO).parts
+            if parts[0] != "game":
+                # A server's own: servers/<server>/cfg/… or tests/integration/servers/<server>/cfg/…
+                folders.append(REPO.joinpath(*parts[: parts.index("cfg")]))
+            if (
+                ours
+                and not made
+                and not any((folder / "cfg" / target).is_file() for folder in folders)
+            ):
                 findings.append(f"{where}: there's no {target}")
         elif command in commands or command in plugin_commands:
             continue
@@ -171,7 +204,7 @@ def check(path: Path, data: dict, names: tuple[set[str], set[str]]) -> list[str]
 
 
 def main() -> int:
-    data = json.loads((REPO / "checks/cvars.json").read_text())
+    data = {game: json.loads((CVARS / f"{game}.json").read_text()) for game in GAMES}
     names = plugin_names()
     status = 0
     for path in configs():
@@ -181,8 +214,15 @@ def main() -> int:
             path.write_text(formatted)
             print(f"{path.relative_to(REPO)}: formatted", file=sys.stderr)
             status = 1
-        for finding in check(path, data, names):
-            print(finding, file=sys.stderr)
+        # Each finding once, with the games it's of if it isn't of all the config runs in
+        games = games_of(path)
+        findings: dict[str, list[str]] = {}
+        for game in games:
+            for finding in check(path, game, data[game], names):
+                findings.setdefault(finding, []).append(game)
+        for finding, of in findings.items():
+            suffix = f" (in {', '.join(of)})" if len(games) > 1 and of != games else ""
+            print(finding + suffix, file=sys.stderr)
             status = 1
     return status
 
