@@ -1,5 +1,5 @@
 # Insurgency's test server: the game's own Checkpoint (coop) on Ministry (ministry_coop), with nothing of ours but what
-# every server runs (nwi-server server-config), for tests of the tools and the plugins with Insurgency.
+# every Insurgency server runs (game/common and game/insurgency), for tests of the tools and the plugins with Insurgency.
 # On the LAN only.
 game = "insurgency"
 hostname = "Insurgency test"

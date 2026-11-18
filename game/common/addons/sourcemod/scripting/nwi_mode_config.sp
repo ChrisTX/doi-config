@@ -10,12 +10,15 @@
 // configs ran (OnConfigsExecuted), the game's included, it runs those of the game mode's configs that
 // exist, in this order, so that a later one's setting replaces an earlier one's:
 //
-//     doi-config/basic_mode_<category>.cfg         all game modes of the category
-//     doi-config/basic_mode_<category>-<mode>.cfg  the game mode, whatever the playlist
-//     doi-config/playlists/<playlist>-<mode>.cfg   the playlist's own settings of the game mode, made
-//                                                  by nwi-server make-mods
-//     doi-config/mode_<playlist name>.cfg          all game modes of the playlist
-//     doi-config/mode_<playlist name>-<mode>.cfg   the game mode in the playlist
+//     basic_mode_<category>.cfg         all game modes of the category
+//     basic_mode_<category>-<mode>.cfg  the game mode, whatever the playlist
+//     playlists/<playlist>-<mode>.cfg   the playlist's own settings of the game mode, made by
+//                                       nwi-server make-mods, in nwi-config only
+//     mode_<playlist name>.cfg          all game modes of the playlist
+//     mode_<playlist name>-<mode>.cfg   the game mode in the playlist
+//
+// each of cfg/nwi-config, the configs of all games and of Insurgency, then of cfg/doi-config, Day
+// of Infamy's (game/common, game/insurgency and game/doi of the configs).
 //
 // <category> is coop, pvp or solo: the game's coop modes are those whose rules derive from
 // CINSRulesCoopBase, solo those of CINSRulesSinglePlayerBase (Insurgency's training), the others
@@ -71,6 +74,10 @@ static const char g_insurgencyModes[][][] =
 };
 
 NWIGame g_game;
+// The folders of cfg with the game modes' configs, in their order: the configs of all games and of
+// Insurgency, then Day of Infamy's
+char FOLDERS[][] = {"nwi-config", "doi-config"};
+
 ConVar g_current;
 ConVar g_categoryOverride;
 ConVar g_playlist;
@@ -163,25 +170,33 @@ void StartMode(const char[] mode)
     char name[PLATFORM_MAX_PATH];
     strcopy(name, sizeof(name), playlist[slash + 1]);
 
+    // The configs by their names in a folder of cfg, in their order
     char configs[5][PLATFORM_MAX_PATH];
     if (g_category[0] != '\0')
     {
-        Format(configs[0], sizeof(configs[]), "doi-config/basic_mode_%s.cfg", g_category);
-        Format(configs[1], sizeof(configs[]), "doi-config/basic_mode_%s-%s.cfg", g_category, mode);
+        Format(configs[0], sizeof(configs[]), "basic_mode_%s.cfg", g_category);
+        Format(configs[1], sizeof(configs[]), "basic_mode_%s-%s.cfg", g_category, mode);
     }
     if (playlist[0] != '\0')
     {
-        Format(configs[2], sizeof(configs[]), "doi-config/playlists/%s-%s.cfg", playlist, mode);
-        Format(configs[3], sizeof(configs[]), "doi-config/mode_%s.cfg", name);
-        Format(configs[4], sizeof(configs[]), "doi-config/mode_%s-%s.cfg", name, mode);
+        Format(configs[2], sizeof(configs[]), "playlists/%s-%s.cfg", playlist, mode);
+        Format(configs[3], sizeof(configs[]), "mode_%s.cfg", name);
+        Format(configs[4], sizeof(configs[]), "mode_%s-%s.cfg", name, mode);
     }
-    // Appended to the commands waiting, in their order
+    // Appended to the commands waiting, in their order, each of the folders in turn
     for (int i = 0; i < sizeof(configs); i++)
     {
-        char path[PLATFORM_MAX_PATH];
-        Format(path, sizeof(path), "cfg/%s", configs[i]);
-        if (configs[i][0] != '\0' && FileExists(path, true))
-            ServerCommand("exec \"%s\"", configs[i]);
+        for (int folder = 0; folder < sizeof(FOLDERS); folder++)
+        {
+            // The playlists' configs are made into nwi-config only
+            if (configs[i][0] == '\0' || (i == 2 && folder > 0))
+                continue;
+            char config[PLATFORM_MAX_PATH], path[PLATFORM_MAX_PATH];
+            Format(config, sizeof(config), "%s/%s", FOLDERS[folder], configs[i]);
+            Format(path, sizeof(path), "cfg/%s", config);
+            if (FileExists(path, true))
+                ServerCommand("exec \"%s\"", config);
+        }
     }
     PrintToServer("nwi_mode_config: %s (%s), playlist %s", mode,
         g_category[0] != '\0' ? g_category : "unknown category", playlist[0] != '\0' ? playlist : "none");

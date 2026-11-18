@@ -80,9 +80,9 @@ repos:
         language: system
         entry: >-
           bash -c 'status=0; for f; do
-          spcomp -E -i game/addons/sourcemod/scripting/include -o /dev/null "$f" || status=1;
+          spcomp -E -i game/common/addons/sourcemod/scripting/include -o /dev/null "$f" || status=1;
           done; exit "$status"' --
-        files: ^(game/addons/sourcemod/scripting|tests/integration/plugins)/[^/]+\.sp$
+        files: ^(game/common/addons/sourcemod/scripting|tests/integration/plugins)/[^/]+\.sp$
 
       # The game's configs: formatted, the cvar bare and its arguments quoted, and checked against the
       # game's cvars and commands (checks/cvars.json, made with checks/dump_cvars.py) and those of our
@@ -93,7 +93,7 @@ repos:
         language: system
         entry: python3 checks/check_configs.py
         pass_filenames: false
-        files: \.cfg$|^checks/(cvars\.json|check_configs\.py)$|^game/addons/sourcemod/scripting/
+        files: \.cfg$|^checks/(cvars\.json|check_configs\.py)$|^game/common/addons/sourcemod/scripting/
 
       # The servers' settings: their keys, and the configs and lists they name (nwi-server server-config)
       - id: server-config

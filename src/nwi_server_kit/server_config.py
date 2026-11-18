@@ -2,14 +2,14 @@
 
 The file says what the server is; its machine's settings and secrets (ports, passwords) are in its
 environment file instead (/etc/nwi-server/<server>.env). Its keys, the paths relative to the game's cfg
-folder:
+folder, of game/<game>/cfg or game/common/cfg of its configs (games.config_file), or of its own cfg:
 
     game            optional: the game, by the name of its folder, "doi" (Day of Infamy, the default)
                     or "insurgency"; the server's install has to be one of it
     hostname        the server's name in the server browser; SourceTV's is "<hostname> | SourceTV"
     startup_map     the first map and its game mode, e.g. "bastogne stronghold"
     playlist        optional: the playlist (+sv_playlist), e.g. "nwi/coop_commando"; its config of the
-                    settings we take over, doi-config/playlists/<playlist>.cfg, which nwi-server make-mods
+                    settings we take over, nwi-config/playlists/<playlist>.cfg, which nwi-server make-mods
                     makes, runs in server.cfg
     ruleset         optional, with a playlist: its ruleset (+sv_ruleset), e.g. "american_campaign" of
                     nwi/coop_commando; the playlist's default one without
@@ -34,7 +34,7 @@ folder:
     configs_after   optional: configs to run after ours, e.g. ["doi-config/basic_coop.cfg"]
 
 The server.cfg it makes runs, in this order, so that a later one's setting replaces an earlier one's:
-configs_before, doi-config/tv_settings.cfg, the playlist's config, doi-config/basic_settings.cfg,
+configs_before, nwi-config/tv_settings.cfg, the playlist's config, nwi-config/basic_settings.cfg,
 the tickrate's updates, configs_after. The game modes' configs run at every map start, after these (nwi_mode_config.sp).
 
 The playlist and its ruleset are on the command line, before +map, so that the game applies the
@@ -50,7 +50,7 @@ import shutil
 import tomllib
 from pathlib import Path
 
-from .games import DEFAULT, SERVER_APPS, config_folder, game_folder
+from .games import DEFAULT, SERVER_APPS, config_file, config_folder, game_folder
 
 # The keys and their types
 KEYS = {
@@ -136,12 +136,12 @@ def server_cfg(settings: dict) -> str:
         f"tv_title {quote(hostname + ' | SourceTV')}",
     ]
     configs = list(settings.get("configs_before", []))
-    configs.append("doi-config/tv_settings.cfg")
+    configs.append("nwi-config/tv_settings.cfg")
     lines += [f"exec {quote(config)}" for config in configs]
     configs = []
     if "playlist" in settings:
-        configs.append(f"doi-config/playlists/{settings['playlist']}.cfg")
-    configs.append("doi-config/basic_settings.cfg")
+        configs.append(f"nwi-config/playlists/{settings['playlist']}.cfg")
+    configs.append("nwi-config/basic_settings.cfg")
     lines += [f"exec {quote(config)}" for config in configs]
     # The clients' updates per second, the tickrate's, whatever their own settings: the maximums
     # (sv_maxcmdrate, sv_maxupdaterate) follow the tickrate by themselves
@@ -216,7 +216,7 @@ def options(root: Path) -> list[str]:
 
 def check(paths: list[Path]) -> int:
     status = 0
-    cfg = config_folder() / "game" / "cfg"
+    configs = config_folder()
     for path in paths:
         try:
             settings = load(path)
@@ -229,12 +229,14 @@ def check(paths: list[Path]) -> int:
         named += [settings[key] for key in ("mapcycle", "workshop") if key in settings]
         for name in named:
             # The configs' own, or the server's, which its folder brings along (e.g. a test's)
+            game = settings.get("game", DEFAULT)
             if (
-                not (cfg / name).is_file()
+                not config_file(configs, game, name).is_file()
                 and not (path.parent / "cfg" / name).is_file()
             ):
                 print(
-                    f"{path}: there's no game/cfg/{name}, nor cfg/{name} of the server"
+                    f"{path}: there's no cfg/{name} in game/{game} or game/common, "
+                    "nor of the server"
                 )
                 status = 1
     return status

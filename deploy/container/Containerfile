@@ -62,7 +62,8 @@ RUN --mount=type=bind,from=repo,target=/mnt/repo --mount=type=secret,id=repo-key
   && cp -a --no-preserve=ownership /usr/lib/metamod/. /usr/lib/sourcemod/. /opt/nwi-layer/ \
   && chown -R nwi-server:nwi-server /opt/nwi-layer
 
-# This repository and its plugins, on top of SourceMod in /opt/nwi-layer
+# This repository's plugins and game/common, on top of SourceMod in /opt/nwi-layer; game/<game>
+# comes at the server's start, which knows its game
 USER 1000:1000
 COPY --chown=nwi-server:nwi-server . /opt/nwi-server-kit
 # The package of the tools, from the repository (python -m nwi_server_kit), and the workshop items'
@@ -71,7 +72,7 @@ COPY --chown=nwi-server:nwi-server . /opt/nwi-server-kit
 ENV PYTHONPATH=/opt/nwi-server-kit/src \
   NWI_CLAMD=off
 RUN python3 -m nwi_server_kit compile-plugins /opt/nwi-server-kit /tmp/plugins \
-  && cp -a /tmp/plugins/. /opt/nwi-server-kit/game/. /opt/nwi-layer/ \
+  && cp -a /tmp/plugins/. /opt/nwi-server-kit/game/common/. /opt/nwi-layer/ \
   && rm -rf /tmp/plugins
 
 WORKDIR /srv/game

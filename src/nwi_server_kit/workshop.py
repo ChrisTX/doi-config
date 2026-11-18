@@ -228,7 +228,8 @@ def hold_scanned(
 
 
 def collections(configs: Path) -> dict[int, str]:
-    """A config source's collections and the workshop lists they mirror (game/cfg/<list>), of
+    """A config source's collections and the workshop lists they mirror (cfg/<list> of game/, e.g.
+    game/doi/cfg/doi-config/workshop-ids-pvp.txt, games.config_file), of
     workshop/collections.toml:
 
         [collections.3450000000]
@@ -302,7 +303,9 @@ def sync_collections(
             try:
                 items = [
                     item
-                    for item in list_items(configs_of(source) / "game/cfg" / list_name)
+                    for item in list_items(
+                        games.config_file(configs_of(source), None, list_name)
+                    )
                     if str(item) not in held
                 ]
                 current = steam_web.collection_items(collection)
@@ -376,7 +379,9 @@ def listed_items(configs: Path) -> list[int]:
     for toml in sorted(configs.glob("servers/*/server.toml")):
         settings = server_config.load(toml)
         if "workshop" in settings:
-            text = (configs / "game/cfg" / settings["workshop"]).read_text()
+            text = games.config_file(
+                configs, settings.get("game", games.DEFAULT), settings["workshop"]
+            ).read_text()
             items |= {
                 int(line.split()[0])
                 for line in text.splitlines()

@@ -72,10 +72,10 @@ matches gets no replacement and stays as the game has it:
 A [[replace.ruleset]] table belongs to the [[replace]] table before it, as does a [replace.set] table,
 the same as set = { ... } in it.
 
-They make cfg/doi-config/playlists/<name>.playlist of the output.
+They make cfg/nwi-config/playlists/<name>.playlist of the output.
 
-The [[playlist]] tables make cfg/doi-config/playlists/<name>.cfg of the output, which sets the settings,
-for a server's server.cfg (playlist of its server.toml, which sets sv_playlist), and cfg/doi-config/playlists/<name>-<mode>.cfg for each game mode
+The [[playlist]] tables make cfg/nwi-config/playlists/<name>.cfg of the output, which sets the settings,
+for a server's server.cfg (playlist of its server.toml, which sets sv_playlist), and cfg/nwi-config/playlists/<name>-<mode>.cfg for each game mode
 whose block of settings has some, with nwi_mode_cvar, for the game mode's configs (see
 nwi_mode_config.sp). An include glob that matches nothing is an error, e.g. after a game update that
 changed the playlist.
@@ -745,7 +745,7 @@ def make_replacements(game: Path, replaces: list[Replace], output: Path) -> None
         mods = ", ".join(
             dict.fromkeys(f"mods/{replace.mod}.toml" for replace in matching)
         )
-        path = output / "cfg/doi-config/playlists" / f"{name}.playlist"
+        path = output / "cfg/nwi-config/playlists" / f"{name}.playlist"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             f"// Made by nwi-server make-mods from the game's scripts/playlists/{name}.playlist,\n"
@@ -830,7 +830,7 @@ class Playlist:
             raise ModError(
                 f"{mod}: {self.name} has no forced settings matching {', '.join(unused)}"
             )
-        folder = output / "cfg/doi-config/playlists"
+        folder = output / "cfg/nwi-config/playlists"
         header = (
             f"// Made by nwi-server make-mods from the game's scripts/playlists/{self.name}.playlist:\n"
             f"// the settings it forces that mods/{mod}.toml takes over"
@@ -856,7 +856,7 @@ class Playlist:
 
 def make_mod(config: Path, game: Path, workshop: Path, output: Path) -> list[Replace]:
     """Make the mod of a mods/<game>/<mod>.toml in output/custom/<mod>, and its playlists' configs in
-    output/cfg/doi-config/playlists; returns its replacements of playlists, which make_replacements()
+    output/cfg/nwi-config/playlists; returns its replacements of playlists, which make_replacements()
     makes with those of all mods."""
     mod = config.stem
     with config.open("rb") as file:

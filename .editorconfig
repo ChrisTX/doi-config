@@ -37,5 +37,5 @@ indent_style = unset
 indent_size = unset
 
 # AFK Manager, vendored from version 4.3.0, indents with tabs
-[game/addons/sourcemod/{scripting/afk_manager4.sp,scripting/include/afk_manager.inc,translations/afk_manager.phrases.txt}]
+[game/common/addons/sourcemod/{scripting/afk_manager4.sp,scripting/include/afk_manager.inc,translations/afk_manager.phrases.txt}]
 indent_style = tab

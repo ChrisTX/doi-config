@@ -133,7 +133,9 @@ def dropped_maps(state: Path, game: str, item: int, version: Path | None) -> lis
     return sorted(path.stem for path in download.glob("maps/*.bsp"))
 
 
-def leave_out(config: Path, configs: Path, dropped: set[int], maps: set[str]) -> None:
+def leave_out(
+    config: Path, configs: Path, game: str, dropped: set[int], maps: set[str]
+) -> None:
     """Leave items whose version the server runs isn't the Workshop's out of the server's copy of its
     config: of its workshop list and, their maps, of its mapcycle; a startup map of theirs becomes the
     mapcycle's first (workshop.py)."""
@@ -147,7 +149,7 @@ def leave_out(config: Path, configs: Path, dropped: set[int], maps: set[str]) ->
     if "workshop" in settings:
         target = config / "cfg" / settings["workshop"]
         target.parent.mkdir(parents=True, exist_ok=True)
-        text = (configs / "game/cfg" / settings["workshop"]).read_text()
+        text = games.config_file(configs, game, settings["workshop"]).read_text()
         target.write_text(workshop.filter_list(text, dropped))
     if not maps:
         return
@@ -156,7 +158,7 @@ def leave_out(config: Path, configs: Path, dropped: set[int], maps: set[str]) ->
         target = config / "cfg" / settings["mapcycle"]
         target.parent.mkdir(parents=True, exist_ok=True)
         cycle = workshop.filter_mapcycle(
-            (configs / "game/cfg" / settings["mapcycle"]).read_text(), maps
+            games.config_file(configs, game, settings["mapcycle"]).read_text(), maps
         )
         target.write_text(cycle)
     if settings["startup_map"].split()[0] in maps:
@@ -292,12 +294,17 @@ def _mount(name: str, unit: str, state: Path) -> None:
                 for item in dropped
                 for name in dropped_maps(state, game, item, items.get(item))
             }
-            leave_out(work / "config", configs, dropped, left_out_maps)
+            leave_out(work / "config", configs, game, dropped, left_out_maps)
         lower_game.append(mapped(work / "config", work / "lower/config", NOBODY, uid))
     lower_game += [
         mapped(plugins, work / "lower/plugins", NOBODY, uid),
         mapped(mods, work / "lower/mods", NOBODY, uid),
-        mapped(configs / "game", work / "lower/configs", NOBODY, uid),
+    ]
+    # The game's files of game/ over the common ones (games.game_folders)
+    lower_game += [
+        mapped(folder, work / f"lower/configs-{folder.name}", NOBODY, uid)
+        for folder in games.game_folders(configs, game)
+        if folder.is_dir()
     ]
     lower_game += [
         mapped(version, work / f"lower/{name}", NOBODY, uid)

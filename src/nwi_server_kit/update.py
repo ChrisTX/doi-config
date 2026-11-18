@@ -118,10 +118,10 @@ def build_plugins(state: Path, source: str, configs: Path) -> Path:
 
 
 def compile_plugins(configs: Path, output: Path) -> None:
-    """Compile the plugins of configs (game/addons/sourcemod/scripting) into
+    """Compile the plugins of configs (game/common/addons/sourcemod/scripting) into
     OUTPUT/addons/sourcemod/plugins, with SourceMod's include files and those of the installed
     packages (nwi-server compile-plugins CONFIGS OUTPUT, for the container image)."""
-    scripting = configs / "game/addons/sourcemod/scripting"
+    scripting = configs / "game/common/addons/sourcemod/scripting"
     plugins = output / "addons/sourcemod/plugins"
     plugins.mkdir(parents=True, exist_ok=True)
     for plugin in sorted(scripting.glob("*.sp")):
@@ -556,7 +556,7 @@ def update(state: Path, image: bool = False) -> None:
         )
         for source in game_sources or [games.DEFAULT_SOURCE]:
             configs = games.config_folder(source)
-            gamedata = configs / "game/addons/sourcemod/gamedata/nwi.games.txt"
+            gamedata = configs / "game/common/addons/sourcemod/gamedata/nwi.games.txt"
             lacking = check_gamedata.missing(own, gamedata)
             for line in lacking:
                 print(f"Error: {line}", file=sys.stderr)

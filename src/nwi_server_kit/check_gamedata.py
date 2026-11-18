@@ -19,7 +19,9 @@ def missing(game_dir: Path, gamedata_file: Path | None = None) -> list[str]:
     """The gamedata's signatures by symbol that the game install's libraries don't have, as
     messages; the gamedata of the default config source's configs without GAMEDATA_FILE."""
     if gamedata_file is None:
-        gamedata_file = config_folder() / "game/addons/sourcemod/gamedata/nwi.games.txt"
+        gamedata_file = (
+            config_folder() / "game/common/addons/sourcemod/gamedata/nwi.games.txt"
+        )
     folder = game_folder(game_dir)
     game = folder.name
     libraries = {

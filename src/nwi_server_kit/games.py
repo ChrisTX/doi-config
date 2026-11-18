@@ -5,6 +5,10 @@ files: the depots from the app (DepotDownloader picks them), the workshop's app 
 (the Web API's consumer_app_id), the game's folder from the install, the folder with gameinfo.txt.
 A game's name is the name of its folder.
 
+A config source's game/ has what the game's folder of a server gets: game/common what servers of
+all games get, game/<game> (doi, insurgency) what those of the game get, over the common; a file of
+the game's replaces a common one of the same name (game_folders(), config_file()).
+
 The configs, servers/ and game/ of a repository like this one, come from config sources, e.g. a
 community's: the repository and its branch or tag of NWI_SOURCES_DIR/<source>.env
 (/etc/nwi-server/configs), URL=… and REF=…, whose newest version the updater keeps in its state,
@@ -67,6 +71,29 @@ def config_folder(source: str = DEFAULT_SOURCE, pick: bool = False) -> Path:
     if newest is None:
         raise ValueError(f"the config source {source} has no version yet, update first")
     return newest
+
+
+def game_folders(configs: Path, game: str | None = None) -> list[Path]:
+    """A config source's folders of game/ for a game's servers, in the order they win: the game's own,
+    then the common (see the module's documentation); without GAME, every game's, then the common."""
+    common = configs / "game/common"
+    if not common.is_dir():
+        raise ValueError(
+            f"{configs}: game/ has no common folder, the layout of before it was split: the files "
+            "of all servers go into game/common, a game's own into game/doi or game/insurgency"
+        )
+    games = [game] if game is not None else sorted(SERVER_APPS)
+    return [configs / "game" / name for name in games] + [common]
+
+
+def config_file(configs: Path, game: str | None, name: str) -> Path:
+    """A file of the game's cfg/ by its name there, e.g. doi-config/mapcycle_coop.txt: the game's own
+    or the common one (game_folders()); the common path if there's none, which then can't be read."""
+    folders = game_folders(configs, game)
+    for folder in folders:
+        if (folder / "cfg" / name).is_file():
+            return folder / "cfg" / name
+    return folders[-1] / "cfg" / name
 
 
 DETAILS_URL = (
@@ -133,7 +160,9 @@ def server(name: str, env: dict[str, str], pick: bool = False) -> Server:
         source,
         config,
         settings.get("game", DEFAULT),
-        configs / "game/cfg" / workshop if workshop else None,
+        config_file(configs, settings.get("game", DEFAULT), workshop)
+        if workshop
+        else None,
     )
 
 

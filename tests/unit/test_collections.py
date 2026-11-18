@@ -58,8 +58,11 @@ def configs(tmp_path: Path) -> Path:
     (folder / "workshop/collections.toml").write_text(
         '[collections.900]\nlist = "doi-config/workshop-pvp.txt"\n'
     )
-    (folder / "game/cfg/doi-config").mkdir(parents=True)
-    (folder / "game/cfg/doi-config/workshop-pvp.txt").write_text("1\n2 // a map\n3\n")
+    (folder / "game/doi/cfg/doi-config").mkdir(parents=True)
+    (folder / "game/common").mkdir()
+    (folder / "game/doi/cfg/doi-config/workshop-pvp.txt").write_text(
+        "1\n2 // a map\n3\n"
+    )
     return folder
 
 

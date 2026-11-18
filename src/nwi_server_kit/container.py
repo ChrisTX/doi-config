@@ -6,8 +6,9 @@ at /srv/game/steamapps/workshop, both with Podman's overlay (:O), so that the se
 its container, and read-only: mods at /srv/mods, the state at /srv/layers and the list of the game's
 other depots' versions in it at /srv/depots.list. Its start links the game's other depots into the game,
 copies the image's files of the game's folder (/opt/nwi-layer: SourceMod, Metamod:Source, the plugins
-and game/ of the repository), the mods (the map scripts in custom/, the playlists' configs in cfg/), the
-server's config of the repository and the secrets into the game's folder (doi, insurgency), then
+and game/common of the repository), the repository's game/<game>, the mods (the map scripts in
+custom/, the playlists' configs in cfg/), the server's config of the repository and the secrets into
+the game's folder (doi, insurgency), then
 prepares and runs the server (launch.py), under the watchdog, which passes the container's stop signal
 on.
 
@@ -84,6 +85,9 @@ def assemble(paths: Paths, server: str | None) -> Path:
                 link_tree(paths.layers / depot.strip(), paths.root)
     game = games.game_folder(paths.root)
     copy_tree(paths.layer, game)
+    # The repository's files of the game, over the common ones of the layer (games.game_folders)
+    if (paths.repository / "game" / game.name).is_dir():
+        copy_tree(paths.repository / "game" / game.name, game, links=False)
     if paths.mods.is_dir():
         copy_tree(paths.mods, game, links=False)
     # What the server keeps, mounted at /srv/nwi-data rather than in the game's folders, where Podman

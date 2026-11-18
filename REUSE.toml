@@ -8,8 +8,8 @@ SPDX-License-Identifier = "MIT"
 # AFK Manager's translations, and its configuration, which SourceMod generated from the plugin's descriptions
 [[annotations]]
 path = [
-  "game/addons/sourcemod/translations/afk_manager.phrases.txt",
-  "game/cfg/sourcemod/afk_manager.cfg",
+  "game/common/addons/sourcemod/translations/afk_manager.phrases.txt",
+  "game/common/cfg/sourcemod/afk_manager.cfg",
 ]
 precedence = "override"
 SPDX-FileCopyrightText = ["Rothgar", "Christian Pfeiffer"]

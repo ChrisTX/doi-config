@@ -131,11 +131,12 @@ def configs(tmp_path: Path, keys: dict) -> Path:
         'hostname = "Coop"\nstartup_map = "custom_map stronghold"\n'
         'mapcycle = "doi-config/mapcycle.txt"\nworkshop = "doi-config/workshop.txt"\n'
     )
-    (folder / "game/cfg/doi-config").mkdir(parents=True)
-    (folder / "game/cfg/doi-config/workshop.txt").write_text(
+    (folder / "game/doi/cfg/doi-config").mkdir(parents=True)
+    (folder / "game/common").mkdir()
+    (folder / "game/doi/cfg/doi-config/workshop.txt").write_text(
         f"{ITEM}\n222 // a map\n333\n"
     )
-    (folder / "game/cfg/doi-config/mapcycle.txt").write_text(
+    (folder / "game/doi/cfg/doi-config/mapcycle.txt").write_text(
         "custom_map stronghold\nbastogne stronghold\ncustom_map raid\n"
     )
     return folder
@@ -236,7 +237,7 @@ def test_leave_out(tmp_path: Path, configs: Path) -> None:
     (download / "other_map.bsp").write_bytes(b"VBSP")
     maps |= set(mount.dropped_maps(tmp_path, "doi", 333, None))
     assert maps == {"custom_map", "other_map"}
-    mount.leave_out(config, configs, {ITEM, 333}, maps)
+    mount.leave_out(config, configs, "doi", {ITEM, 333}, maps)
     assert (config / "cfg/doi-config/workshop.txt").read_text() == "222 // a map\n"
     assert (
         config / "cfg/doi-config/mapcycle.txt"

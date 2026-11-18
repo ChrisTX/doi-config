@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Format and check the game's configs of this repository (game/cfg, and servers' own cfg folders of
-servers/ and tests/integration/servers/).
+"""Format and check the game's configs of this repository (the cfg folders of game/common and of each
+game's game/<game>, and servers' own cfg folders of servers/ and tests/integration/servers/).
 
 Formats each line as the game's own configs write it: the cvar or command bare, its arguments quoted,
 e.g. mp_roundtime "600", exec "doi-config/bot_logic.cfg". Then checks against the server's cvars and
@@ -9,12 +9,13 @@ commands (checks/cvars.json, see checks/dump_cvars.py) and those of the plugins 
 - every name is a cvar or a command,
 - a cvar gets one value, a number within its bounds where it has bounds,
 - a cheat cvar is only set if nwi_cvar_unlocker removes its cheat flag (its config,
-  game/addons/sourcemod/configs/nwi_cvar_unlocker.cfg, Day of Infamy's section); its bounds replace the
+  game/common/addons/sourcemod/configs/nwi_cvar_unlocker.cfg, Day of Infamy's section); its bounds replace the
   game's, a bound it calculates (team_slots) isn't checked,
 - the configs of the game modes keep to nwi_mode_config.sp: the configs it runs (basic_mode_*.cfg,
   mode_*.cfg) only set cvars with nwi_mode_cvar, which no other config uses, so that the settings of a
   game mode are undone when it changes,
-- an exec'd config of doi-config exists, but for the playlists' configs, which nwi-server make-mods makes.
+- an exec'd config of ours (nwi-config, doi-config) exists in game/, but for the playlists' configs
+  (nwi-config/playlists), which nwi-server make-mods makes.
 
 Usage: check_configs.py   (in the repository; exit status 1 on findings, or if a file was reformatted)
 """
@@ -27,8 +28,8 @@ from pathlib import Path
 from srctools.keyvalues import Keyvalues
 
 REPO = Path(__file__).resolve().parent.parent
-SCRIPTING = REPO / "game/addons/sourcemod/scripting"
-UNLOCKER = REPO / "game/addons/sourcemod/configs/nwi_cvar_unlocker.cfg"
+SCRIPTING = REPO / "game/common/addons/sourcemod/scripting"
+UNLOCKER = REPO / "game/common/addons/sourcemod/configs/nwi_cvar_unlocker.cfg"
 # A line's tokens: quoted, a comment, or bare
 TOKEN = re.compile(r'"(?P<quoted>[^"]*)"|(?P<comment>//.*)|(?P<bare>[^\s"]+)')
 
@@ -36,7 +37,7 @@ TOKEN = re.compile(r'"(?P<quoted>[^"]*)"|(?P<comment>//.*)|(?P<bare>[^\s"]+)')
 def configs() -> list[Path]:
     return sorted(
         [
-            *(REPO / "game/cfg").rglob("*.cfg"),
+            *(REPO / "game").glob("*/cfg/**/*.cfg"),
             *(REPO / "servers").glob("*/cfg/**/*.cfg"),
             *(REPO / "tests/integration/servers").glob("*/cfg/**/*.cfg"),
         ]
@@ -158,9 +159,9 @@ def check(path: Path, data: dict, names: tuple[set[str], set[str]]) -> list[str]
                 findings.append(f"{where}: nwi_mode_cvar without a cvar")
         elif command == "exec":
             target = arguments[0] if arguments else ""
-            ours = target.startswith("doi-config/")
-            made = target.startswith("doi-config/playlists/")
-            if ours and not made and not (REPO / "game/cfg" / target).is_file():
+            ours = target.startswith(("nwi-config/", "doi-config/"))
+            made = target.startswith("nwi-config/playlists/")
+            if ours and not made and not any((REPO / "game").glob(f"*/cfg/{target}")):
                 findings.append(f"{where}: there's no {target}")
         elif command in commands or command in plugin_commands:
             continue

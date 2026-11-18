@@ -50,8 +50,8 @@ def test_server_cfg(tmp_path: Path) -> None:
     assert 'tv_name "Coop | SourceTV"' in cfg
     # The tickrate's updates (128 by default) after the settings all servers share
     assert cfg[-6:] == [
-        'exec "doi-config/playlists/nwi/coop_commando.cfg"',
-        'exec "doi-config/basic_settings.cfg"',
+        'exec "nwi-config/playlists/nwi/coop_commando.cfg"',
+        'exec "nwi-config/basic_settings.cfg"',
         'sv_mincmdrate "128"',
         'sv_minupdaterate "128"',
         'exec "doi-config/basic_coop.cfg"',
@@ -157,3 +157,35 @@ def test_geoip(tmp_path: Path) -> None:
     (tmp_path / "GeoIP/GeoLite2-City.mmdb").write_bytes(b"mmdb")
     server_config.prepare(install)
     assert (folder / "cfg/server.cfg").is_file()
+
+
+def test_config_file(tmp_path: Path) -> None:
+    """A file of a game's cfg: the game's own over the common one of the same name, the common one
+    for every game, and a config source of the layout before game/ was split refused."""
+    for folder, name in (
+        ("common", "nwi-config/basic_settings.cfg"),
+        ("common", "nwi-config/tv_settings.cfg"),
+        ("insurgency", "nwi-config/tv_settings.cfg"),
+        ("doi", "doi-config/mapcycle_coop.txt"),
+    ):
+        (tmp_path / "game" / folder / "cfg" / name).parent.mkdir(
+            parents=True, exist_ok=True
+        )
+        (tmp_path / "game" / folder / "cfg" / name).write_text(folder)
+    game = tmp_path / "game"
+    assert games.config_file(tmp_path, "insurgency", "nwi-config/tv_settings.cfg") == (
+        game / "insurgency/cfg/nwi-config/tv_settings.cfg"
+    )
+    assert games.config_file(tmp_path, "doi", "nwi-config/tv_settings.cfg") == (
+        game / "common/cfg/nwi-config/tv_settings.cfg"
+    )
+    # Another game's file isn't the game's; without a game, every game's is
+    missing = games.config_file(tmp_path, "insurgency", "doi-config/mapcycle_coop.txt")
+    assert not missing.is_file()
+    assert games.config_file(tmp_path, None, "doi-config/mapcycle_coop.txt") == (
+        game / "doi/cfg/doi-config/mapcycle_coop.txt"
+    )
+    old = tmp_path / "old"
+    (old / "game/cfg").mkdir(parents=True)
+    with pytest.raises(ValueError, match="before it was split"):
+        games.config_file(old, "doi", "doi-config/mapcycle_coop.txt")

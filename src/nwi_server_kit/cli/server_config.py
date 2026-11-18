@@ -7,7 +7,7 @@ Usage: with GAME the game's folder of the install ROOT (nwi_server_kit.games):
                                     line (nwi-server start)
     nwi-server server-config game FILE      print the game of a server.toml
     nwi-server server-config check FILE...  check server.toml files: their keys, and that the configs and lists
-                                    they name exist in game/cfg of the configs, or in the
+                                    they name exist in the cfg of game/<game> or game/common, or in the
                                     server's own cfg folder (NWI_CONFIG, see
                                     nwi_server_kit.games)
 """

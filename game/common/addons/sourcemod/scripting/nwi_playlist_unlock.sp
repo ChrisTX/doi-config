@@ -3,7 +3,7 @@
 
 // Lifts the restrictions of the playlists, in Day of Infamy and Insurgency, so that servers with their
 // own maps and settings stay in the playlists' browser: the server takes each playlist from its
-// replacement in cfg/doi-config/playlists, where there is one, through nwi_gamedata
+// replacement in cfg/nwi-config/playlists, where there is one, through nwi_gamedata
 // (NWI_ReplacePlaylists). nwi-server make-mods makes the replacements by the [[replace]] tables of
 // mods/<game>/*.toml, e.g. without allowed_maps, forced_cvars, forced_cvars_dedicated and
 // require_maxplayers_min/_max. The game's files stay as they are, as do their checksums, which the
@@ -28,7 +28,7 @@ public Plugin myinfo =
 };
 
 // The folder of the replacements, relative to the game folder
-#define REPLACEMENTS "cfg/doi-config/playlists"
+#define REPLACEMENTS "cfg/nwi-config/playlists"
 
 public void OnPluginStart()
 {

@@ -36,7 +36,7 @@ forward void NWI_OnStatsWorkshopCheck(bool &workshop);
 
 // Has the game take each playlist from a replacement file where there is one: the playlist's file
 // (scripts/playlists/<playlist>.playlist) is replaced by <folder>/<playlist>.playlist, relative to the
-// game folder (e.g. cfg/doi-config/playlists, which nwi-server make-mods fills), for every ruleset of the
+// game folder (e.g. cfg/nwi-config/playlists, which nwi-server make-mods fills), for every ruleset of the
 // playlist; a playlist without one stays as the game has it. The game's checksum of the playlist stays
 // that of its file. The game makes its playlists before SourceMod is there, so it makes them again:
 // at once, or once the plugins are loaded if the server is starting. Call it in OnAllPluginsLoaded, and

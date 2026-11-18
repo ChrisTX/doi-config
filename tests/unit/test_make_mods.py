@@ -276,7 +276,7 @@ drop = ["allowed_maps", "forced_cvars"]
     )
     output = tmp_path / "output"
     make(game, tmp_path / "workshop", output, [mods])
-    folder = output / "cfg/doi-config/playlists"
+    folder = output / "cfg/nwi-config/playlists"
     config = (folder / "nwi/coop.cfg").read_text().splitlines()
     assert config[3:] == ['doi_bot_difficulty "2"', 'mp_timelimit "30"']
     stronghold = (folder / "nwi/coop-stronghold.cfg").read_text().splitlines()
@@ -286,7 +286,7 @@ drop = ["allowed_maps", "forced_cvars"]
     assert sorted(path.name for path in folder.glob("nwi/*.playlist")) == [
         "coop.playlist"
     ]
-    replaced = dict(made(output, "cfg/doi-config/playlists/nwi/coop.playlist")[0][1])
+    replaced = dict(made(output, "cfg/nwi-config/playlists/nwi/coop.playlist")[0][1])
     assert "allowed_maps" not in replaced
     assert replaced["forced_cvars"] == [("sv_battleye", "0")]
     rulesets = dict(replaced["rulesets"])
@@ -453,7 +453,7 @@ def test_insurgency_game_modes(insurgency: Path, tmp_path: Path) -> None:
     )
     output = tmp_path / "output"
     make(insurgency, tmp_path / "no-workshop", output, [mods])
-    folder = output / "cfg/doi-config/playlists/nwi"
+    folder = output / "cfg/nwi-config/playlists/nwi"
     assert (folder / "coop.cfg").read_text().splitlines()[3:] == [
         'ins_bot_count_checkpoint_min "4"'
     ]

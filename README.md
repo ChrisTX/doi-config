@@ -15,9 +15,12 @@ what they seem to, e.g. `sv_visiblemaxplayers`.
 The repository is laid out like the server's `doi` folder, so its folders can be
 placed on top of a server as they are:
 
-- `game` holds what all servers share: the configs in `cfg/doi-config` (see
-  [Configs](#configs)) and the SourceMod plugins, their translations and
-  configs in `addons/sourcemod`.
+- `game` holds what goes into the servers' game folder (`doi`, `insurgency`):
+  `game/common` what servers of both games share, the SourceMod plugins, their
+  translations and configs in `addons/sourcemod` and the shared configs in
+  `cfg/nwi-config`; `game/<game>` what a game's servers add, Day of Infamy's
+  configs in `cfg/doi-config` and Insurgency's in `cfg/nwi-config` (see
+  [Configs](#configs)). A game's file replaces a common one of the same name.
 - `mods/<game>` has the rules of the mods of a game, which are made from its map
   scripts (see [Mods](#mods)).
 - `servers/<config>` holds what one server adds: its settings in `server.toml`
@@ -33,10 +36,10 @@ placed on top of a server as they are:
 
 ## Usage
 
-`game` belongs into the server's `doi` folder, with `cfg/doi-config` at
-`doi/cfg/doi-config`. Source configs can't resolve paths dynamically, so the
-configuration only works at that location. The systemd units below set this
-up.
+`game/common` and `game/<game>` belong into the server's game folder, e.g.
+`doi`, with `cfg/doi-config` at `doi/cfg/doi-config`. Source configs can't
+resolve paths dynamically, so the configuration only works at that location.
+The systemd units below set this up.
 
 ### Server settings
 
@@ -63,8 +66,8 @@ With `game = "insurgency"`, a server runs Insurgency instead of Day of Infamy,
 like the test server `servers/ins-test`. The tools only keep the apps of the
 games' dedicated servers (`nwi-server games`) and find the rest: the depots,
 the game's folder (`doi` or `insurgency`, the one with `gameinfo.txt`) and the
-workshop's app of the items. The configs of `game/cfg/doi-config` are Day of
-Infamy's.
+workshop's app of the items. The configs of `game/doi` are Day of Infamy's,
+those of `game/insurgency` Insurgency's.
 
 At each start, `nwi-server prepare` makes the server's `cfg/server.cfg` of
 it with `nwi-server server-config`, which describes the keys: the names of the
@@ -93,7 +96,7 @@ server is put together with overlayfs from read-only layers, top first:
 - this repository's plugins, compiled by `nwi-update.service`
 - the mods of `mods/<game>` and the playlists' configs, made by
   `nwi-update.service`
-- `game` of this repository
+- `game/<game>` of this repository, then its `game/common`
 - SourceMod, Metamod:Source and the plugins from their packages, copies of
   `/usr/lib/sourcemod` and `/usr/lib/metamod` made by `nwi-update.service`
   when the packages changed, so that their update reaches a server when it
@@ -681,17 +684,18 @@ share (`basic_settings.cfg`), and its `configs_after`, like those of the coop or
 PvP servers (`basic_coop.cfg`, `basic_pvp.cfg`). The game forces a playlist's settings, but the server
 library's patch stops it, so `mods/doi/playlists.toml` says which of them the
 servers take over; `nwi-server make-mods` makes the playlist's config of them
-from the installed game, `cfg/doi-config/playlists/<playlist>.cfg`.
+from the installed game, `cfg/nwi-config/playlists/<playlist>.cfg`.
 
 At every map start the game runs its own config of the game mode,
 `cfg/default_server_<mode>.cfg`. The `nwi_mode_config` plugin takes the game
 mode from it and runs the game mode's configs that exist, each later one
-replacing an earlier one's settings:
+replacing an earlier one's settings, each of `cfg/nwi-config` (the shared and
+Insurgency's) and then of `cfg/doi-config` (Day of Infamy's):
 
 1. `basic_mode_<coop|pvp>.cfg`: all coop or PvP game modes
 2. `basic_mode_<coop|pvp>-<mode>.cfg`: the game mode, in every playlist
 3. `playlists/<playlist>-<mode>.cfg`: the settings the playlist forces in the
-   game mode, made by `nwi-server make-mods`
+   game mode, made by `nwi-server make-mods` (in `cfg/nwi-config` only)
 4. `mode_<playlist>.cfg`: all game modes of the playlist, e.g.
    `mode_coop_commando.cfg`
 5. `mode_<playlist>-<mode>.cfg`: the game mode in the playlist
@@ -866,7 +870,7 @@ for the server's `doi` folder.
 
 The `nwi_playlist_unlock` plugin lifts the playlists' restrictions, in Day of
 Infamy and Insurgency: the server takes each playlist from a replacement in
-`cfg/doi-config/playlists/<playlist>.playlist` where there is one, which
+`cfg/nwi-config/playlists/<playlist>.playlist` where there is one, which
 `nwi-server make-mods` makes by the `[[replace]]` tables of `mods/<game>/*.toml`. Ours
 (`mods/doi/playlists.toml`) drop `allowed_maps`, the forced settings and the
 required slots from every playlist, in its own keys and its rulesets: any map
@@ -951,7 +955,7 @@ licence. The SourceMod plugins written for these servers, `nwi_cvar_unlocker`,
 exception, at your choice, so they can be used in other SourceMod projects
 either way.
 
-AFK Manager, vendored in `game/addons/sourcemod` together with its include,
+AFK Manager, vendored in `game/common/addons/sourcemod` together with its include,
 translations and configuration, is licensed under the GPL-3.0-only with
 SourceMod's linking exception, like its earlier versions. The mods' map scripts
 aren't part of this repository: `nwi-server make-mods` makes them from the game's
