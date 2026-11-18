@@ -22,6 +22,11 @@ indent_style = tab
 [Makefile]
 indent_style = tab
 
+# Windows batch files need CRLF and tabs, like the shell scripts
+[*.cmd]
+end_of_line = crlf
+indent_style = tab
+
 # The game renders the MOTDs differently without their trailing whitespace
 [servers/*/motd.txt]
 trim_trailing_whitespace = false

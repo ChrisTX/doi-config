@@ -1,0 +1,24 @@
+// SPDX-FileCopyrightText: Christian Pfeiffer
+// SPDX-License-Identifier: MIT
+//
+// An example of the server browser's blocklist file, cfg/server_blacklist.txt (see README.md). The
+// game reads it as KeyValues: a "serverblacklist" block with a "server" block per entry, each with
+// the server's name, its address (addr, the IP without a port to block the whole address) and when
+// it was added (date, a Unix time). HL2DM.ORG's Download_Blacklist.php serves a maintained list in
+// this format. The addresses below are from the documentation range (TEST-NET, RFC 5737) and match
+// no real server; replace them, use the browser's Blacklist tab, or import the maintained list.
+"serverblacklist"
+{
+    "server"
+    {
+        "name"    "Example fake-count server"
+        "addr"    "203.0.113.10"
+        "date"    "1763424000"
+    }
+    "server"
+    {
+        "name"    "Example of a second entry"
+        "addr"    "198.51.100.20"
+        "date"    "1763424000"
+    }
+}
