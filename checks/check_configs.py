@@ -9,7 +9,8 @@ plugins of this repository: a config of game/common against those of every game,
 against its game's, a server's own against its server.toml's game's. A finding of some of the games
 names them.
 
-- every name is a cvar or a command,
+- every name is a cvar or a command, and a command's arguments keep to its signature of
+  checks/commands.toml, where it has one (whose commands have to be the games' or the plugins'),
 - a cvar gets one value, a number within its bounds where it has bounds,
 - a cheat cvar is only set if nwi_cvar_unlocker removes its cheat flag (its config,
   game/common/addons/sourcemod/configs/nwi_cvar_unlocker.cfg, the game's section); its bounds replace
@@ -35,6 +36,9 @@ from srctools.keyvalues import Keyvalues
 REPO = Path(__file__).resolve().parent.parent
 SCRIPTING = REPO / "game/common/addons/sourcemod/scripting"
 CVARS = REPO / "checks/cvars"
+SIGNATURES = REPO / "checks/commands.toml"
+# The types of commands.toml's arguments, and value-of:<argument>
+TYPES = {"path", "cvar", "int", "enum"}
 GAMES = ("doi", "insurgency")
 UNLOCKER = REPO / "game/common/addons/sourcemod/configs/nwi_cvar_unlocker.cfg"
 # A line's tokens: quoted, a comment, or bare
@@ -123,10 +127,61 @@ def unlocker(game: str) -> tuple[set[str], dict[str, float | None]]:
     return cheats, bounds
 
 
-def check(
-    path: Path, game: str, data: dict, names: tuple[set[str], set[str]]
+def signatures() -> dict[str, list[dict]]:
+    """The commands' arguments of commands.toml, by the commands' names."""
+    with SIGNATURES.open("rb") as file:
+        return {
+            name.lower(): table.get("args", [])
+            for name, table in tomllib.load(file).items()
+        }
+
+
+def check_signatures(
+    signatures: dict[str, list[dict]], commands: set[str]
 ) -> list[str]:
-    """The findings of a config in a game, with the game's cvars and commands (DATA)."""
+    """The findings of commands.toml: commands the games and plugins don't have, arguments without a
+    name or of an unknown type, value-of an argument that isn't an earlier cvar, and a required
+    argument after an optional one."""
+    where = SIGNATURES.relative_to(REPO)
+    findings = []
+    for command, arguments in signatures.items():
+        if command not in commands:
+            findings.append(
+                f"{where}: {command} is neither the games' nor the plugins' command"
+            )
+        earlier: dict[str, str] = {}
+        optional = False
+        for argument in arguments:
+            name, kind = argument.get("name"), str(argument.get("type"))
+            target = kind.removeprefix("value-of:")
+            if not name:
+                findings.append(f"{where}: an argument of {command} has no name")
+            if kind.startswith("value-of:") and earlier.get(target) != "cvar":
+                findings.append(
+                    f"{where}: {command}'s {name} is the value of {target}, which isn't an earlier cvar"
+                )
+            elif not kind.startswith("value-of:") and kind not in TYPES:
+                findings.append(
+                    f"{where}: {command}'s {name} is of an unknown type {kind}"
+                )
+            if optional and not argument.get("optional"):
+                findings.append(
+                    f"{where}: {command}'s {name} is required after an optional one"
+                )
+            optional = optional or bool(argument.get("optional"))
+            earlier[str(name)] = kind
+    return findings
+
+
+def check(
+    path: Path,
+    game: str,
+    data: dict,
+    names: tuple[set[str], set[str]],
+    signatures: dict[str, list[dict]],
+) -> list[str]:
+    """The findings of a config in a game, with the game's cvars and commands (DATA) and the commands'
+    SIGNATURES."""
     cvars = data["cvars"]
     commands = set(data["commands"])
     plugin_cvars, plugin_commands = names
@@ -164,6 +219,77 @@ def check(
                 f"{where}: {name} {values[0]} is out of its bounds {low} to {high}"
             )
 
+    def arguments_of(number: int, command: str, arguments: list[str]) -> None:
+        """A command's arguments by its signature."""
+        where = f"{relative}:{number}"
+        spec = signatures[command]
+        required = sum(1 for argument in spec if not argument.get("optional"))
+        if not required <= len(arguments) <= len(spec):
+            expected = (
+                str(required) if required == len(spec) else f"{required} to {len(spec)}"
+            )
+            plural = "" if expected == "1" else "s"
+            findings.append(
+                f"{where}: {command} takes {expected} argument{plural}, not {len(arguments)}"
+            )
+            return
+        given = {argument["name"]: value for argument, value in zip(spec, arguments)}
+        # The cvars whose values are given too, which setting() checks with the value
+        valued = {
+            argument["type"].removeprefix("value-of:")
+            for argument in spec[: len(arguments)]
+            if argument["type"].startswith("value-of:")
+        }
+        for argument, value in zip(spec, arguments):
+            kind = argument["type"]
+            if kind == "cvar" and argument["name"] not in valued:
+                if value.lower() not in cvars and value.lower() not in plugin_cvars:
+                    findings.append(f"{where}: {value} isn't a cvar")
+            elif kind.startswith("value-of:"):
+                setting(number, given[kind.removeprefix("value-of:")], [value])
+            elif kind == "int":
+                try:
+                    number_value = int(value)
+                except ValueError:
+                    findings.append(
+                        f"{where}: {command}'s {argument['name']} is a whole number, not {value!r}"
+                    )
+                    continue
+                low, high = argument.get("min"), argument.get("max")
+                if (
+                    low is not None
+                    and number_value < low
+                    or (high is not None and number_value > high)
+                ):
+                    findings.append(
+                        f"{where}: {command}'s {argument['name']} {value} is out of its bounds "
+                        f"{low} to {high}"
+                    )
+            elif kind == "enum" and value not in argument.get("values", []):
+                findings.append(
+                    f"{where}: {command}'s {argument['name']} is one of "
+                    f"{', '.join(argument['values'])}, not {value!r}"
+                )
+            elif kind == "path" and argument.get("relative") == "cfg":
+                exists(where, value)
+
+    def exists(where: str, target: str) -> None:
+        """A config of ours (nwi-config, doi-config) in the game's folders or the server's own, but for
+        the playlists' configs, which nwi-server make-mods makes."""
+        ours = target.startswith(("nwi-config/", "doi-config/"))
+        made = target.startswith("nwi-config/playlists/")
+        folders = [REPO / "game" / game, REPO / "game/common"]
+        parts = path.relative_to(REPO).parts
+        if parts[0] != "game":
+            # A server's own: servers/<server>/cfg/… or tests/integration/servers/<server>/cfg/…
+            folders.append(REPO.joinpath(*parts[: parts.index("cfg")]))
+        if (
+            ours
+            and not made
+            and not any((folder / "cfg" / target).is_file() for folder in folders)
+        ):
+            findings.append(f"{where}: there's no {target}")
+
     for number, line in enumerate(path.read_text().splitlines(), 1):
         tokens, _ = parse(line)
         if not tokens:
@@ -176,26 +302,8 @@ def check(
             )
         elif command == "nwi_mode_cvar" and not mode_config:
             findings.append(f"{where}: nwi_mode_cvar is for the game modes' configs")
-        if command == "nwi_mode_cvar":
-            if arguments:
-                setting(number, arguments[0], arguments[1:])
-            else:
-                findings.append(f"{where}: nwi_mode_cvar without a cvar")
-        elif command == "exec":
-            target = arguments[0] if arguments else ""
-            ours = target.startswith(("nwi-config/", "doi-config/"))
-            made = target.startswith("nwi-config/playlists/")
-            folders = [REPO / "game" / game, REPO / "game/common"]
-            parts = path.relative_to(REPO).parts
-            if parts[0] != "game":
-                # A server's own: servers/<server>/cfg/… or tests/integration/servers/<server>/cfg/…
-                folders.append(REPO.joinpath(*parts[: parts.index("cfg")]))
-            if (
-                ours
-                and not made
-                and not any((folder / "cfg" / target).is_file() for folder in folders)
-            ):
-                findings.append(f"{where}: there's no {target}")
+        if command in signatures:
+            arguments_of(number, command, arguments)
         elif command in commands or command in plugin_commands:
             continue
         else:
@@ -206,7 +314,12 @@ def check(
 def main() -> int:
     data = {game: json.loads((CVARS / f"{game}.json").read_text()) for game in GAMES}
     names = plugin_names()
+    commands = signatures()
     status = 0
+    known = names[1].union(*(game["commands"] for game in data.values()))
+    for finding in check_signatures(commands, known):
+        print(finding, file=sys.stderr)
+        status = 1
     for path in configs():
         text = path.read_text()
         formatted = "".join(f"{format_line(line)}\n" for line in text.splitlines())
@@ -218,7 +331,7 @@ def main() -> int:
         games = games_of(path)
         findings: dict[str, list[str]] = {}
         for game in games:
-            for finding in check(path, game, data[game], names):
+            for finding in check(path, game, data[game], names, commands):
                 findings.setdefault(finding, []).append(game)
         for finding, of in findings.items():
             suffix = f" (in {', '.join(of)})" if len(games) > 1 and of != games else ""

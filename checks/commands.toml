@@ -1,0 +1,42 @@
+# The arguments of the commands the configs use, which the game doesn't describe in a form a tool can
+# read: its help is a sentence, if any. checks/check_configs.py checks a config's commands by them, and
+# editors can take them for completion and signature help. The commands of the dumps
+# (checks/cvars/<game>.json) or of the plugins without one here are known by their names only.
+#
+# Each command has its arguments in order, each with a name and a type:
+#     path         a file, relative to the folder of relative (cfg: the game's cfg folder)
+#     cvar         a cvar's name, of the game or of a plugin
+#     value-of:ARG the value of the cvar named by the argument ARG, within its bounds
+#     int          a whole number, from min to max where they're given
+#     enum         one of values
+# An optional argument (optional = true) may be left out, and so may every one after it.
+
+# The engine's
+
+[exec]
+args = [{ name = "config", type = "path", relative = "cfg" }]
+
+[log]
+args = [{ name = "state", type = "enum", values = ["on", "off"], optional = true }]
+
+# Takes effect while the server hibernates, as when it starts
+[maxplayers]
+args = [{ name = "slots", type = "int", min = 1 }]
+
+# -1 no checks of the clients' files, 0 to 2 more and more of them; its help ("Show user data.") is
+# wrong
+[sv_pure]
+args = [{ name = "level", type = "int", min = -1, max = 2 }]
+
+# SourceMod's
+
+[sm_cvar]
+args = [
+  { name = "cvar", type = "cvar" },
+  { name = "value", type = "value-of:cvar", optional = true },
+]
+
+# Ours (nwi_mode_config.sp)
+
+[nwi_mode_cvar]
+args = [{ name = "cvar", type = "cvar" }, { name = "value", type = "value-of:cvar" }]

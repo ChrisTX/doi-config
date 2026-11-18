@@ -93,7 +93,7 @@ repos:
         language: system
         entry: python3 checks/check_configs.py
         pass_filenames: false
-        files: \.cfg$|^checks/(cvars/[^/]+\.json|check_configs\.py)$|^game/common/addons/sourcemod/(scripting/|configs/nwi_cvar_unlocker\.cfg$)|^servers/[^/]+/server\.toml$
+        files: \.cfg$|^checks/(cvars/[^/]+\.json|commands\.toml|check_configs\.py)$|^game/common/addons/sourcemod/(scripting/|configs/nwi_cvar_unlocker\.cfg$)|^servers/[^/]+/server\.toml$
 
       # The servers' settings: their keys, and the configs and lists they name (nwi-server server-config)
       - id: server-config

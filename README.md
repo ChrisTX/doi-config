@@ -721,7 +721,9 @@ cvar bare, its value quoted) and checks them against the cvars and commands of
 the games they run in, `checks/cvars/<game>.json`: those of `game/common`
 against both games', those of `game/<game>` and a server's own against their
 game's. It finds unknown names, values out of their bounds, cheat cvars and the
-rules above. After a game update, the test instance dumps a game's cvars anew
+rules above, and checks the commands' arguments by their signatures in
+`checks/commands.toml`, which editors can use too: the game's help describes them
+in a sentence, if at all. After a game update, the test instance dumps a game's cvars anew
 from its test server, started without the unlocker for the game's own bounds:
 
 ```bash
