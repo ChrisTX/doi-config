@@ -1,6 +1,8 @@
 """A server's start (launch.py): its preparation in its writable layer, of a fake install in a
 temporary folder, and its command line."""
 
+import grp
+import os
 from pathlib import Path
 
 import pytest
@@ -47,6 +49,10 @@ def root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     ):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(rcon, "RCON_DIR", tmp_path / "no-rcon")
+    # RCON_GROUP ("nwi-rcon") is a system group that need not exist where the tests run; as root,
+    # in the CI container, its absence would make the secret's chown fail. Use the test process's
+    # own group, which always exists, so the tests don't depend on the system's state.
+    monkeypatch.setattr(launch, "RCON_GROUP", grp.getgrgid(os.getgid()).gr_name)
     return root
 
 
