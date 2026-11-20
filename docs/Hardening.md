@@ -114,6 +114,22 @@ On Linux, [client/linux-rcon-firewall.md](../client/linux-rcon-firewall.md)
 shows the nftables and firewalld shapes for a related rule; the same tools
 rate-limit a port.
 
+### RCON
+
+RCON is unencrypted: the password, and every command after it, cross the
+network in the clear. Treat encrypted RCON as a rule of its own, and never
+expose the RCON port to the internet directly. Administer it over an encrypted
+channel instead -- an SSH tunnel, a VPN such as WireGuard, or IPsec -- or bind
+it to `localhost` and forward a port to it. Otherwise anyone who can read the
+traffic learns the password and can then run any command on the server, and
+anyone who can tamper with it can alter what passes; encrypting the channel
+closes both, with no exploit involved.
+
+As a second layer, restrict the RCON port at the firewall to the address or VPN
+you administer from, and set the engine's own brute-force limits
+(`sv_rcon_maxfailures`, `sv_rcon_minfailures`, `sv_rcon_banpenalty`, which
+defaults to no ban) so repeated wrong passwords are slowed and banned.
+
 ## Keeping current
 
 The most useful thing of all is to keep the server up to date: `nwi-server
