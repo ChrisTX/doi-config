@@ -6,10 +6,10 @@ SPDX-License-Identifier: MIT
 # Staying safe as a player
 
 Day of Infamy and Insurgency are old Source games, and their clients still carry
-bugs that newer Source games had fixed. This folder has two small, optional
-safeguards for players: a launcher wrapper that blocks the dangerous part of a
-known game-invite attack, and a server blocklist for the fake servers that
-clutter the browser. Neither changes any game file, so neither affects VAC.
+bugs that newer Source games had fixed. This folder has an optional safeguard for
+players: a small wrapper that the game runs through, which blocks a known
+game-invite attack and keeps the server browser's blocklist of fake servers up to
+date. It changes no game file, so it doesn't affect VAC.
 
 ## The game-invite attack
 
@@ -30,83 +30,79 @@ Infamy and Insurgency never got that fix: their RCON client is still there, the
 2025 Windows update only removed BattlEye, and the Linux clients weren't updated
 at all. So the safe thing is not to let an invite reach those commands.
 
-## The launcher wrapper
+## What the wrapper does
 
-`safe-launch.sh` (Linux) and `safe-launch.cmd` (Windows) start the game for you
-with the dangerous commands removed and everything else kept, so invites to a
-real server (`+connect`) and your own launch options still work. They drop these
-`+`-commands, which a client never needs, and their arguments:
+The game runs through the wrapper, which:
 
-| Dropped | Why |
-| --- | --- |
-| `+rcon`, `+rcon_address`, `+rcon_password`, `+rcon_port` | point your RCON client at a server |
-| `+host_writeconfig`, `+host_writeconfig_ss` | write to your config, e.g. a key binding, to make the attack stick |
-| `+alias` | defines a command that could stand in for the above |
+- **drops the dangerous `+`-commands** an invite abuses and their arguments, and
+  keeps everything else, `+connect` included, so invites to a real server and
+  your own launch options still work:
 
-### Install it (Windows)
+  | Dropped | Why |
+  | --- | --- |
+  | `+rcon`, `+rcon_address`, `+rcon_password`, `+rcon_port` | point your RCON client at a server |
+  | `+host_writeconfig`, `+host_writeconfig_ss` | write to your config to make the attack stick |
+  | `+alias` | defines a command that could stand in for the above |
 
-1. Save `safe-launch.cmd` somewhere of your own, e.g.
-   `C:\Users\You\safe-launch.cmd`.
-2. In Steam, right-click the game, **Properties**, **General**, and put this in
-   **Launch options**, with the path where you saved it:
+- **refreshes the server blocklist**: it writes the game's
+  `cfg/server_blacklist.txt` from [HL2DM.ORG's maintained list](https://content.hl2dm.org/spamfilter/)
+  of spammy servers, plus any addresses you put in `blocklist-extra.txt` next to
+  the wrapper (one IP per line, `#` for comments). The server browser's
+  **Blacklisted Servers** tab then hides them. This is mostly a convenience, but
+  it also helps here: an attacker would want a busy-looking server for people to
+  join, so hiding the fake-count servers makes that harder. It's best effort — if
+  you're offline, the blocklist is left as it is and the game still starts.
 
-   ```text
-   "C:\Users\You\safe-launch.cmd" %command%
-   ```
+The wrapper is `safe-launch.py` on Linux (needs Python 3, which desktop Linux has)
+and `safe-launch.cmd` with `safe-launch.ps1` on Windows (Windows PowerShell, which
+Windows 10 and 11 have). It's set as the game's Steam launch options, before
+`%command%`.
 
-### Install it (Linux)
+## Installing it
 
-1. Save `safe-launch.sh` somewhere of your own and make it executable:
-   `chmod +x ~/safe-launch.sh`.
-2. In Steam, right-click the game, **Properties**, **General**, and put this in
-   **Launch options**:
+The installer finds Day of Infamy and Insurgency, copies the wrapper to a folder
+of its own, sets each game's Steam launch options to run through it, and writes
+the blocklist. **Close Steam fully first** (right-click the tray icon, Exit),
+because Steam rewrites its settings when it exits. It backs up the file it edits
+and changes only these two games' launch options.
 
-   ```text
-   /home/you/safe-launch.sh %command%
-   ```
+1. Put this `client` folder somewhere of your own.
+2. Close Steam.
+3. Run the installer:
+   - **Windows:** double-click `install.cmd`.
+   - **Linux:** run `./install.py` in the `client` folder (Python 3).
+4. Start Steam and play as usual.
 
-The game starts as usual. When the wrapper drops something, it prints a line
-saying what; set the environment variable `NWI_SAFE_LAUNCH_LOG` to a file path
-(Linux) to keep a record.
+The wrapper does its work each time the game starts. When it drops something, it
+prints a line saying what (set `NWI_SAFE_LAUNCH_LOG` to a file path to keep a
+record). To add your own bad servers to the blocklist, put their IPs in
+`blocklist-extra.txt` next to the wrapper, one per line.
 
-### What it doesn't cover
+### By hand instead
+
+If you'd rather not run the installer, set the launch options yourself: in Steam,
+right-click the game, **Properties**, **General**, and set **Launch options** to
+the wrapper's path followed by `%command%` (`"C:\path\safe-launch.cmd" %command%`
+on Windows, `/path/safe-launch.py %command%` on Linux, made executable). If the
+game already has launch options, put the wrapper and a space right before
+`%command%`, keeping the rest.
+
+## What it doesn't cover
 
 The wrapper sees the command line, which the game uses for an invite you accept
 **before** the game starts. An invite you accept while the game is **already
-running** takes a different path that a launcher can't reach, so:
+running** takes a different path a launcher can't reach, so:
 
 - don't accept game invites from people you don't know, and
-- the game shows a window listing the start parameters before it launches from
-  an invite: read it, and cancel if it has `rcon` or settings you didn't expect.
+- the game shows a window listing the start parameters before it launches from an
+  invite: read it, and cancel if it has `rcon` or settings you didn't expect.
 
 Making your configs read-only is a good extra step: it stops a server writing a
 binding or setting into them that would bring the attack back the next time you
 play.
 
-## The server blocklist
+On Linux, you can also block client RCON at the firewall as an extra layer; see
+[linux-rcon-firewall.md](linux-rcon-firewall.md).
 
-Source's server browser has a **Blacklisted Servers** tab, which hides servers
-you blocklist, including the fake ones that report made-up player counts to look
-busy. It reads `cfg/server_blacklist.txt` in the game's config folder. Hiding
-those servers is mostly a convenience, but it also helps here: anyone trying to
-use the invite attack would want a server that looks busy so people join it, so
-a blocklist of fake-count servers makes that harder.
-
-- **One server you've seen:** find it in the browser, right-click it and choose
-  to add it to the blocklist. For a range that keeps changing its address, the
-  menu's **Class C** option blocklists its `/24` (the first three parts of the
-  address).
-- **A known-bad list:** HL2DM.ORG keeps a maintained list of spammy Source
-  servers at <https://content.hl2dm.org/spamfilter/>. `RogueIPs.txt` is the
-  plain list of addresses; `GameSpamFilter.bat` adds them as Windows Firewall
-  rules; `Download_Blacklist.php` serves them as a ready `server_blacklist.txt`
-  you can save into your `cfg` folder or **Import** on the Blacklist tab. It's a
-  general Source list, so some entries won't be Day of Infamy or Insurgency
-  servers, which does no harm.
-- **The format**, if you edit the file yourself: `server_blacklist.example.txt`
-  here shows it, with placeholder addresses from the documentation range (they
-  match no real server). Each `server` block has a `name`, an `addr` (the IP,
-  without a port to block the whole address) and a `date` (a Unix time).
-
-This is a nuisance filter, not a security measure: it only hides servers from
-your browser.
+`server_blacklist.example.txt` shows the blocklist file's format, if you ever want
+to edit it by hand.
