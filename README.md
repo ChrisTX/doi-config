@@ -8,7 +8,9 @@ update a server, and the systemd units that run and monitor it.
 
 For players, [docs/Clients.md](docs/Clients.md) covers the client settings the
 servers need. [docs/Cvars.md](docs/Cvars.md) has notes on cvars that don't do
-what they seem to, e.g. `sv_visiblemaxplayers`.
+what they seem to, e.g. `sv_visiblemaxplayers`. For server admins,
+[docs/Hardening.md](docs/Hardening.md) covers which build to run and how to keep
+the server process contained.
 
 ## Layout
 
