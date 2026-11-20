@@ -8,7 +8,7 @@ For problems with a server or a script, open an issue. Problems of the game, Sou
 
 ## Getting started
 
-The tools of the checks are in the Arch Linux repositories, apart from five from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, `hadolint`, `python-srctools`, the library the tools read the game's files with (KeyValues, VDF, VPK), `python-a2s`, the watchdog's queries of the servers, and `python-jpype1`, which PyGhidra runs Ghidra with for hl2sdk-ghidra. PyGhidra itself comes with Ghidra, as a wheel in `/opt/ghidra/Ghidra/Features/PyGhidra/pypkg/dist`, and the virtual environment below has it:
+The tools of the checks are in the Arch Linux repositories, apart from six from the AUR: SourceMod's compiler `spcomp`, which comes with `sourcemod-scripting`, `hadolint`, `python-srctools`, the library the tools read the game's files with (KeyValues, VDF, VPK), `python-a2s`, the watchdog's queries of the servers, `python-jpype1`, which PyGhidra runs Ghidra with for hl2sdk-ghidra, and `powershell`, which runs PSScriptAnalyzer on the client's PowerShell scripts. PSScriptAnalyzer itself isn't in the AUR, so install it into PowerShell with `pwsh -Command 'Install-Module PSScriptAnalyzer'` (the servers' version is 1.25.0). PyGhidra comes with Ghidra, as a wheel in `/opt/ghidra/Ghidra/Features/PyGhidra/pypkg/dist`, and the virtual environment below has it:
 
 ```bash
 sudo pacman -S --needed prek shfmt shellcheck shellharden ruff mypy \
@@ -48,11 +48,12 @@ prek install
 prek run --all-files
 ```
 
-GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run, downloads the release of hadolint, and makes the virtual environment of `uv.lock`, see `.github/workflows/check.yml`.
+GitHub Actions runs the same checks on every push and pull request. The AUR isn't available there: it builds spcomp from the SourceMod release the servers run, downloads the releases of hadolint and PowerShell (then PSScriptAnalyzer from the PowerShell Gallery), and makes the virtual environment of `uv.lock`, see `.github/workflows/check.yml`.
 
 ## Checks
 
 - Shell scripts are formatted with shfmt and pass shellcheck and shellharden. Write `cd … || exit` instead of disabling SC2164.
+- PowerShell scripts (`client/*.ps1`) pass PSScriptAnalyzer (`checks/psscriptanalyzer.ps1`, with the rules in `checks/PSScriptAnalyzerSettings.psd1`). The excluded rules are for reusable modules; suppress nothing else without a reason.
 - Python scripts are formatted with ruff and pass `ruff check`. Suppress a rule only where the code can't comply, with `# noqa: <rule>` and a comment saying why.
 - The Python code passes mypy, with the settings of `pyproject.toml`: functions without annotations are checked too. Narrow a type where it's ambiguous, e.g. a KeyValues value that may be a string or a block, rather than casting it or ignoring the error.
 - The tests in `tests/unit/` pass: `python3 -m pytest`. They run the code on fake state in temporary folders, never the system's; a change of the layers, their trial (`health.py`) or what the watchdog records comes with tests. The tests of the Workshop uploads build a stand-in of the Steamworks API's library, `tests/unit/fake_steam_api.c`, with the C compiler (`cc`).

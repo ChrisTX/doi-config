@@ -35,6 +35,11 @@ sanitizers = "sanitizers"
 UndefinedBehaviorSanitizer = "UndefinedBehaviorSanitizer"
 # DHooks' hook result that replaces the function's call (dhooks.inc), "supersede" as it spells it
 MRES_Supercede = "MRES_Supercede"
+# PSScriptAnalyzer, the PowerShell linter, its cmdlet Invoke-ScriptAnalyzer and its settings file: the
+# tool's name keeps its American "z"
+PSScriptAnalyzer = "PSScriptAnalyzer"
+PSScriptAnalyzerSettings = "PSScriptAnalyzerSettings"
+ScriptAnalyzer = "ScriptAnalyzer"
 
 [files]
 extend-exclude = [

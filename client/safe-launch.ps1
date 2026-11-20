@@ -64,7 +64,7 @@ function Write-Blocklist {
     [void]$out.AppendLine('}')
     Set-Content -LiteralPath (Join-Path $cfg 'server_blacklist.txt') -Value $out.ToString() -NoNewline -Encoding ascii
 }
-try { Write-Blocklist } catch { }
+try { Write-Blocklist } catch { Write-Verbose "blocklist refresh skipped: $_" }
 
 # Start the game with the kept tokens.
 if ($keep.Count -gt 1) { & $keep[0] @($keep[1..($keep.Count - 1)]) } else { & $keep[0] }

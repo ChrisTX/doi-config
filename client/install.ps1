@@ -14,11 +14,8 @@ $installDir = Join-Path $env:LOCALAPPDATA 'nwi-safe-launch'
 
 function Get-SteamPath {
     if ($env:NWI_STEAM_ROOT) { return $env:NWI_STEAM_ROOT }
-    try {
-        $p = (Get-ItemProperty 'HKCU:\Software\Valve\Steam' -ErrorAction Stop).SteamPath
-        if ($p) { return $p.Replace('/', '\') }
-    }
-    catch {}
+    $key = Get-ItemProperty 'HKCU:\Software\Valve\Steam' -ErrorAction SilentlyContinue
+    if ($key -and $key.SteamPath) { return $key.SteamPath.Replace('/', '\') }
     $default = "${env:ProgramFiles(x86)}\Steam"
     if (Test-Path $default) { return $default }
     return $null
@@ -91,7 +88,7 @@ function Write-Blocklist($cfg) {
     foreach ($ip in $sorted) {
         [void]$sb.AppendLine('    "server"'); [void]$sb.AppendLine('    {')
         [void]$sb.AppendLine("        `"name`"    `"Spamfilter $ip`""); [void]$sb.AppendLine("        `"addr`"    `"$ip`"")
-        [void]$sb.AppendLine('        "date"    "0"'); [void]$sb.AppendLine('    }')
+        [void]$sb.AppendLine("        `"date`"    `"$now`""); [void]$sb.AppendLine('    }')
     }
     [void]$sb.AppendLine('}')
     Set-Content -LiteralPath (Join-Path $cfg 'server_blacklist.txt') -Value $sb.ToString() -NoNewline -Encoding ascii

@@ -30,13 +30,18 @@ jobs:
       MULTICOLORS_COMMIT: d2f2dc9126255571c0fc4499d5729cacb57265ca
       HADOLINT_VERSION: 2.15.1
       HADOLINT_SHA256: c7187db94eeeeca956519a6af171adc31453941a1e777961f6e680f697c8c507
+      # PowerShell (for the client/*.ps1 check with PSScriptAnalyzer) from its release's file, checked
+      # against the checksum; PSScriptAnalyzer from the PowerShell Gallery at a pinned version.
+      POWERSHELL_VERSION: 7.7.0
+      POWERSHELL_SHA256: c89d9c682d2c403dfe726f3df948e359675235a5bd6fab535776de69729ca0cb
+      PSSCRIPTANALYZER_VERSION: 1.25.0
     steps:
       # Before the checkout, which only makes a git repository with git installed. Ghidra and its Java
       # for hl2sdk-ghidra: its stubs for mypy, Ghidra itself for its tests.
       - name: Install the tools of the checks
         run: |
           pacman -Syu --noconfirm --needed git prek shfmt shellcheck shellharden ruff systemd-lsp yamllint tombi \
-            rumdl typos trivy editorconfig-checker reuse clang gcc ghidra jdk21-openjdk python uv
+            rumdl typos trivy editorconfig-checker reuse clang gcc ghidra jdk21-openjdk python uv icu
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -50,6 +55,19 @@ jobs:
             "https://github.com/hadolint/hadolint/releases/download/v$HADOLINT_VERSION/hadolint-linux-x86_64"
           echo "$HADOLINT_SHA256  /tmp/hadolint" | sha256sum -c
           install -m755 /tmp/hadolint /usr/local/bin/hadolint
+
+      # PowerShell and PSScriptAnalyzer for the client/*.ps1 check (checks/psscriptanalyzer.ps1); the
+      # AUR isn't available, so PowerShell is its release's file, checked against the checksum, and
+      # PSScriptAnalyzer comes from the PowerShell Gallery.
+      - name: Install PowerShell and PSScriptAnalyzer
+        run: |
+          curl -fsSLo /tmp/powershell.tar.gz \
+            "https://github.com/PowerShell/PowerShell/releases/download/v$POWERSHELL_VERSION/powershell-$POWERSHELL_VERSION-linux-x64.tar.gz"
+          echo "$POWERSHELL_SHA256  /tmp/powershell.tar.gz" | sha256sum -c
+          mkdir -p /opt/microsoft/powershell
+          tar -xzf /tmp/powershell.tar.gz -C /opt/microsoft/powershell
+          ln -sf /opt/microsoft/powershell/pwsh /usr/local/bin/pwsh
+          pwsh -NoProfile -Command 'Set-PSRepository -Name PSGallery -InstallationPolicy Trusted; Install-Module -Name PSScriptAnalyzer -RequiredVersion $env:PSSCRIPTANALYZER_VERSION -Scope AllUsers -Force'
 
       # The Python tools' dependencies (srctools, python-a2s, hl2sdk-ghidra's), mypy, pytest and Ghidra's
       # stubs, in .venv with the versions and checksums of uv.lock, for Arch Linux's Python; the hooks
