@@ -70,20 +70,37 @@ repository supports both do this, in their own way.
 
 ### systemd
 
-The `nwi-server@.service` unit already runs each server as a transient user
-(`DynamicUser=yes`) with `NoNewPrivileges=yes`, `ProtectSystem=strict`,
-`ProtectHome=yes`, `PrivateTmp=yes` and `PrivateDevices=yes`, so the process
-can't write outside its own state, can't see other users' files, and can't gain
-privileges.
+The `nwi-server@.service` unit runs each server as a transient user of its own
+(`DynamicUser=yes`) in a sandbox that `systemd-analyze security` rates 2.0, "OK"
+(7.5 without it). The server can't write outside its own state, see other
+users' files or processes, gain privileges, change the kernel, the clock or the
+hostname, create namespaces or turn address space randomisation off. It may
+only make the system calls of an ordinary service, and nothing it writes while
+it runs can be executed: only `/usr` and its own game files are executable,
+`/tmp`, `/dev/shm` and its state aren't. Each part was tried on running Day of
+Infamy and Insurgency servers, and the unit's comments say why it's there, and
+why the few that are left out are.
 
-You can tighten it further, in a drop-in, with directives such as
-`LockPersonality=yes` (keeps address-space randomisation on),
-`RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX`, `RestrictNamespaces=yes`,
-`ProtectKernelTunables=yes`, `ProtectKernelModules=yes`,
-`ProtectControlGroups=yes`, an empty `CapabilityBoundingSet=` and a
-`SystemCallFilter=`. Add these one at a time and test: the game engine is old
-and a system-call filter in particular can stop it starting, so a filter wants
-checking against a real round before you rely on it.
+What depends on your network goes in a drop-in. On a dedicated server, an
+address restriction keeps a compromised server off the rest of your local
+network (your router, other machines):
+
+```ini
+# /etc/systemd/system/nwi-server@.service.d/addresses.conf
+[Service]
+IPAddressDeny=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 169.254.0.0/16 fc00::/7 fe80::/10
+# The machine's own addresses, and a database on another host
+IPAddressAllow=192.168.1.10
+```
+
+Allow the machine's own addresses: the server's watchdog asks the server over
+them, as the game doesn't answer queries from `127.0.0.1`. A database on the
+same machine needs nothing, `localhost` isn't denied. This also shuts out
+players on your own network, so it suits a dedicated server, not one at home.
+
+A list of the ports the server may bind (`SocketBindAllow=`) doesn't work:
+Steam's networking binds its sockets to port 0, any free port, which such a list
+refuses, and the server never comes up.
 
 One directive to **leave off the game server**: `MemoryDenyWriteExecute=yes`.
 SourceMod's SourcePawn engine compiles plugins to native code at runtime and

@@ -16,6 +16,8 @@ extend-ignore-re = [
   "\"[a-z][a-z0-9_]*_[a-z0-9_]*\"",
   # PyGhidra's function that analyses a program
   '\bpyghidra\.analyze\b',
+  # systemd's tool that analyses units, among them their sandbox (systemd-analyze security)
+  '\bsystemd-analyze\b',
   # The cryptography library's module of key formats
   '\bserialization\.',
   'import hashes, serialization\b',

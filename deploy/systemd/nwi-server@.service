@@ -64,6 +64,46 @@ PrivateDevices=yes
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
+# The rest of the sandbox, which systemd-analyze security rates 2.0 (7.5 without it), each part tried
+# on a running server: its start, RCON, SourceMod's plugins, a map change. See docs/Hardening.md.
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+# Other servers' processes are hidden. Not ProcSubset=pid, which hides /proc/cpuinfo: the engine
+# reads its CPU from there ("couldn't read cpu information" otherwise).
+ProtectProc=invisible
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+# Also keeps the server from turning address space randomisation off. A sanitiser build (SANITISER)
+# that re-runs itself without it would need this relaxed in a drop-in.
+LockPersonality=yes
+# 64-bit for nwi-server and its watchdog, 32-bit x86 for the servers (srcds_linux)
+SystemCallArchitectures=native x86
+# Netlink for the engine's list of the machine's addresses, local sockets for systemd's notifications
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+# The calls of a system service, which cover everything the server, the watchdog and nwi-server
+# prepare make (checked with SystemCallLog=~@system-service). Not narrower: prepare needs chown
+# (@privileged), the engine setpriority (@resources). A call outside the set fails with EPERM rather
+# than killing the server.
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+# Of root's capabilities, prepare ("!") keeps what it takes to write the server's configs and secrets
+# into its layers, which are mapped to the server's user. The server, an unprivileged user, has none.
+CapabilityBoundingSet=CAP_CHOWN CAP_DAC_OVERRIDE CAP_FOWNER
+# Nothing written at run time can be run: only /usr and the server's layers are executable. The
+# private /tmp, /var/tmp and /dev/shm and the health folder are mounts of their own, which / doesn't
+# cover, so they're named.
+NoExecPaths=/ /tmp /var/tmp /dev/shm -/run/nwi-server/health/%i
+ExecPaths=-/usr -/run/nwi-server/%i
+# Not set, on purpose: MemoryDenyWriteExecute= (SourcePawn compiles the plugins at run time),
+# PrivateNetwork= (the game needs the network; docs/design/rcon-isolation.md has the namespace plan),
+# PrivateUsers= (prepare gives the RCON password to the group nwi-rcon, which a user namespace doesn't
+# map), UMask=0077 (nwi-update reads the health file), IPAddressDeny= and SocketBindAllow= (the
+# database's address and the ports differ by machine and server: drop-ins, see docs/Hardening.md).
 Restart=always
 RestartMode=direct
 RestartSec=10
