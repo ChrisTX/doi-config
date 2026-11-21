@@ -137,9 +137,12 @@ floods before they reach the server:
 - Game traffic passes untouched. Connectionless packets, the queries and the
   handshake of a connection, pass only with a type the engine answers and that
   type's length.
-- Each address may send 20 of those a second. Queries and handshakes each have
-  a budget for all addresses together, so a flood of queries can't keep players
-  from joining.
+- Each address may send 20 of those a second. Each server has a budget for
+  queries and one for handshakes, for all addresses together: a flood of
+  queries can't keep players from joining, and a flood at one server doesn't
+  use up another's. The queries' budget, 40 a second, stays below the engine's
+  own limit of 60 (`sv_max_queries_sec_global`): with more let through, the
+  engine sometimes turned joins away too.
 
 The engine itself answers a query from an address it hasn't seen with a
 challenge smaller than the request, so the servers can't be used to amplify
@@ -153,18 +156,22 @@ limited to `ct state new` doesn't. With firewalld, check that its rule for the
 ports includes `untracked` (`nft list ruleset`). `nft list table ip
 nwi-game-ports` shows what it dropped.
 
-Measured on an Insurgency server in a network namespace, under 20,000 packets a
-second, with a client querying the server and starting connections throughout;
-`tests/integration/instance.py stress` repeats it with the test instance.
-With the table, the server kept its tick in every case:
+Measured with `tests/integration/instance.py stress` on the Insurgency test
+server: floods of 20,000 packets a second for 20 seconds, while a client queried
+the server every 1.5 seconds and started a connection every 3. With the table,
+the server kept its tick in every case:
 
 | Flood | With the table | Without |
 | --- | --- | --- |
-| Queries from spoofed addresses | joins get through, ~200 tracked | joins fail, ~210,000 tracked |
-| Queries from one address | everything answered | some queries lost |
-| Malformed packets | everything answered, all dropped | joins fail, ~150,000 tracked |
-| Handshakes from spoofed addresses | queries answered, most joins | almost nothing answered |
-| Junk shaped like game traffic | answers unchanged, nothing tracked | answers unchanged, ~140,000 tracked |
+| Queries from spoofed addresses | all joins answered, 5 tracked | 1 of 6 joins, ~198,000 tracked |
+| Queries from one address | everything answered | 13 of 14 queries |
+| Malformed packets | everything answered | 1 of 6 joins, ~198,000 tracked |
+| Handshakes from spoofed addresses | all queries, 4 of 7 joins | 1 of 6 joins, ~198,000 tracked |
+| Junk shaped like game traffic | answers unchanged | answers unchanged, ~200,000 tracked |
+
+Without the table, a full connection table also drops the server's own
+watchdog's queries, and the watchdog then takes the server for hung and aborts
+it: under a long enough flood, a server can restart again and again.
 
 Two things it can't do. During a flood of spoofed queries the server drops out of
 the server browser: no rule can tell a spoofed query from a real one, only the

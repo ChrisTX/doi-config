@@ -15,8 +15,10 @@
 #   engine answers T (A2S_INFO, only with its exact request), U (A2S_PLAYER), V (A2S_RULES), W (a
 #   challenge), i (ping), q (a connection's challenge) and k (a connection), and ignores the rest.
 # - Each address may send 20 of them a second, in bursts of 60 (the machine's own, over lo, as many as
-#   they like). Queries and handshakes each have a budget for all addresses together, so a flood of
-#   queries can't keep players from connecting.
+#   they like). Each server, by its port, has a budget for queries and one for handshakes, for all
+#   addresses together, so a flood of queries can't keep players from connecting. The queries' budget
+#   is below the engine's own limit of 60 a second (sv_max_queries_sec_global): with more let through,
+#   the engine sometimes turned the requests that start a connection away too.
 #
 # The engine already answers a query from an address it hasn't seen with a challenge, smaller than
 # the request, so the servers can't be used to reflect or amplify floods at others: this protects the
@@ -43,6 +45,19 @@ table ip nwi-game-ports {
 		flags dynamic, timeout
 		timeout 10s
 		size 65536
+	}
+
+	# The servers' budgets, by port: a limit statement on its own would be one for all of them
+	set queries {
+		type inet_service
+		flags dynamic, timeout
+		timeout 10s
+	}
+
+	set handshakes {
+		type inet_service
+		flags dynamic, timeout
+		timeout 10s
 	}
 
 	chain prerouting {
@@ -93,7 +108,7 @@ table ip nwi-game-ports {
 	}
 
 	chain query {
-		limit rate over 100/second burst 200 packets counter drop
+		update @queries { udp dport limit rate over 40/second burst 80 packets } counter drop
 		accept
 	}
 
@@ -109,7 +124,7 @@ table ip nwi-game-ports {
 	}
 
 	chain handshake {
-		limit rate over 50/second burst 100 packets counter drop
+		update @handshakes { udp dport limit rate over 50/second burst 100 packets } counter drop
 		accept
 	}
 }
