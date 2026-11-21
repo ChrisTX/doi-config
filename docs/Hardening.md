@@ -156,27 +156,33 @@ limited to `ct state new` doesn't. With firewalld, check that its rule for the
 ports includes `untracked` (`nft list ruleset`). `nft list table ip
 nwi-game-ports` shows what it dropped.
 
-Measured with `tests/integration/instance.py stress` on the Insurgency test
-server: floods of 20,000 packets a second for 20 seconds, while a client queried
-the server every 1.5 seconds and started a connection every 3. With the table,
-the server kept its tick in every case:
+Measured with `tests/integration/instance.py stress` on the test servers of Day
+of Infamy (128 tick) and Insurgency (64 tick): floods of 20,000 packets a second
+for 20 seconds, while a client queried the server every 1.5 seconds and started
+a connection every 3. With the table, both kept their tick in every case, and at
+most 26 connections were tracked:
 
 | Flood | With the table | Without |
 | --- | --- | --- |
-| Queries from spoofed addresses | all joins answered, 5 tracked | 1 of 6 joins, ~198,000 tracked |
-| Queries from one address | everything answered | 13 of 14 queries |
-| Malformed packets | everything answered | 1 of 6 joins, ~198,000 tracked |
-| Handshakes from spoofed addresses | all queries, 4 of 7 joins | 1 of 6 joins, ~198,000 tracked |
+| Queries from spoofed addresses | all joins answered | 1 of 6 joins, ~198,000 tracked |
+| Queries from one address | everything answered | nearly everything answered |
+| Malformed packets | everything answered | 1 of 6 joins, up to 262,144 tracked |
+| Handshakes from spoofed addresses | all queries, 2 to 4 of 7 joins | 1 of 6 joins, up to 262,144 tracked |
 | Junk shaped like game traffic | answers unchanged | answers unchanged, ~200,000 tracked |
+
+262,144 was the test machine's limit: a full table drops every new connection to
+the machine.
 
 Without the table, a full connection table also drops the server's own
 watchdog's queries, and the watchdog then takes the server for hung and aborts
 it: under a long enough flood, a server can restart again and again.
 
-Two things it can't do. During a flood of spoofed queries the server drops out of
-the server browser: no rule can tell a spoofed query from a real one, only the
+Three things it can't do. During a flood of spoofed queries the server drops out
+of the server browser: no rule can tell a spoofed query from a real one, only the
 engine's challenge can, and it comes after the first packet; joining still
-works. And packets shaped like game traffic can't be filtered without the
+works. During a flood of spoofed handshakes, players who join compete with it
+for the server's budget for handshakes and may need a few tries, for the same
+reason. And packets shaped like game traffic can't be filtered without the
 connection state the table deliberately doesn't keep; the engine drops those
 from addresses that never connected cheaply.
 
