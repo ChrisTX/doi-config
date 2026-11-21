@@ -40,6 +40,8 @@ MRES_Supercede = "MRES_Supercede"
 PSScriptAnalyzer = "PSScriptAnalyzer"
 PSScriptAnalyzerSettings = "PSScriptAnalyzerSettings"
 ScriptAnalyzer = "ScriptAnalyzer"
+# SSH's per-user key file (authorized_keys, in docs/design): its spelling is the file's
+authorized_keys = "authorized_keys"
 
 [files]
 extend-exclude = [
