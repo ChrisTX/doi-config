@@ -125,11 +125,56 @@ The servers pin the engine's query rate limits in
 will do to the A2S query port is bounded. Those are the engine's own defaults,
 set explicitly so a config reset can't drop them.
 
-Beyond that, a host firewall can rate-limit the server's UDP port as ordinary
-denial-of-service hygiene, the same way you would for any public UDP service.
-On Linux, [client/linux-rcon-firewall.md](../client/linux-rcon-firewall.md)
-shows the nftables and firewalld shapes for a related rule; the same tools
-rate-limit a port.
+### Flood protection with nftables
+
+[deploy/nftables/nwi-game-ports.nft](../deploy/nftables/nwi-game-ports.nft) is a
+table of its own, loaded beside your firewall, that protects the game ports from
+floods before they reach the server:
+
+- The game ports' packets aren't tracked, so a flood from spoofed addresses
+  can't fill the connection table. A full table refuses every new connection to
+  the machine, RCON and SSH included.
+- Game traffic passes untouched. Connectionless packets, the queries and the
+  handshake of a connection, pass only with a type the engine answers and that
+  type's length.
+- Each address may send 20 of those a second. Queries and handshakes each have
+  a budget for all addresses together, so a flood of queries can't keep players
+  from joining.
+
+The engine itself answers a query from an address it hasn't seen with a
+challenge smaller than the request, so the servers can't be used to amplify
+floods at others; the table protects the servers and the machine.
+
+Set its `game_ports` to your servers' game and SourceTV ports, then load it with
+`nft -f nwi-game-ports.nft`, or include it from `/etc/nftables.conf`. It opens
+no port: your firewall still has to accept the game ports, and for untracked
+packets, which these are. A rule like `udp dport 27015-27030 accept` does; one
+limited to `ct state new` doesn't. With firewalld, check that its rule for the
+ports includes `untracked` (`nft list ruleset`). `nft list table ip
+nwi-game-ports` shows what it dropped.
+
+Measured on an Insurgency server in a network namespace, under 20,000 packets a
+second, with a client querying the server and starting connections throughout.
+With the table, the server kept its tick in every case:
+
+| Flood | With the table | Without |
+| --- | --- | --- |
+| Queries from spoofed addresses | joins get through, ~200 tracked | joins fail, ~210,000 tracked |
+| Queries from one address | everything answered | some queries lost |
+| Malformed packets | everything answered, all dropped | joins fail, ~150,000 tracked |
+| Handshakes from spoofed addresses | queries answered, most joins | almost nothing answered |
+| Junk shaped like game traffic | answers unchanged, nothing tracked | answers unchanged, ~140,000 tracked |
+
+Two things it can't do. During a flood of spoofed queries the server drops out of
+the server browser: no rule can tell a spoofed query from a real one, only the
+engine's challenge can, and it comes after the first packet; joining still
+works. And packets shaped like game traffic can't be filtered without the
+connection state the table deliberately doesn't keep; the engine drops those
+from addresses that never connected cheaply.
+
+Windows Firewall can't look inside packets or limit each address: open only the
+game ports (UDP), keep RCON closed, and rely on the query limits above and your
+host's protection against floods.
 
 ### RCON
 

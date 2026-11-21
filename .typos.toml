@@ -31,6 +31,8 @@ theater = "theater"
 sanitize = "sanitize"
 sanitizer = "sanitizer"
 sanitizers = "sanitizers"
+# nftables' keyword for the interface a packet came in on (deploy/nftables)
+iif = "iif"
 
 [default.extend-identifiers]
 # The name of Clang's and GCC's sanitizer of undefined behaviour

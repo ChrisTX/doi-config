@@ -1,0 +1,115 @@
+#!/usr/sbin/nft -f
+# SPDX-FileCopyrightText: Christian Pfeiffer
+# SPDX-License-Identifier: MIT
+
+# Flood protection for the game servers' UDP ports, a table of its own beside the machine's firewall
+# (see docs/Hardening.md). It opens and closes no port: the firewall's input chain still has to accept
+# the game ports, and for packets that aren't tracked, which these aren't (see below).
+#
+# Before connection tracking (priority raw):
+# - The game ports' packets aren't tracked, both ways: a flood from spoofed addresses can't fill the
+#   connection table, and players' packets skip it.
+# - Game traffic, anything that doesn't start with FF FF FF FF, passes untouched.
+# - Connectionless packets (FF FF FF FF: the queries and the handshake of a connection) pass only with
+#   a type the engine answers and that type's length. Measured on Day of Infamy and Insurgency: the
+#   engine answers T (A2S_INFO, only with its exact request), U (A2S_PLAYER), V (A2S_RULES), W (a
+#   challenge), i (ping), q (a connection's challenge) and k (a connection), and ignores the rest.
+# - Each address may send 20 of them a second, in bursts of 60 (the machine's own, over lo, as many as
+#   they like). Queries and handshakes each have a budget for all addresses together, so a flood of
+#   queries can't keep players from connecting.
+#
+# The engine already answers a query from an address it hasn't seen with a challenge, smaller than
+# the request, so the servers can't be used to reflect or amplify floods at others: this protects the
+# servers themselves.
+#
+# Load with "nft -f nwi-game-ports.nft", which replaces the table, or include it from
+# /etc/nftables.conf. "nft list table ip nwi-game-ports" shows the counters of what it dropped.
+
+table ip nwi-game-ports
+delete table ip nwi-game-ports
+
+# The servers' game engine only listens on IPv4
+table ip nwi-game-ports {
+	# The servers' game and SourceTV ports
+	set game_ports {
+		type inet_service
+		flags interval
+		elements = { 27015-27030 }
+	}
+
+	# The addresses that sent connectionless packets lately, each with its rate
+	set sources {
+		type ipv4_addr
+		flags dynamic, timeout
+		timeout 10s
+		size 65536
+	}
+
+	chain prerouting {
+		type filter hook prerouting priority raw; policy accept;
+		udp dport @game_ports jump game
+	}
+
+	chain output {
+		type filter hook output priority raw; policy accept;
+		udp sport @game_ports notrack
+	}
+
+	chain game {
+		notrack
+		@th,64,32 != 0xffffffff accept
+		# The machine's own queries, e.g. its servers' watchdogs, which all come from its own address
+		iif lo accept
+		# Enough for a monitor that asks all the machine's servers at once
+		update @sources { ip saddr limit rate over 20/second burst 60 packets } counter drop
+		# The type, the payload's fifth byte
+		@th,96,8 vmap {
+			0x54 : jump info,
+			0x55 : jump challenged,
+			0x56 : jump challenged,
+			0x57 : jump ping,
+			0x69 : jump ping,
+			0x71 : jump challenge,
+			0x6b : jump connect,
+		}
+		counter drop
+	}
+
+	# "Source Engine Query" and its terminator, with the challenge or without
+	chain info {
+		udp length != { 33, 37 } counter drop
+		jump query
+	}
+
+	# The challenge, or -1 to ask for one
+	chain challenged {
+		udp length != 17 counter drop
+		jump query
+	}
+
+	chain ping {
+		udp length > 17 counter drop
+		jump query
+	}
+
+	chain query {
+		limit rate over 100/second burst 200 packets counter drop
+		accept
+	}
+
+	chain challenge {
+		udp length > 108 counter drop
+		jump handshake
+	}
+
+	# Name, password and Steam ticket, in one packet
+	chain connect {
+		udp length > 1480 counter drop
+		jump handshake
+	}
+
+	chain handshake {
+		limit rate over 50/second burst 100 packets counter drop
+		accept
+	}
+}
