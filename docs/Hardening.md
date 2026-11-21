@@ -154,7 +154,8 @@ ports includes `untracked` (`nft list ruleset`). `nft list table ip
 nwi-game-ports` shows what it dropped.
 
 Measured on an Insurgency server in a network namespace, under 20,000 packets a
-second, with a client querying the server and starting connections throughout.
+second, with a client querying the server and starting connections throughout;
+`tests/integration/instance.py stress` repeats it with the test instance.
 With the table, the server kept its tick in every case:
 
 | Flood | With the table | Without |

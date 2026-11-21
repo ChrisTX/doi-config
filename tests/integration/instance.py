@@ -28,6 +28,14 @@ Usage:
         the round test: update and start each config (coop-commando and soak-bots by default) in turn,
         let bots play its rounds and check that they do (tests/integration/rounds.py), then remove it;
         exit status 1 if a config failed
+    instance.py stress [--seconds SECONDS] [--rate RATE] [--floods FLOOD,...] [CONFIG]
+        the stress test of the network: update and start a config (coop-commando by default), flood its
+        game port from spoofed addresses with and without deploy/nftables/nwi-game-ports.nft while a
+        client queries it and starts connections, check that with the table it keeps its tick and
+        serves the client (tests/integration/stress.py, in a network namespace of the pod's, with
+        podman unshare), then remove it; SECONDS each flood (20 by default) at RATE packets a second
+        (20000), FLOOD... of tests/integration/stress.py (all by default); with SANITISER also no
+        sanitiser report in the server's output; exit status 1 if a check failed
     instance.py dump-cvars [--with-descriptions] GAME
         dump the cvars and commands of GAME (doi, insurgency) into checks/cvars/<GAME>.json for
         checks/check_configs.py (checks/dump_cvars.py): update and start its test server (coop-commando
@@ -94,6 +102,7 @@ REPOSITORY = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(REPOSITORY / "src"), str(REPOSITORY)]
 from nwi_server_kit import rcon as rcon_client
 from tests.integration import rounds as round_checks
+from tests.integration.soak_watch import REPORT
 
 SETTINGS = (
     "AUR_REPO",
@@ -843,6 +852,74 @@ class Instance:
                 )
             self.down()
 
+    def stress(self, args: list[str]) -> int:
+        """The stress test of a config, see the usage and tests/integration/stress.py."""
+        options: list[str] = []
+        while args[:1] in (["--seconds"], ["--rate"], ["--floods"]):
+            if len(args) < 2:
+                raise InstanceError(f"{args[0]} needs a number")
+            options, args = [*options, *args[:2]], args[2:]
+        if len(args) > 1:
+            raise InstanceError(
+                "stress [--seconds SECONDS] [--rate RATE] [--floods FLOOD,...] [CONFIG]"
+            )
+        config = args[0] if args else "coop-commando"
+        tickrate = str(server_settings(config).get("tickrate", 128))
+        self.update([config])
+        self.up([config])
+        try:
+            # A flood without the table can fill the connection table so that the server's own
+            # watchdog gets no answer and aborts it: the server comes back for the next flood
+            run(
+                "podman", "update", "--restart", "on-failure", f"{POD}-server",
+                capture=True,
+            )  # fmt: skip
+            infra = run(
+                "podman", "pod", "inspect", "--format", "{{.InfraContainerID}}", POD,
+                capture=True,
+            ).strip()  # fmt: skip
+            pid = run(
+                "podman", "inspect", "--format", "{{.State.Pid}}", infra, capture=True
+            ).strip()
+            # As root of rootless Podman's user namespace, which owns the pod's network namespace
+            status = subprocess.run(
+                [
+                    "podman",
+                    "unshare",
+                    sys.executable,
+                    str(REPOSITORY / "tests/integration/stress.py"),
+                    "--pod-pid",
+                    pid,
+                    "--tickrate",
+                    tickrate,
+                    *options,
+                    str(REPOSITORY / "deploy/nftables/nwi-game-ports.nft"),
+                ],
+                env=os.environ | {"RCON_PASSWORD": self.rcon_password()},
+                check=False,
+            ).returncode
+            logs = subprocess.run(
+                ["podman", "logs", f"{POD}-server"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            reports = [
+                line
+                for line in (logs.stdout + logs.stderr).splitlines()
+                if REPORT.search(line)
+            ]
+            if reports:
+                print(
+                    f"FAILED: {len(reports)} sanitiser reports in the server's output, the first: "
+                    f"{reports[0]}",
+                    file=sys.stderr,
+                )
+                return 1
+            return status
+        finally:
+            self.down()
+
     def dump_cvars(self, args: list[str]) -> int:
         """The dump of a game's cvars and commands, see the usage and checks/dump_cvars.py."""
         descriptions = args[:1] == ["--with-descriptions"]
@@ -1045,6 +1122,7 @@ def main(argv: list[str] | None = None) -> int:
         "logs",
         "soak",
         "rounds",
+        "stress",
         "dump-cvars",
     ):
         print(f"Usage:{usage}", file=sys.stderr)
@@ -1070,6 +1148,8 @@ def main(argv: list[str] | None = None) -> int:
             return instance.logs()
         elif command == "rounds":
             return instance.rounds(rest)
+        elif command == "stress":
+            return instance.stress(rest)
         elif command == "dump-cvars":
             return instance.dump_cvars(rest)
         else:
