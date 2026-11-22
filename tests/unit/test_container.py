@@ -106,3 +106,9 @@ def test_commands(monkeypatch: pytest.MonkeyPatch) -> None:
     assert container_cli.main(["check"]) == 1
     assert calls == [("update", ["--image", "/srv/state"]), ("check", ["/srv/state"])]
     assert container_cli.main(["bogus"]) == 2
+
+
+def test_a_config_of_another_name(paths: container.Paths) -> None:
+    """A server whose config isn't the one of its name (SERVER_CONFIG_NAME), e.g. a second one."""
+    game = container.assemble(paths, "coop-2", "coop")
+    assert (game / "server.toml").read_text() == 'hostname = "Coop"\n'

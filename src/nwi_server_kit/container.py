@@ -13,8 +13,9 @@ prepares and runs the server (launch.py), under the watchdog, which passes the c
 on.
 
 The environment:
-    SERVER_NAME     the server's config in servers/, if it has one; without, the secrets need a
-                    cfg/server.cfg
+    SERVER_NAME     the server's name, and its config in servers/ if it has one; without, the
+                    secrets need a cfg/server.cfg
+    SERVER_CONFIG_NAME  its config instead, if it isn't the one of its name, as for the systemd units
 The other settings are the variables of nwi-server@.service's environment file (SERVER_PORT, …).
 /srv/nwi-data has what the server keeps between its containers, volumes or folders of the image's user:
 dumps (crash dumps), logs (the game's), sourcemod/logs and sourcemod/data (SourceMod's).
@@ -71,7 +72,7 @@ def copy_tree(source: Path, target: Path, links: bool = True) -> None:
     shutil.copytree(source, target, symlinks=links, dirs_exist_ok=True)
 
 
-def assemble(paths: Paths, server: str | None) -> Path:
+def assemble(paths: Paths, server: str | None, config_name: str | None = None) -> Path:
     """Make the game's folder of the server's files, see the module's documentation; the game's folder."""
     if not os.access(paths.root / "srcds_linux", os.X_OK):
         raise ValueError(
@@ -100,10 +101,13 @@ def assemble(paths: Paths, server: str | None) -> Path:
             shutil.rmtree(target)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.symlink_to(paths.data / kept)
-    if server:
-        config = paths.repository / "servers" / server
+    config_name = config_name or server
+    if server and config_name:
+        config = paths.repository / "servers" / config_name
         if not config.is_dir():
-            raise ValueError(f"the config {server} isn't in {paths.repository}/servers")
+            raise ValueError(
+                f"the config {config_name} isn't in {paths.repository}/servers"
+            )
         # With its symbolic links resolved: a link to another server's file, like private-mp's
         # motd.txt, points out of the server's folder
         copy_tree(config, game, links=False)

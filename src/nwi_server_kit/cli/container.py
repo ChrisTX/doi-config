@@ -34,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     server = os.environ.get("SERVER_NAME") or None
     try:
-        container.assemble(paths, server)
+        container.assemble(paths, server, os.environ.get("SERVER_CONFIG_NAME") or None)
         launch.prepare(paths.root, server or "")
         return launch.start(paths.root)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
