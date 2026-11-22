@@ -1,9 +1,12 @@
-# Day of Infamy client configuration
+# Client configuration
 
 Settings for players of the servers, to fix crashes on large maps and to make
-SourceMod's menus work.
+SourceMod's menus work. The client's safe-launch wrapper and its installer have
+their own notes, in [client/README.md](../../client/README.md).
 
 ## Engine hunk overflow
+
+*Both games: the engine's, of their 32-bit builds.*
 
 Community maps, especially large ones like `ardennes`, can crash the game when
 loading. This is an old Source engine problem known as an [Engine Hunk
@@ -32,6 +35,8 @@ With a 32-bit game, the native Linux one or the 32-bit one on Windows, add
 `+r_hunkalloclightmaps 0` to the game's launch options in Steam.
 
 ## Keys for SourceMod menus
+
+*Day of Infamy; Insurgency's default bindings aren't checked.*
 
 SourceMod menus like the admin menu (`sm_admin`) use the keys 1 to 0 to pick
 an entry. The game only binds the keys 1 to 5, so the entries 6 to 10 can't be

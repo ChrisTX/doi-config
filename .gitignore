@@ -19,3 +19,5 @@ dist/
 # The game's help texts of the cvars and commands, for editors on this machine only
 # (tests/integration/instance.py dump-cvars --with-descriptions)
 checks/cvars/descriptions/
+# The book of the docs (mdbook build)
+target/

@@ -221,5 +221,5 @@ This belongs with the NWI tools, alongside the existing `rcon.py` (which already
 has `connect`/`run`) and the per-instance `nwi-server@.service` template — the
 handler is the daemon form of the former on the model of the latter. It leans on
 the container deployment for the namespace, sits behind the same "encrypted RCON
-only" rule written up for admins in [../Hardening.md](../Hardening.md), and the
+only" rule written up for admins in [Hardening](../kit/Hardening.md), and the
 standalone wrapper above is a piece of the planned NWI-tools / config split.

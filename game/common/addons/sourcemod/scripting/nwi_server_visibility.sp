@@ -7,7 +7,7 @@
 // The browser of a playlist's servers hides those whose players, less their bots, are outside its
 // players filter, and the filter's range is the playlist's (filters, players, min and max of its file):
 // 0 to 8 in both games' coop playlists. So a coop server disappears as soon as more than 8 players are
-// on it, exactly when it's busy, and players can't widen the filter (docs/Cvars.md). The server leaves
+// on it, exactly when it's busy, and players can't widen the filter (docs/games/Cvars.md). The server leaves
 // its bots out of the counts it sends to Steam, which answers the browsers' queries.
 //
 // For the counts it sends to Steam (nwi_gamedata.inc, NWI_OnSteamServerDetails), the plugin counts the

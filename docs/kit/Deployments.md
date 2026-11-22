@@ -5,7 +5,7 @@ SPDX-License-Identifier: MIT
 
 # systemd and containers
 
-The servers run in one of two ways (see the [README](../README.md)): as
+The servers run in one of two ways (see the [README](../../README.md)): as
 systemd services on the host (`deploy/systemd`, with the package of
 `deploy/arch`), or in containers of the image (`deploy/container`), with
 rootless Podman's Quadlet units (`deploy/quadlet`). Both run the same server

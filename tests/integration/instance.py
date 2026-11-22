@@ -5,7 +5,7 @@ the live servers: the passwords are generated, and without its config the Discor
 
 Usage:
     instance.py build [--local] [--testing] [PODMAN BUILD OPTION...]
-        build the image (podman build, see README.md) with the packages of the public repository, or
+        build the image (podman build, see docs/kit/Containers.md) with the packages of the public repository, or
         with --local (or NWI_TEST_REPO=local) of the local pacman repository, e.g. for packages not
         published yet; with --testing with Arch Linux's testing repositories, for packages built
         against them, as on a machine that uses them
@@ -74,7 +74,7 @@ one VAR=value a line, e.g. TEST_ADMIN=[U:1:123], the environment's taking preced
     TEST_DB_PORT          the database's port on 127.0.0.1 with --db-only (3306)
     SANITISER             undefined, address or address,undefined: up starts the server from the
                           sanitiser image (localhost/nwi-server-sanitiser, tests/integration/sanitiser,
-                          see README.md), with its runtime preloaded
+                          see docs/kit/Testing.md), with its runtime preloaded
     LAUNCH_OPTIONS        options of the server's command line for every up, separated by spaces,
                           before those of up's own
     NWI_TEST_REPO         public (the default) or local: the repository of build and of the database's
@@ -583,7 +583,7 @@ class Instance:
         if not up.db_only:
             if not succeeds("podman", "image", "exists", self.server_image):
                 raise InstanceError(
-                    f"no image {self.server_image}, build it first (see README.md)"
+                    f"no image {self.server_image}, build it first (see docs/kit/Testing.md)"
                 )
             if not os.access(
                 self.state / "servers" / up.config / "game/srcds_linux", os.X_OK

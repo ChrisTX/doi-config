@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 # Flood protection for the game servers' UDP ports, a table of its own beside the machine's firewall
-# (see docs/Hardening.md). It opens and closes no port: the firewall's input chain still has to accept
+# (see docs/kit/Hardening.md). It opens and closes no port: the firewall's input chain still has to accept
 # the game ports, and for packets that aren't tracked, which these aren't (see below).
 #
 # Before connection tracking (priority raw):

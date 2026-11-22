@@ -1,0 +1,14 @@
+# The book of the docs (mdBook): mdbook build makes it in target/book, mdbook serve shows it
+[book]
+title = "Day of Infamy Open Configuration"
+language = "en-GB"
+src = "docs"
+
+[build]
+build-dir = "target/book"
+
+[output.html]
+git-repository-url = "https://github.com/ChrisTX/doi-config"
+
+# The links, between the pages and to the repository's files, are rumdl's to check, in the git hooks
+# (MD051, MD057)

@@ -1,7 +1,7 @@
 # The server image with test builds of SourceMod, Metamod:Source and the extensions with sanitisers,
 # on top of the usual one: their binaries replace the usual ones in /opt/nwi-layer, and compiler-rt
 # brings the sanitisers' runtime, which nwi-server start preloads when the container has SANITISER set
-# (undefined, address or address,undefined, as they were built). For tests only, see README.md.
+# (undefined, address or address,undefined, as they were built). For tests only, see docs/kit/Testing.md.
 #
 # Build arguments:
 #   BASE      the usual image (localhost/nwi-server)

@@ -40,7 +40,7 @@ The environment, the server's environment file (/etc/nwi-server/<server>.env):
                       is a private one, as in a container
     SANITISER         undefined, address or address,undefined, for a server with test builds of
                       SourceMod and Metamod:Source with these sanitisers (./aur-packages build
-                      --sanitize of the AUR packages, see README.md): their 32-bit runtime of
+                      --sanitize of the AUR packages, see docs/kit/Testing.md): their 32-bit runtime of
                       compiler-rt is preloaded into srcds too, and they report to the server's output
                       with stack traces (UBSAN_OPTIONS and ASAN_OPTIONS, unless they're set)
 

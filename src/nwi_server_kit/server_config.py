@@ -27,7 +27,7 @@ folder, of game/<game>/cfg or game/common/cfg of its configs (games.config_file)
                     own settings (sv_mincmdrate, sv_minupdaterate in server.cfg)
     geoip           optional: true for a server whose plugins need SourceMod's GeoIP databases, which
                     then fails to start without one, false by default: e.g. the host's from geoipupdate,
-                    which the sourcemod package links (/var/lib/GeoIP, see README.md); without one,
+                    which the sourcemod package links (/var/lib/GeoIP, see docs/kit/GeoIP.md); without one,
                     every server starts without SourceMod's GeoIP extension (launch.configure_geoip)
     launch_options  optional: more options of the server's command line, e.g. ["-nobots"]
     configs_before  optional: configs to run before ours
@@ -188,7 +188,7 @@ def check_geoip(folder: Path) -> None:
     if not has_geoip(folder):
         raise ValueError(
             f"geoip is true, but {geoip} has no GeoIP database ({', '.join(GEOIP_DATABASES)}): "
-            "install geoipupdate, or give the container the host's /var/lib/GeoIP (see README.md)"
+            "install geoipupdate, or give the container the host's /var/lib/GeoIP (see docs/kit/GeoIP.md)"
         )
 
 

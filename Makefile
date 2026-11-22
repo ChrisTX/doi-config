@@ -2,7 +2,7 @@
 # hand: make install DESTDIR=… PREFIX=/usr, with the Python package nwi_server_kit and its command
 # nwi-server (pyproject.toml), which make builds first. The configs aren't installed: the tools read them from the
 # servers' config sources, which the updater keeps (nwi_server_kit.games).
-# See README.md.
+# See docs/kit/Systemd.md.
 
 PREFIX ?= /usr
 LIBDIR ?= $(PREFIX)/lib
@@ -12,7 +12,8 @@ UNITS = $(wildcard deploy/systemd/*)
 # The user units of a player's machine: the scan of the game client's workshop items
 USER_UNITS = $(wildcard deploy/systemd-user/*)
 QUADLET = $(wildcard deploy/quadlet/*)
-DOCS = README.md CONTRIBUTING.md docs/Clients.md docs/Cvars.md
+# The book (docs/) is installed with its folders, which its links need
+DOCS = README.md CONTRIBUTING.md $(shell find docs -name '*.md')
 
 .PHONY: all install uninstall check
 
@@ -27,7 +28,7 @@ install:
 	install -Dm644 deploy/sysusers.d/nwi-server.conf "$(DESTDIR)$(LIBDIR)/sysusers.d/nwi-server.conf"
 	# Copied into ~/.config by whoever runs the containers: in Podman's folders, they'd be every user's
 	install -Dm644 -t "$(DESTDIR)$(DATADIR)/nwi-server-kit/quadlet" $(QUADLET)
-	install -Dm644 -t "$(DESTDIR)$(DATADIR)/doc/nwi-server-kit" $(DOCS)
+	for file in $(DOCS); do install -Dm644 "$$file" "$(DESTDIR)$(DATADIR)/doc/nwi-server-kit/$$file"; done
 
 uninstall:
 	rm -rf "$(DESTDIR)$(DATADIR)/nwi-server-kit" \

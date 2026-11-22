@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping with this configuration. It's the configuration of the Kim Jong Un Day of Infamy servers: the game's configuration files, the scripts that set up and update a server, the systemd units that run and monitor it, and a few SourceMod plugins. See the [README](README.md) for how it's used on a server.
+Thanks for helping with this configuration. It's the configuration of the Kim Jong Un Day of Infamy servers: the game's configuration files, the scripts that set up and update a server, the systemd units that run and monitor it, and a few SourceMod plugins. See [the book](docs/README.md) for how it's used on a server.
 
 ## Reporting problems
 
@@ -69,6 +69,7 @@ GitHub Actions runs the same checks on every push and pull request. The AUR isn'
 
 ## Writing
 
+- The documentation is a book of Markdown files in `docs/` ([mdBook](https://rust-lang.github.io/mdBook/), the `mdbook` package; `docs/SUMMARY.md` its chapters): `docs/games` what's true of the games whatever runs them, `docs/configs` this repository's configs and plugins, `docs/kit` nwi-server-kit's tools and units, `docs/design` designs yet to be built. A topic of one game says so at its start, in italics; the others cover both games. The README only introduces the repository and points to the book. `mdbook serve` shows the book as it will look; rumdl checks its links (MD051, MD057).
 - Texts are in British English: documentation, comments, commit messages and what players see, like the MOTDs and advertisements. Names keep their spelling, e.g. cvars, keywords of file formats, the game's terms like "theater", and texts from upstream like the licence texts and vendored code. Terms of software keep theirs too, like "sanitizer" (the compilers' -fsanitize), as in the AUR packages. typos checks the spelling of the files, American spellings included; the names, terms and files it leaves alone are in `.typos.toml`.
 
 ## Commits

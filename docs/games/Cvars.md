@@ -1,11 +1,14 @@
-# Day of Infamy cvars
+# Cvars
 
-Notes on cvars whose effect in Day of Infamy isn't what their name or
-description suggests, tested on our servers. A full list of the cvars with
-their defaults, bounds and flags is in `checks/cvars/doi.json` (made by
+Notes on cvars whose effect isn't what their name or description suggests,
+tested on our Day of Infamy servers. Each says which game has it; Insurgency's
+side of those both games have isn't tested. The full lists of the cvars with
+their defaults, bounds and flags are in `checks/cvars/<game>.json` (made by
 `checks/dump_cvars.py`).
 
 ## sv_visiblemaxplayers
+
+*Both games, an engine cvar; tested on Day of Infamy.*
 
 > Overrides the max players reported to prospective clients
 
@@ -66,6 +69,8 @@ server lists still show it.
 
 ## mp_coop_lobbysize
 
+*Both games; tested on Day of Infamy.*
+
 > Size of coop lobby
 
 The number of human players in coop: the "maximum of human players" of
@@ -94,6 +99,8 @@ busy server in the playlist's server browser either: like
 maximum, which the browser doesn't filter on.
 
 ## doi_coop_lobby_size
+
+*Day of Infamy only.*
 
 > Size of DOI coop lobby
 
@@ -126,6 +133,8 @@ with Ghidra); the numbers of `mp_coop_lobbysize` are the ones measured for
 
 ## sv_battleye
 
+*Day of Infamy; Insurgency has it too (default 0), untested there.*
+
 > Enable BattlEye?
 
 Does nothing any more: the game no longer ships BattlEye, which it removed in
@@ -134,7 +143,7 @@ the [change of the Linux server's depot](https://steamdb.info/depot/462311/histo
 The cvar still exists, and NWI's playlists still set it to 1 in their
 `forced_cvars_dedicated`. Until a second update the next day, that update also
 made servers load the client's libraries, see
-[Libraries (Linux)](../README.md#libraries-linux).
+[Libraries (Linux)](Server-notes.md#libraries-linux).
 
 The Linux server has the engine's side of it (`CBattleyeServer` in
 `engine_srv.so`), which loads the BattlEye server module only when the cvar is

@@ -6,7 +6,7 @@
 # Settings that would get in the way aren't taken over: the theater override and the workshop, which
 # the servers use, BattlEye, stats (basic_settings.cfg), and the rules we set differently, like dead
 # talk, voice and team kill punishment. The replacements force one setting of their own instead:
-# BattlEye off, which the game no longer has (docs/Cvars.md). Forced, the setting is hidden from the
+# BattlEye off, which the game no longer has (docs/games/Cvars.md). Forced, the setting is hidden from the
 # console, and the server never looks for BattlEye's library.
 
 [[replace]]

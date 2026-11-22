@@ -5,62 +5,13 @@ SPDX-License-Identifier: MIT
 
 # Running a hardened server
 
-Notes for server admins on which build to run and how to keep the server
-process contained. None of this is required to run a server; it's the
-background for making informed choices, especially the choice of build, which
-affects memory, loading speed and robustness all at once and isn't obvious from
-the outside.
+Notes for server admins on how to keep the server process contained, and the
+network protected. None of this is required to run a server. Which build to run
+is a choice of its own, which affects memory, loading speed and robustness all
+at once: see [Builds](../games/Builds.md).
 
-For problems to report, and how, see [SECURITY.md](../SECURITY.md); problems of
+For problems to report, and how, see [SECURITY.md](../../SECURITY.md); problems of
 the game itself belong upstream.
-
-## Which build to run
-
-Day of Infamy and Insurgency come in a 32-bit and a 64-bit build, and the
-dedicated server can be run three ways. They are not equivalent:
-
-| How you run it | Bits | Memory ceiling | Windows mitigation policies |
-| --- | --- | --- | --- |
-| Native Linux server | 32-bit only | ~3 GB per process | n/a |
-| Windows server through Wine/Proton on Linux | 64-bit | the host's RAM | not applied by Wine |
-| Windows server on Windows | 64-bit | the host's RAM | applied |
-
-The native Linux dedicated server exists **only** as a 32-bit build, so a Linux
-host that runs the server directly is on 32-bit whether it wants to be or not.
-To run the server as 64-bit on a Linux host, run the Windows server through Wine
-or Proton.
-
-### Memory and loading
-
-The 32-bit server shares the ~3 GB address-space ceiling of any 32-bit process.
-A plain server stays well under it, but mods, large maps and workshop content
-all add up, and a mod-heavy server can run out of address space long before the
-host runs out of RAM — the same ceiling that makes the 32-bit game crash on
-large maps (see [Clients.md](Clients.md), the engine hunk overflow). The 64-bit
-server doesn't have that ceiling; it can use as much memory as the host has.
-
-The 64-bit Windows server through Wine has also loaded noticeably faster for
-connecting clients in our testing, which matters most on servers that run many
-mods. For a mod-heavy server this, together with the memory headroom, is usually
-the deciding factor.
-
-### Robustness
-
-The 64-bit builds are compiled with the modern memory-safety mitigations —
-address space layout randomisation (ASLR), data execution prevention (DEP) and a
-high-entropy address space — which make a server more robust if a flaw is ever
-found in the engine or a parser. The 32-bit builds predate some of these. This
-is a property of how the binaries were built, not of this configuration, and it
-can't be changed from the outside; it's simply another reason the 64-bit server
-is the better default where you have the choice.
-
-Running the 64-bit Windows server through Wine or Proton keeps those built-in
-binary mitigations, as far as the Linux kernel and Wine provide them. Wine does
-not apply Windows' own system-level mitigation policies (the Image File
-Execution Options / `Set-ProcessMitigation` settings), so a server on Windows
-itself has the strongest enforcement. In practice Wine on Linux is a good
-middle ground: 64-bit, the memory headroom and loading speed above, and the
-binaries' own mitigations.
 
 ## Containing the server process
 
@@ -120,14 +71,14 @@ needs — reached through the container runtime rather than the unit file.
 ## Network
 
 The servers pin the engine's query rate limits in
-[basic_settings.cfg](../game/common/cfg/nwi-config/basic_settings.cfg)
+[basic_settings.cfg](../../game/common/cfg/nwi-config/basic_settings.cfg)
 (`sv_max_queries_sec` and its companions), so the amount of answering the server
 will do to the A2S query port is bounded. Those are the engine's own defaults,
 set explicitly so a config reset can't drop them.
 
 ### Flood protection with nftables
 
-[deploy/nftables/nwi-game-ports.nft](../deploy/nftables/nwi-game-ports.nft) is a
+[deploy/nftables/nwi-game-ports.nft](../../deploy/nftables/nwi-game-ports.nft) is a
 table of its own, loaded beside your firewall, that protects the game ports from
 floods before they reach the server:
 
@@ -211,5 +162,5 @@ defaults to no ban) so repeated wrong passwords are slowed and banned.
 The most useful thing of all is to keep the server up to date: `nwi-server
 update` pulls the current game, SourceMod and Metamod:Source, which is where
 fixes arrive. Report problems of this configuration as in
-[SECURITY.md](../SECURITY.md); problems of the game, SourceMod,
+[SECURITY.md](../../SECURITY.md); problems of the game, SourceMod,
 Metamod:Source or the plugins belong to their own projects.

@@ -1,5 +1,5 @@
 # The bot soak test: a PvP server with 20 bots a team on the frontline maps, for tests of SourceMod and
-# its extensions over hours, e.g. the sanitiser builds (tests/integration/sanitiser), see README.md. On the LAN
+# its extensions over hours, e.g. the sanitiser builds (tests/integration/sanitiser), see docs/kit/Testing.md. On the LAN
 # only. A test's config: tests/integration/instance.py soak runs it in the container, and
 # tests/integration/soak_watch.py logs it and adds the bots again after map changes. Its settings and mapcycle are
 # in its cfg folder.

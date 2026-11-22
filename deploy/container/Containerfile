@@ -1,7 +1,7 @@
 # The Day of Infamy server, with SourceMod and the plugins from their packages and this configuration,
 # without the game and the workshop items: those are the state folder's, which the updater of the same
 # image fills with DepotDownloader, as nwi-update.service does for the systemd units (see nwi_server_kit/container.py). The
-# image has nothing of the game's, which may not be passed on. See README.md for building and running.
+# image has nothing of the game's, which may not be passed on. See docs/kit/Containers.md for building and running.
 #
 # Build arguments:
 #   REPO_NAME                      the name of the pacman repository with the packages (aurutils), which
@@ -24,7 +24,7 @@ ARG TESTING
 # A failed download in a pipe fails the step
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# The game's libraries (see README.md) and the servers' user with a fixed ID, which the files of the
+# The game's libraries (see docs/games/Server-notes.md) and the servers' user with a fixed ID, which the files of the
 # volumes belong to: a system user's ID depends on the users the base image has
 COPY deploy/container/enable-repos.sh /usr/local/lib/nwi-server-kit/
 RUN /usr/local/lib/nwi-server-kit/enable-repos.sh "$TESTING" \
@@ -68,7 +68,7 @@ USER 1000:1000
 COPY --chown=nwi-server:nwi-server . /opt/nwi-server-kit
 # The package of the tools, from the repository (python -m nwi_server_kit), and the workshop items'
 # scan without ClamAV, which the image doesn't have: a container that mounts the host's clamd socket
-# sets NWI_CLAMD to it (see README.md)
+# sets NWI_CLAMD to it (see docs/kit/Workshop.md)
 ENV PYTHONPATH=/opt/nwi-server-kit/src \
   NWI_CLAMD=off
 RUN python3 -m nwi_server_kit compile-plugins /opt/nwi-server-kit /tmp/plugins \

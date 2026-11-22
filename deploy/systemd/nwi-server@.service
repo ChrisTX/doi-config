@@ -65,7 +65,7 @@ NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 # The rest of the sandbox, which systemd-analyze security rates 2.0 (7.5 without it), each part tried
-# on a running server: its start, RCON, SourceMod's plugins, a map change. See docs/Hardening.md.
+# on a running server: its start, RCON, SourceMod's plugins, a map change. See docs/kit/Hardening.md.
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectKernelLogs=yes
@@ -103,7 +103,7 @@ ExecPaths=-/usr -/run/nwi-server/%i
 # PrivateNetwork= (the game needs the network; docs/design/rcon-isolation.md has the namespace plan),
 # PrivateUsers= (prepare gives the RCON password to the group nwi-rcon, which a user namespace doesn't
 # map), UMask=0077 (nwi-update reads the health file), IPAddressDeny= and SocketBindAllow= (the
-# database's address and the ports differ by machine and server: drop-ins, see docs/Hardening.md).
+# database's address and the ports differ by machine and server: drop-ins, see docs/kit/Hardening.md).
 Restart=always
 RestartMode=direct
 RestartSec=10

@@ -1,7 +1,7 @@
 # shellcheck shell=bash disable=SC2034,SC2154 # makepkg reads the variables and sets pkgdir, startdir
 # The tools and the systemd units of the servers (make install, see the Makefile), built from the
 # commits of the checkout this file is in: makepkg in deploy/arch. The configs aren't part of it, the
-# servers' clone in /var/lib/nwi-server/config has them (README.md).
+# servers' clone in /var/lib/nwi-server/config has them (docs/kit/Systemd.md).
 
 pkgname=nwi-server-kit-git
 pkgver=r0
