@@ -1,0 +1,115 @@
+# The approved versions of the workshop items of the servers' lists, by their manifests, and the keys
+# (workshop/keys/<name>.pem) an item's versions may be signed with, which approves them too. Any other
+# new version is held: the servers keep theirs (see nwi_server_kit/workshop.py). approve_all = true
+# would let every version through without review.
+
+[items.730693849]
+manifests = ["7884895337500542485"]
+
+[items.740520071]
+manifests = ["2224342624675990487"]
+
+[items.748373492]
+manifests = ["8371365640958726416"]
+
+[items.784860329]
+manifests = ["4118261654870574497"]
+
+[items.790354595]
+manifests = ["2449667763906569976"]
+
+[items.793007315]
+manifests = ["6460063250494731355"]
+
+[items.820577576]
+manifests = ["6040975484334277437"]
+
+[items.823637416]
+manifests = ["45120604890631448"]
+
+[items.905850555]
+manifests = ["4550970347754467753"]
+
+[items.963438744]
+manifests = ["5421901579350213314"]
+
+[items.1169735323]
+manifests = ["3210000598386488779"]
+
+[items.1169745302]
+manifests = ["242442420327573083"]
+
+[items.1169751846]
+manifests = ["8277786296827551306"]
+
+[items.1169811155]
+manifests = ["5121441875273515870"]
+
+[items.1169827881]
+manifests = ["5834549192481513514"]
+
+[items.1199219217]
+manifests = ["1673264874260710692"]
+
+[items.1218775028]
+manifests = ["7625694942663430086"]
+
+[items.1232605344]
+manifests = ["5641683691768211456"]
+
+[items.1252806651]
+manifests = ["171176736246692901"]
+
+[items.1261064369]
+manifests = ["6911774716689318768"]
+
+[items.1281165034]
+manifests = ["4924066430682712734"]
+
+[items.1303306197]
+manifests = ["5439121509021255948"]
+
+[items.1304752352]
+manifests = ["8211420342534171100"]
+
+[items.1309007740]
+manifests = ["8432165999291151290"]
+
+[items.1406144028]
+manifests = ["7343151892597918326"]
+
+[items.1423382399]
+manifests = ["4579302763935120464"]
+
+[items.1478012671]
+manifests = ["5326375272491533457"]
+
+[items.1621509366]
+manifests = ["1017714502245566439"]
+
+[items.1904283800]
+manifests = ["3797102767389397552"]
+
+[items.2105637422]
+manifests = ["8805212661275158975"]
+
+[items.2786343036]
+manifests = ["3193228679399374667"]
+
+[items.3431236539]
+manifests = ["8263103335775559755"]
+
+[items.3431242570]
+manifests = ["7960126314276627105"]
+
+[items.3431251359]
+manifests = ["5632604446942892206"]
+
+[items.3545048108]
+manifests = ["8677503008393813885"]
+
+[items.3591171916]
+manifests = ["5455319188683646288"]
+
+[items.3627608872]
+manifests = ["3559203991983767676"]
