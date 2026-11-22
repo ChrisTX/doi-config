@@ -380,7 +380,7 @@ def listed_items(configs: Path) -> list[int]:
         settings = server_config.load(toml)
         if "workshop" in settings:
             text = games.config_file(
-                configs, settings.get("game", games.DEFAULT), settings["workshop"]
+                configs, games.config_game(settings, configs), settings["workshop"]
             ).read_text()
             items |= {
                 int(line.split()[0])

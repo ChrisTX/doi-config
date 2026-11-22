@@ -65,7 +65,10 @@ of Coop Commando, `ruleset = "american_campaign"`, which keeps its maps and
 teams (see [Playlists](#playlists)).
 
 With `game = "insurgency"`, a server runs Insurgency instead of Day of Infamy,
-like the test server `servers/ins-test`. The tools only keep the apps of the
+like the test server `servers/ins-test`. A config without `game` is of its
+config source's game: the one it has a folder of in `game`, e.g. Insurgency for
+a community's configs with only `game/insurgency`, or Day of Infamy if the
+source has both, like this one. The tools only keep the apps of the
 games' dedicated servers (`nwi-server games`) and find the rest: the depots,
 the game's folder (`doi` or `insurgency`, the one with `gameinfo.txt`) and the
 workshop's app of the items. The configs of `game/doi` are Day of Infamy's,
@@ -154,8 +157,8 @@ SourceMod and Metamod:Source are copied from `SOURCEMOD_DIR` and `METAMOD_DIR`,
   come from `/etc/nwi-server/<server>.env` (`SERVER_PORT`, `TV_PORT`,
   `CLIENT_PORT`), which has no secrets, the rest of its settings from its
   `server.toml`. The server uses the folder of the same name in `servers`, or
-  the one `SERVER_CONFIG_NAME` names; without one, `GAME` says its game, `doi`
-  by default.
+  the one `SERVER_CONFIG_NAME` names; without one, `GAME` says its game, its
+  config source's by default.
 - `nwi-server start` runs the server and queries it with A2S. The
   service is ready once the server first answers, and systemd's watchdog
   restarts it when it hasn't answered for 90 seconds, at most 6 times an hour.

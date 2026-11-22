@@ -20,8 +20,9 @@ The servers, whose games are installed and whose workshop items are downloaded, 
 order: the configs of servers/ in NWI_SERVER_CONFIGS, separated by spaces (e.g. a test instance's);
 the environment files of NWI_SERVERS_DIR (/etc/nwi-server by default), <server>.env each, if there
 is one; every config of the default source's servers/ otherwise. A server's game is its server.toml's (game), or GAME of
-its environment file without one, Day of Infamy by default; its workshop items those of its
-server.toml's list (workshop).
+its environment file without one; without either, its config source's game (source_game()): the one
+game the source has a folder of in game/, Day of Infamy if it has none or both. Its workshop items
+are those of its server.toml's list (workshop).
 
 The commands: cli/games.py.
 """
@@ -86,6 +87,20 @@ def game_folders(configs: Path, game: str | None = None) -> list[Path]:
     return [configs / "game" / name for name in games] + [common]
 
 
+def source_game(configs: Path) -> str:
+    """The game of a config source's servers that don't name theirs: the one game it has a folder of in
+    game/, e.g. game/insurgency of an Insurgency community's configs; Day of Infamy if it has none or
+    several."""
+    own = [game for game in SERVER_APPS if (configs / "game" / game).is_dir()]
+    return own[0] if len(own) == 1 else DEFAULT
+
+
+def config_game(settings: dict, configs: Path) -> str:
+    """The game of a server.toml's settings among a config source's configs: its own (game), or the
+    source's (source_game())."""
+    return str(settings.get("game") or source_game(configs))
+
+
 def config_file(configs: Path, game: str | None, name: str) -> Path:
     """A file of the game's cfg/ by its name there, e.g. doi-config/mapcycle_coop.txt: the game's own
     or the common one (game_folders()); the common path if there's none, which then can't be read."""
@@ -147,7 +162,7 @@ def server(name: str, env: dict[str, str], pick: bool = False) -> Server:
     if not toml.is_file():
         if "SERVER_CONFIG_NAME" in env:
             raise ValueError(f"{name}: the config {config} of {source} is unknown")
-        game = env.get("GAME", DEFAULT)
+        game = env.get("GAME") or source_game(configs)
         if game not in SERVER_APPS:
             raise ValueError(
                 f"{name}: GAME is one of {', '.join(SERVER_APPS)}, not {game}"
@@ -155,14 +170,13 @@ def server(name: str, env: dict[str, str], pick: bool = False) -> Server:
         return Server(name, source, None, game, None)
     settings = load(toml)
     workshop = settings.get("workshop")
+    game = config_game(settings, configs)
     return Server(
         name,
         source,
         config,
-        settings.get("game", DEFAULT),
-        config_file(configs, settings.get("game", DEFAULT), workshop)
-        if workshop
-        else None,
+        game,
+        config_file(configs, game, workshop) if workshop else None,
     )
 
 

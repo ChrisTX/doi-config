@@ -50,7 +50,14 @@ import shutil
 import tomllib
 from pathlib import Path
 
-from .games import DEFAULT, SERVER_APPS, config_file, config_folder, game_folder
+from .games import (
+    DEFAULT,
+    SERVER_APPS,
+    config_file,
+    config_folder,
+    config_game,
+    game_folder,
+)
 
 # The keys and their types
 KEYS = {
@@ -155,11 +162,12 @@ def server_cfg(settings: dict) -> str:
 
 def server_settings(root: Path) -> tuple[Path, dict]:
     """The game's folder of the install and the settings of its server.toml, which has to be of the
-    install's game."""
+    install's game if it names one: without, the server's game came from its config source
+    (games.source_game()), which the mount picked the install by."""
     folder = game_folder(root)
     path = folder / "server.toml"
     settings = load(path)
-    game = settings.get("game", DEFAULT)
+    game = settings.get("game", folder.name)
     if game != folder.name:
         raise ValueError(
             f"{path}: the server is of {game}, the install of {folder.name}"
@@ -229,7 +237,7 @@ def check(paths: list[Path]) -> int:
         named += [settings[key] for key in ("mapcycle", "workshop") if key in settings]
         for name in named:
             # The configs' own, or the server's, which its folder brings along (e.g. a test's)
-            game = settings.get("game", DEFAULT)
+            game = config_game(settings, configs)
             if (
                 not config_file(configs, game, name).is_file()
                 and not (path.parent / "cfg" / name).is_file()

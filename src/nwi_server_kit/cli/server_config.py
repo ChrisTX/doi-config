@@ -5,7 +5,8 @@ Usage: with GAME the game's folder of the install ROOT (nwi_server_kit.games):
                                     from ROOT/GAME/server.toml (nwi-server prepare)
     nwi-server server-config args ROOT      print the command line's options of ROOT/GAME/server.toml, one per
                                     line (nwi-server start)
-    nwi-server server-config game FILE      print the game of a server.toml
+    nwi-server server-config game FILE      print the game of a server.toml of a config source's
+                                    servers/<config>/, its own or the source's (games.source_game())
     nwi-server server-config check FILE...  check server.toml files: their keys, and that the configs and lists
                                     they name exist in the cfg of game/<game> or game/common, or in the
                                     server's own cfg folder (NWI_CONFIG, see
@@ -16,7 +17,7 @@ import sys
 import tomllib
 from pathlib import Path
 
-from ..games import DEFAULT
+from ..games import config_game
 from ..server_config import check, load, options, prepare
 
 
@@ -36,7 +37,8 @@ def main(argv: list[str] | None = None) -> int:
         return check(operands)
     try:
         if command == "game":
-            print(load(operands[0]).get("game", DEFAULT))
+            # servers/<config>/server.toml of the source's configs
+            print(config_game(load(operands[0]), operands[0].resolve().parents[2]))
         else:
             (prepare if command == "prepare" else args)(operands[0])
     except (ValueError, OSError, tomllib.TOMLDecodeError) as error:
