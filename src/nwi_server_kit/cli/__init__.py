@@ -22,46 +22,30 @@ Usage: nwi-server COMMAND ARGUMENTS..., the commands:
     metrics          serve the servers' metrics for Prometheus and Netdata (metrics.py)
 """
 
+import importlib
 import sys
-from collections.abc import Callable
 
-from . import (
-    check_gamedata,
-    check_updates,
-    container,
-    games,
-    health,
-    launch,
-    make_mods,
-    metrics,
-    mount,
-    notify,
-    rcon,
-    server_config,
-    update,
-    watchdog,
-    workshop,
-)
-
-COMMANDS: dict[str, Callable[[list[str]], int]] = {
-    "games": games.main,
-    "server-config": server_config.main,
-    "make-mods": make_mods.main,
-    "check-gamedata": check_gamedata.main,
-    "update": update.main,
-    "compile-plugins": update.compile_main,
-    "check-updates": check_updates.main,
-    "mount": mount.main,
-    "unmount": mount.unmount_main,
-    "health": health.main,
-    "notify": notify.main,
-    "workshop": workshop.main,
-    "prepare": launch.prepare_main,
-    "start": launch.start_main,
-    "watchdog": watchdog.main,
-    "rcon": rcon.main,
-    "container": container.main,
-    "metrics": metrics.main,
+# Each command's module of cli/ and its function, imported only when it runs: a command needs only
+# its own module's libraries
+COMMANDS: dict[str, tuple[str, str]] = {
+    "games": ("games", "main"),
+    "server-config": ("server_config", "main"),
+    "make-mods": ("make_mods", "main"),
+    "check-gamedata": ("check_gamedata", "main"),
+    "update": ("update", "main"),
+    "compile-plugins": ("update", "compile_main"),
+    "check-updates": ("check_updates", "main"),
+    "mount": ("mount", "main"),
+    "unmount": ("mount", "unmount_main"),
+    "health": ("health", "main"),
+    "notify": ("notify", "main"),
+    "workshop": ("workshop", "main"),
+    "prepare": ("launch", "prepare_main"),
+    "start": ("launch", "start_main"),
+    "watchdog": ("watchdog", "main"),
+    "rcon": ("rcon", "main"),
+    "container": ("container", "main"),
+    "metrics": ("metrics", "main"),
 }
 
 
@@ -70,4 +54,6 @@ def main(argv: list[str] | None = None) -> int:
     if not args or args[0] not in COMMANDS:
         print(__doc__.split("Usage:")[1].rstrip(), file=sys.stderr)
         return 2
-    return COMMANDS[args[0]](args[1:])
+    module, function = COMMANDS[args[0]]
+    command = getattr(importlib.import_module(f".{module}", __package__), function)
+    return int(command(args[1:]))
