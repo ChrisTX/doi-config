@@ -2,6 +2,8 @@
 of a module of the library (<module>.py).
 
 Usage: nwi-server COMMAND ARGUMENTS..., the commands:
+    configs          list a config source's configs, with their games (servers.py)
+    add              set up a server: its environment file, with its config, game and ports (servers.py)
     games            what the tools know of the games and find out about the servers (games.py)
     server-config    a server's settings, server.toml (server_config.py)
     make-mods        make the mods of mods/<game>/*.toml (make_mods.py)
@@ -26,8 +28,10 @@ import importlib
 import sys
 
 # Each command's module of cli/ and its function, imported only when it runs: a command needs only
-# its own module's libraries
+# its own module's libraries, e.g. add none but Python's on a container's host
 COMMANDS: dict[str, tuple[str, str]] = {
+    "configs": ("servers", "configs_main"),
+    "add": ("servers", "add_main"),
     "games": ("games", "main"),
     "server-config": ("server_config", "main"),
     "make-mods": ("make_mods", "main"),

@@ -68,7 +68,8 @@ With `game = "insurgency"`, a server runs Insurgency instead of Day of Infamy,
 like the test server `servers/ins-test`. A config without `game` is of its
 config source's game: the one it has a folder of in `game`, e.g. Insurgency for
 a community's configs with only `game/insurgency`, or Day of Infamy if the
-source has both, like this one. The tools only keep the apps of the
+source has both, like this one. `nwi-server configs` lists a source's configs
+with their games. The tools only keep the apps of the
 games' dedicated servers (`nwi-server games`) and find the rest: the depots,
 the game's folder (`doi` or `insurgency`, the one with `gameinfo.txt`) and the
 workshop's app of the items. The configs of `game/doi` are Day of Infamy's,
@@ -92,7 +93,8 @@ A server without a `server.toml`, of no config of `servers`, needs its own
 The servers run as system services, one instance per server, which share one
 install of each game. The games, and the workshop items, are those of the
 servers: each `/etc/nwi-server/<server>.env` is a server, its game its config's
-or `GAME` of its environment file without one (`nwi-server games`). Each server
+or `GAME` of its environment file without one (`nwi-server games`), which
+`nwi-server add` writes. Each server
 and the updater run as users of their own (`DynamicUser=`): a server can't
 change another's files, nor the layers they share, which the updater makes. Each
 server is put together with overlayfs from read-only layers, top first:
@@ -202,16 +204,26 @@ sudo pacman -S --needed --asdeps sourcemod-sourcebans-pp \
   sourcemod-multicolors
 ```
 
-Then, as root, with the server's settings in `/etc/nwi-server/coop-commando.env`
-and its secrets as credentials (see [Secrets](#secrets)), and the default
-config source, which the first update clones:
+Then, as root, the default config source, which the first update clones, and a
+server of one of its configs, with its secrets as credentials (see
+[Secrets](#secrets)). `nwi-server configs` lists the source's configs and their
+games, and `nwi-server add` writes the server's settings,
+`/etc/nwi-server/coop-commando.env`: its config, the one of its name without
+`--config`, and ports that the other servers don't use. It says the server's
+game and how to start it:
 
 ```bash
 printf 'URL=%s\n' https://github.com/ChrisTX/doi-config.git |
   install -D -m 644 /dev/stdin /etc/nwi-server/configs/default.env
+nwi-server configs
+nwi-server add coop-commando
 systemctl enable --now nwi-server@coop-commando.service nwi-servers.target
 systemctl enable --now nwi-restart.timer nwi-update-check.timer
 ```
+
+A second server of the same config gets a name of its own,
+`nwi-server add coop-2 --config coop-commando`, one of another source
+`--source`, and a server without a config its game, `--game insurgency`.
 
 ### Metrics
 
@@ -488,7 +500,9 @@ cp deploy/quadlet/*.container ~/.config/containers/systemd/
 cp deploy/quadlet/*.service deploy/quadlet/*.timer deploy/quadlet/*.target \
   ~/.config/systemd/user/
 systemctl --user daemon-reload
-# The server's settings in ~/.config/nwi-server/coop-commando.env
+# The server's settings in ~/.config/nwi-server/coop-commando.env, with the
+# tools and configs of this checkout, the image's
+PYTHONPATH=src python3 -m nwi_server_kit add --user coop-commando
 systemctl --user start nwi-update.service
 systemctl --user enable --now nwi-server@coop-commando.service nwi-servers.target
 systemctl --user enable --now nwi-restart.timer nwi-update-check.timer
