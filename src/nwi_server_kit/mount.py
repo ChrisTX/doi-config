@@ -36,15 +36,12 @@ failure on the versions on trial (health.py) before it unmounts the layers.
 
 import json
 import os
-import re
 import shutil
 import subprocess
-import sys
 import time
 from pathlib import Path
 
-from . import downloads, games, health, layers, server_config, workshop
-from .server_config import load as load_settings
+from . import games, health, layers, server_config, workshop
 from .update import INSTALLS, write_record
 
 RUN = Path("/run/nwi-server")
@@ -118,83 +115,6 @@ def overlay(lower: list[Path], upper: Path, work: Path, target: Path) -> None:
     )
 
 
-def app_of(item: Path) -> int:
-    """The workshop's app of an item's version, laid out as steamapps/workshop/content/<app>/<item>."""
-    return int(next((item / "steamapps/workshop/content").iterdir()).name)
-
-
-def dropped_maps(state: Path, game: str, item: int, version: Path | None) -> list[str]:
-    """The maps of an item left out: of the version the server runs, else of its newest version, else
-    of its download, e.g. a new item whose only version is held."""
-    version = version or layers.latest(layers.folder(state / game, f"item-{item}"))
-    if version is not None:
-        return maps_of(version)
-    download = state / "downloads/items" / str(item)
-    return sorted(path.stem for path in download.glob("maps/*.bsp"))
-
-
-def leave_out(
-    config: Path, configs: Path, game: str, dropped: set[int], maps: set[str]
-) -> None:
-    """Leave items whose version the server runs isn't the Workshop's out of the server's copy of its
-    config: of its workshop list and, their maps, of its mapcycle; a startup map of theirs becomes the
-    mapcycle's first (workshop.py)."""
-    settings = load_settings(config / "server.toml")
-    print(
-        f"Workshop items whose version isn't the Workshop's, left out: "
-        f"{' '.join(map(str, sorted(dropped)))}"
-        + (f"; maps: {' '.join(sorted(maps))}" if maps else ""),
-        file=sys.stderr,
-    )
-    if "workshop" in settings:
-        target = config / "cfg" / settings["workshop"]
-        target.parent.mkdir(parents=True, exist_ok=True)
-        text = games.config_file(configs, game, settings["workshop"]).read_text()
-        target.write_text(workshop.filter_list(text, dropped))
-    if not maps:
-        return
-    cycle = ""
-    if "mapcycle" in settings:
-        target = config / "cfg" / settings["mapcycle"]
-        target.parent.mkdir(parents=True, exist_ok=True)
-        cycle = workshop.filter_mapcycle(
-            games.config_file(configs, game, settings["mapcycle"]).read_text(), maps
-        )
-        target.write_text(cycle)
-    if settings["startup_map"].split()[0] in maps:
-        first = next(
-            (line.strip() for line in cycle.splitlines() if line.split()), None
-        )
-        if first is None:
-            print(
-                f"The startup map {settings['startup_map']} is left out, but nothing replaces it",
-                file=sys.stderr,
-            )
-            return
-        toml = config / "server.toml"
-        toml.write_text(
-            re.sub(
-                r"^startup_map\s*=.*$",
-                f'startup_map = "{first}"',
-                toml.read_text(),
-                count=1,
-                flags=re.MULTILINE,
-            )
-        )
-        print(
-            f"Startup map {settings['startup_map']} left out, {first} instead",
-            file=sys.stderr,
-        )
-
-
-def maps_of(item: Path) -> list[str]:
-    """The maps of a workshop item's version, maps/<map>.bsp, laid out as
-    steamapps/workshop/content/<app>/<item>."""
-    return sorted(
-        path.stem for path in item.glob("steamapps/workshop/content/*/*/maps/*.bsp")
-    )
-
-
 def mount(name: str, unit: str) -> None:
     """Mount the server's layers, see the module's documentation."""
     # Out of the server's folder, systemd's WorkingDirectory=, which would keep it busy
@@ -230,25 +150,9 @@ def _mount(name: str, unit: str, state: Path) -> None:
         layers.picked(layers.folder(state, f"depot-{depot}")) for depot in depots
     ]
     approvals = workshop.load(configs)
-    listed = games.workshop_items([server], game)
-    items = {}
-    for item in listed:
-        version = layers.pick(
-            layers.folder(state / game, f"item-{item}"),
-            workshop.allowed_versions(state, server.source, item, approvals),
-        )
-        if version is not None:
-            items[item] = version
-    # The items whose version the server runs isn't the Workshop's, which clients would download
-    dropped = {item for item in listed if item not in items}
-    dropped |= {
-        item
-        for item, version in items.items()
-        if downloads.recorded_manifest(
-            state / "downloads/items" / str(item), app_of(version)
-        )
-        != workshop.manifest_of(version)
-    }
+    # Of the approved versions the one the trial picks; the items whose version isn't the Workshop's,
+    # which clients would download, are left out
+    items, dropped = workshop.server_items(state, server, approvals, layers.pick)
     plugins = layers.picked(layers.folder(state, f"plugins-{server.source}"))
     mods = layers.picked(layers.folder(state / game, f"mods-{server.source}"))
     installs = [layers.picked(layers.folder(state, name)) for name, _, _ in INSTALLS]
@@ -280,7 +184,7 @@ def _mount(name: str, unit: str, state: Path) -> None:
     record = work / "record"
     (record / "steamapps/workshop").mkdir(parents=True)
     if items:
-        write_record(record, app_of(next(iter(items.values()))), items)
+        write_record(record, workshop.app_of(next(iter(items.values()))), items)
     # The server's config, copied with its symbolic links resolved: a link to another server's file, like
     # private-mp's motd.txt, points out of the server's folder, which the overlay wouldn't have
     lower_game = []
@@ -289,12 +193,8 @@ def _mount(name: str, unit: str, state: Path) -> None:
             configs / "servers" / server.config, work / "config", symlinks=False
         )
         if dropped:
-            left_out_maps = {
-                name
-                for item in dropped
-                for name in dropped_maps(state, game, item, items.get(item))
-            }
-            leave_out(work / "config", configs, game, dropped, left_out_maps)
+            left_out = workshop.left_out_maps(state, game, dropped, items)
+            workshop.leave_out(work / "config", configs, game, dropped, left_out)
         lower_game.append(mapped(work / "config", work / "lower/config", NOBODY, uid))
     lower_game += [
         mapped(plugins, work / "lower/plugins", NOBODY, uid),
@@ -345,10 +245,10 @@ def _mount(name: str, unit: str, state: Path) -> None:
     maps = {
         map_name: canonical(version)
         for version in items.values()
-        for map_name in maps_of(version)
+        for map_name in workshop.maps_of(version)
     }
     core = [*depot_versions, plugins, mods, configs, *installs]
-    core += [version for version in items.values() if not maps_of(version)]
+    core += [version for version in items.values() if not workshop.maps_of(version)]
     tickrate = server_config.TICKRATE
     if server.config is not None:
         toml = configs / "servers" / server.config / "server.toml"

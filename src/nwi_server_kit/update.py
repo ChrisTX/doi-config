@@ -22,8 +22,10 @@ needs any more, e.g. an item no list names.
 With an image (nwi-server update --image), for the container image (deploy/container), the configs are
 the image's, of one source, and so are the plugins. The containers mount folders of the state that
 Quadlet units can name, so each server gets links in STATE/servers/<server> to the versions of its
-game's own depot (game), its workshop items, a folder made of its game's items' versions
-(<game>/workshop.v), and its mods, and a list of its game's other depots (depots).
+game's own depot (game), its workshop items, a folder made of its game's items' newest approved
+versions (<game>/workshop.v), and its mods, and a list of its game's other depots (depots). A server
+whose items aren't all the Workshop's versions gets its config without them, as the mounts make it
+(workshop.leave_out()), in STATE/servers/<server>/config, which the container lays over the image's.
 """
 
 import hashlib
@@ -33,6 +35,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 from . import check_gamedata, downloads, games, layers, workshop
@@ -277,13 +280,37 @@ def update_items(
     return app, items
 
 
-def workshop_view(state: Path, game: str, app: int | None, items: list[int]) -> Path:
-    """One folder of the game's items' newest versions, with their record, as a version: for the
-    containers, which can't stack an item's layers."""
+def image_approvals() -> workshop.Approvals:
+    """The approvals of the image's configs, the one source of the containers."""
+    return workshop.load(games.config_folder(games.DEFAULT_SOURCE))
+
+
+def newest_allowed(layer: Path, allowed: Callable[[Path], bool]) -> Path | None:
+    """The newest of the versions of a layer ALLOWED allows: the containers' choice, which has no trial."""
+    found = [path for path in layers.versions(layer) if allowed(path)]
+    return found[-1] if found else None
+
+
+def workshop_view(
+    state: Path,
+    game: str,
+    app: int | None,
+    items: list[int],
+    approvals: workshop.Approvals,
+) -> Path:
+    """One folder of the game's items' newest approved versions, with their record, as a version: for
+    the containers, which can't stack an item's layers."""
     # Moved into the layer or removed by keep_if_new()
     view = Path(tempfile.mkdtemp(dir=state))
     (view / "steamapps/workshop").mkdir(parents=True)
-    newest = item_versions(state, game, items)
+    newest = {}
+    for item in items:
+        allowed = workshop.allowed_versions(
+            state, games.DEFAULT_SOURCE, item, approvals
+        )
+        version = newest_allowed(layers.folder(state / game, f"item-{item}"), allowed)
+        if version is not None:
+            newest[item] = version
     for version in newest.values():
         subprocess.run(
             ["cp", "-a", "--reflink=auto", f"{version}/.", str(view)], check=True
@@ -479,12 +506,32 @@ def link(path: Path, target: Path) -> None:
     temporary.rename(path)
 
 
-def link_servers(state: Path, found: list[games.Server]) -> None:
+def link_servers(
+    state: Path, found: list[games.Server], approvals: workshop.Approvals
+) -> None:
     """The containers' links to their game's layers' versions, STATE/servers/<server>/{game,workshop,
-    mods}, and the list of their game's other depots' versions, depots, relative to STATE."""
+    mods}, the list of their game's other depots' versions, depots, relative to STATE, and the config
+    of a server without its items that aren't the Workshop's versions, config (see the module's
+    documentation)."""
+    configs = games.config_folder(games.DEFAULT_SOURCE)
     for server in found:
         folder = state / "servers" / server.name
         folder.mkdir(parents=True, exist_ok=True)
+        shutil.rmtree(folder / "config", ignore_errors=True)
+        if server.config is not None:
+            items, dropped = workshop.server_items(
+                state, server, approvals, newest_allowed
+            )
+            if dropped:
+                shutil.copytree(
+                    configs / "servers" / server.config,
+                    folder / "config",
+                    symlinks=False,
+                )
+                left_out = workshop.left_out_maps(state, server.game, dropped, items)
+                workshop.leave_out(
+                    folder / "config", configs, server.game, dropped, left_out
+                )
         depots = (state / server.game / "depots").read_text().split()[0::2]
         newest = [
             layers.newest(layers.folder(state, f"depot-{depot}")) for depot in depots
@@ -566,10 +613,10 @@ def update(state: Path, image: bool = False) -> None:
             build_mods(state, game, source, configs, own, app, items)
             needed.add(layers.folder(state / game, f"mods-{source}"))
         if image:
-            workshop_view(state, game, app, items)
+            workshop_view(state, game, app, items, image_approvals())
             needed.add(layers.folder(state / game, "workshop"))
     if image:
-        link_servers(state, found)
+        link_servers(state, found, image_approvals())
     # An update of some configs only (NWI_SERVER_CONFIGS, e.g. a test instance's) can't tell what the
     # others need: it removes no layers or downloads of theirs
     unneeded = os.environ.get("NWI_SERVER_CONFIGS") is None

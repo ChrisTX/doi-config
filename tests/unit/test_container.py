@@ -1,12 +1,13 @@
 """The container image's server start (container.py): the game's folder assembled of the image's files,
 the mounts and the server's config, in a temporary folder."""
 
+import dataclasses
 from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
-from nwi_server_kit import container
+from nwi_server_kit import container, games, layers, update, workshop
 from nwi_server_kit.cli import container as container_cli
 
 
@@ -112,3 +113,66 @@ def test_a_config_of_another_name(paths: container.Paths) -> None:
     """A server whose config isn't the one of its name (SERVER_CONFIG_NAME), e.g. a second one."""
     game = container.assemble(paths, "coop-2", "coop")
     assert (game / "server.toml").read_text() == 'hostname = "Coop"\n'
+
+
+def test_the_update_leaves_out_items_for_the_containers(
+    paths: container.Paths, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A container's server gets its config without the items whose version isn't the Workshop's, as a
+    mount makes it, from the update; its start lays it over the image's."""
+    state = tmp_path / "updater"
+    configs = tmp_path / "configs"
+    (configs / "game/common").mkdir(parents=True)
+    lists = configs / "game/doi/cfg/doi-config"
+    lists.mkdir(parents=True)
+    (lists / "workshop.txt").write_text("1\n2\n")
+    (lists / "mapcycle.txt").write_text("one stronghold\ntwo stronghold\n")
+    (configs / "servers/coop").mkdir(parents=True)
+    (configs / "servers/coop/server.toml").write_text(
+        'hostname = "Coop"\nstartup_map = "two stronghold"\n'
+        'workshop = "doi-config/workshop.txt"\nmapcycle = "doi-config/mapcycle.txt"\n'
+    )
+    monkeypatch.setenv("NWI_CONFIG", str(configs))
+    app = 447820
+    for item, layered, workshop_manifest, name in (
+        (1, "10", "10", "one"),
+        (2, "20", "21", "two"),
+    ):
+        content = tmp_path / f"item-{item}"
+        (content / "maps").mkdir(parents=True)
+        (content / f"maps/{name}.bsp").write_bytes(b"VBSP")
+        layers.snapshot(
+            content,
+            layers.folder(state / "doi", f"item-{item}"),
+            f"20261101T000000.{layered}",
+            shape=f"steamapps/workshop/content/{app}/{item}",
+        )
+        # The Workshop's version, as the update downloaded it: item 2's is newer, and held
+        record = state / "downloads/items" / str(item) / ".DepotDownloader"
+        record.mkdir(parents=True)
+        (record / f"{app}_{workshop_manifest}.manifest").write_text("")
+    approvals = workshop.Approvals(manifests={1: {"10"}, 2: {"20"}})
+    server = games.server("coop", {})
+    # The links to the versions, which this test's state doesn't have, aren't what's tested
+    monkeypatch.setattr(update, "link", lambda *_: None)
+    monkeypatch.setattr(layers, "newest", lambda layer: layer)
+    (state / "doi").mkdir(exist_ok=True)
+    (state / "doi/depots").write_text("462311 1\n")
+    update.link_servers(state, [server], approvals)
+    left_out = state / "servers/coop/config"
+    assert (left_out / "cfg/doi-config/workshop.txt").read_text() == "1\n"
+    assert (left_out / "cfg/doi-config/mapcycle.txt").read_text() == "one stronghold\n"
+    assert 'startup_map = "one stronghold"' in (left_out / "server.toml").read_text()
+    # The container's start takes it over the image's config
+    game = container.assemble(dataclasses.replace(paths, layers=state), "coop")
+    assert (game / "cfg/doi-config/workshop.txt").read_text() == "1\n"
+    # Once item 2's version is the Workshop's, the server lists it again
+    approvals.manifests[2].add("21")
+    layers.snapshot(
+        tmp_path / "item-2",
+        layers.folder(state / "doi", "item-2"),
+        "20261102T000000.21",
+        shape=f"steamapps/workshop/content/{app}/2",
+    )
+    update.link_servers(state, [server], approvals)
+    assert not left_out.exists()

@@ -111,6 +111,10 @@ def assemble(paths: Paths, server: str | None, config_name: str | None = None) -
         # With its symbolic links resolved: a link to another server's file, like private-mp's
         # motd.txt, points out of the server's folder
         copy_tree(config, game, links=False)
+        # Without the workshop items whose version isn't the Workshop's, as the update made it
+        left_out = paths.layers / "servers" / server / "config"
+        if left_out.is_dir():
+            copy_tree(left_out, game, links=False)
     if paths.secrets.is_dir():
         copy_tree(paths.secrets, game, links=False)
     return game

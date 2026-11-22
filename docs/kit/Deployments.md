@@ -19,7 +19,7 @@ what they do around it, and the systemd units do more. This is what differs.
 | SourceMod, Metamod:Source and plugin packages | the host's, copied when they change | the image's |
 | A new version of a layer | on trial: a server that fails falls back to the version before, blamed by where it failed (`nwi-server health`) | used as soon as it's there: no trial, no fallback |
 | Workshop approval: new versions | held unless approved or signed (`workshop/approved.toml`) | the same |
-| Workshop approval: what a server lists | only the items whose version it runs is the Workshop's; their maps leave the mapcycle | every item of its list, see below |
+| Workshop approval: what a server lists | only the items whose version it runs is the Workshop's; their maps leave the mapcycle | the same, see below |
 | Workshop collections | kept in step with the lists, without held items | not changed |
 | Notifications (mail, Discord) | of held versions, failed servers, versions without tries left | none: the update's go nowhere |
 | Each server's user | a user of its own (`DynamicUser=`): no server can touch another's files | the image's user, mapped to the host's, the same for all; each container has its own files |
@@ -32,29 +32,21 @@ what they do around it, and the systemd units do more. This is what differs.
 
 ## Workshop items in containers
 
-The systemd units mount each workshop item as a layer of its own, and a
-server's mount writes its workshop list and mapcycle without the items whose
-version isn't the Workshop's newest (`src/nwi_server_kit/mount.py`). Players'
-clients always download an item's newest version, so a server that ran an
-older one would have files that differ from the players', which breaks the
-game.
+Players' clients always download an item's newest version, so a server that
+ran an older one would have files that differ from the players', which breaks
+the game. So a server lists only the items whose version it runs is the
+Workshop's, and its mapcycle leaves out the maps of the others, in both ways of
+running it (`workshop.leave_out()`):
 
-A container mounts one folder of all its game's items, each in its newest
-version that passed the update (`nwi-server update --image`), and its server
-lists every item of its config's list. So in a container:
+- The systemd units mount each item as a layer of its own, and a server's mount
+  makes its config without those items (`src/nwi_server_kit/mount.py`).
+- A container mounts one folder of all its game's items, each in its newest
+  approved version. The update (`nwi-server update --image`) makes a server's
+  config without the other items in the state, in `servers/<server>/config`,
+  and the container's start lays it over the image's config.
 
-- a held version (not approved, or held by the scan) stays off the server, but
-  the item stays on its list: players download the held version, the server
-  runs the one before.
-- an item without any approved version, e.g. of a source without
-  `workshop/approved.toml`, isn't in the folder at all, and the game downloads
-  an item of its list that it doesn't have itself: past the approval and the
-  scan.
-
-Until containers filter their lists like the mounts do: give a container's
-configs a complete `workshop/approved.toml` (`nwi-server workshop freeze`),
-and when a version is held, take its item off the lists of the container
-servers until it's approved.
+What differs is which version runs: the systemd units' of the trial, which may
+be an older one after failures, the containers' the newest approved one.
 
 ## Choosing
 

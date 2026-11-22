@@ -1,12 +1,12 @@
 """VPK signatures (vpk.py), the approval of workshop items' versions and the servers' lists of them
-(workshop.py, cli/workshop.py, mount.leave_out, check_updates)."""
+(workshop.py, cli/workshop.py, check_updates)."""
 
 import json
 from pathlib import Path
 
 import pytest
 
-from nwi_server_kit import check_updates, mount, notify, vpk, workshop
+from nwi_server_kit import check_updates, notify, vpk, workshop
 from nwi_server_kit.cli import workshop as workshop_cli
 
 from .conftest import State, build_vpk
@@ -257,14 +257,14 @@ def test_leave_out(tmp_path: Path, configs: Path) -> None:
     item = tmp_path / "item" / f"steamapps/workshop/content/447820/{ITEM}/maps"
     item.mkdir(parents=True)
     (item / "custom_map.bsp").write_bytes(b"VBSP")
-    maps = set(mount.dropped_maps(tmp_path, "doi", ITEM, tmp_path / "item"))
+    maps = set(workshop.dropped_maps(tmp_path, "doi", ITEM, tmp_path / "item"))
     # An item without a version: the maps of its download
     download = tmp_path / "downloads/items/333/maps"
     download.mkdir(parents=True)
     (download / "other_map.bsp").write_bytes(b"VBSP")
-    maps |= set(mount.dropped_maps(tmp_path, "doi", 333, None))
+    maps |= set(workshop.dropped_maps(tmp_path, "doi", 333, None))
     assert maps == {"custom_map", "other_map"}
-    mount.leave_out(config, configs, "doi", {ITEM, 333}, maps)
+    workshop.leave_out(config, configs, "doi", {ITEM, 333}, maps)
     assert (config / "cfg/doi-config/workshop.txt").read_text() == "222 // a map\n"
     assert (
         config / "cfg/doi-config/mapcycle.txt"

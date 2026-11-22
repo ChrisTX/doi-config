@@ -47,7 +47,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import games, layers, notify, scan, server_config, steam_web, vpk
+from . import downloads, games, layers, notify, scan, server_config, steam_web, vpk
 
 APPROVED = Path("workshop/approved.toml")
 KEYS = Path("workshop/keys")
@@ -518,3 +518,122 @@ def stage(paths: list[Path], folder: Path) -> Path:
                 raise ValueError(f"{file.name}: given twice")
             shutil.copy2(file, folder / file.name)
     return folder
+
+
+def app_of(item: Path) -> int:
+    """The workshop's app of an item's version, laid out as steamapps/workshop/content/<app>/<item>."""
+    return int(next((item / "steamapps/workshop/content").iterdir()).name)
+
+
+def dropped_maps(state: Path, game: str, item: int, version: Path | None) -> list[str]:
+    """The maps of an item left out: of the version the server runs, else of its newest version, else
+    of its download, e.g. a new item whose only version is held."""
+    version = version or layers.latest(layers.folder(state / game, f"item-{item}"))
+    if version is not None:
+        return maps_of(version)
+    download = state / "downloads/items" / str(item)
+    return sorted(path.stem for path in download.glob("maps/*.bsp"))
+
+
+def leave_out(
+    config: Path, configs: Path, game: str, dropped: set[int], maps: set[str]
+) -> None:
+    """Leave items whose version the server runs isn't the Workshop's out of the server's copy of its
+    config: of its workshop list and, their maps, of its mapcycle; a startup map of theirs becomes the
+    mapcycle's first (see the module's documentation)."""
+    settings = server_config.load(config / "server.toml")
+    print(
+        f"Workshop items whose version isn't the Workshop's, left out: "
+        f"{' '.join(map(str, sorted(dropped)))}"
+        + (f"; maps: {' '.join(sorted(maps))}" if maps else ""),
+        file=sys.stderr,
+    )
+    if "workshop" in settings:
+        target = config / "cfg" / settings["workshop"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        text = games.config_file(configs, game, settings["workshop"]).read_text()
+        target.write_text(filter_list(text, dropped))
+    if not maps:
+        return
+    cycle = ""
+    if "mapcycle" in settings:
+        target = config / "cfg" / settings["mapcycle"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        cycle = filter_mapcycle(
+            games.config_file(configs, game, settings["mapcycle"]).read_text(), maps
+        )
+        target.write_text(cycle)
+    if settings["startup_map"].split()[0] in maps:
+        first = next(
+            (line.strip() for line in cycle.splitlines() if line.split()), None
+        )
+        if first is None:
+            print(
+                f"The startup map {settings['startup_map']} is left out, but nothing replaces it",
+                file=sys.stderr,
+            )
+            return
+        toml = config / "server.toml"
+        toml.write_text(
+            re.sub(
+                r"^startup_map\s*=.*$",
+                f'startup_map = "{first}"',
+                toml.read_text(),
+                count=1,
+                flags=re.MULTILINE,
+            )
+        )
+        print(
+            f"Startup map {settings['startup_map']} left out, {first} instead",
+            file=sys.stderr,
+        )
+
+
+def maps_of(item: Path) -> list[str]:
+    """The maps of a workshop item's version, maps/<map>.bsp, laid out as
+    steamapps/workshop/content/<app>/<item>."""
+    return sorted(
+        path.stem for path in item.glob("steamapps/workshop/content/*/*/maps/*.bsp")
+    )
+
+
+def server_items(
+    state: Path,
+    server: games.Server,
+    approvals: Approvals,
+    choose: Callable[[Path, Callable[[Path], bool]], Path | None],
+) -> tuple[dict[int, Path], set[int]]:
+    """The versions of a server's workshop items, each of its approved ones the one CHOOSE takes of an
+    item's layer, and the items to leave out of its config (leave_out()): those without one, and those
+    whose version isn't the Workshop's, which clients would download (see the module's
+    documentation)."""
+    listed = games.workshop_items([server], server.game)
+    items = {}
+    for item in listed:
+        version = choose(
+            layers.folder(state / server.game, f"item-{item}"),
+            allowed_versions(state, server.source, item, approvals),
+        )
+        if version is not None:
+            items[item] = version
+    dropped = {item for item in listed if item not in items}
+    dropped |= {
+        item
+        for item, version in items.items()
+        if downloads.recorded_manifest(
+            state / "downloads/items" / str(item), app_of(version)
+        )
+        != manifest_of(version)
+    }
+    return items, dropped
+
+
+def left_out_maps(
+    state: Path, game: str, dropped: set[int], items: dict[int, Path]
+) -> set[str]:
+    """The maps of the items left out (dropped_maps())."""
+    return {
+        name
+        for item in dropped
+        for name in dropped_maps(state, game, item, items.get(item))
+    }

@@ -5,8 +5,8 @@ SPDX-License-Identifier: MIT
 
 # Running in a container
 
-Containers do less around the servers than the systemd units, workshop items
-among it: see [systemd and containers](Deployments.md).
+Containers do less around the servers than the systemd units, e.g. there's no
+trial of new versions: see [systemd and containers](Deployments.md).
 
 `deploy/container/Containerfile` builds an image of a server: SourceMod,
 Metamod:Source and the plugins from their packages, this repository and its
