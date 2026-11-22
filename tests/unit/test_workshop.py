@@ -158,10 +158,16 @@ def item_folder(
 
 def test_approvals(configs: Path, keys: dict) -> None:
     approvals = workshop.load(configs)
-    assert approvals is not None
     assert approvals.manifests == {ITEM: {"111"}, 222: {"5"}}
     assert approvals.keys[ITEM] == [vpk.public_der(keys["community"][1])]
-    assert workshop.load(configs / "nothing") is None
+    assert not approvals.approve_all and not approvals.missing
+    assert workshop.load(configs / "nothing") == workshop.Approvals(missing=True)
+    path = configs / "workshop/approved.toml"
+    path.write_text("approve_all = true\n" + path.read_text())
+    assert workshop.load(configs).approve_all
+    path.write_text('approve_all = "yes"\n')
+    with pytest.raises(ValueError, match="approve_all is true or false"):
+        workshop.load(configs)
 
 
 @pytest.mark.parametrize(
@@ -182,7 +188,6 @@ def test_signed_by(
     reason: str | None,
 ) -> None:
     approvals = workshop.load(configs)
-    assert approvals is not None
     found = workshop.signed_by(
         item_folder(tmp_path, keys, key, loose), approvals.keys[ITEM]
     )
@@ -191,7 +196,7 @@ def test_signed_by(
 
 def test_gate(state: State, tmp_path: Path, configs: Path, keys: dict) -> None:
     approvals = workshop.load(configs)
-    sources: dict[str, workshop.Approvals | None] = {"default": approvals}
+    sources = {"default": approvals}
     unsigned = item_folder(tmp_path, keys, None)
     # An approved manifest passes; an unapproved, unsigned one is held, the admins told once
     assert workshop.gate(state.layers, ITEM, "111", unsigned, sources)
@@ -206,10 +211,32 @@ def test_gate(state: State, tmp_path: Path, configs: Path, keys: dict) -> None:
     assert record.signed == {"default": {str(ITEM): ["113"]}}
     assert record.held == {"default": {}}
     assert record.approved("default", ITEM, "113", approvals)
-    # Another source without approvals passes anything
+    # Another source that approves all passes anything
+    everything = workshop.Approvals(approve_all=True)
     assert workshop.gate(
-        state.layers, 999, "1", unsigned, {"other": None, "default": approvals}
+        state.layers, 999, "1", unsigned, {"other": everything, "default": approvals}
     )
+
+
+def test_a_source_without_approvals_holds_everything(
+    state: State, tmp_path: Path, keys: dict
+) -> None:
+    missing = {"theirs": workshop.Approvals(missing=True)}
+    signed = item_folder(tmp_path, keys, "community")
+    # The admins hear of the source once, on every update, not of each item
+    workshop.check_sources(state.layers, missing)
+    assert not workshop.gate(state.layers, 1, "10", signed, missing)
+    assert not workshop.gate(state.layers, 2, "20", signed, missing)
+    workshop.check_sources(state.layers, missing)
+    assert state.notifications() == ["Workshop items held: theirs approves none"]
+    record = workshop.State(state.layers)
+    assert record.held == {"theirs": {"1": "10", "2": "20"}}
+    assert not record.approved("theirs", 1, "10", missing["theirs"])
+    # Once it has approvals, it's heard of again if it loses them
+    approved = {"theirs": workshop.Approvals(manifests={1: {"11"}})}
+    workshop.check_sources(state.layers, approved)
+    assert workshop.gate(state.layers, 1, "11", signed, approved)
+    assert workshop.State(state.layers).unapproved == []
 
 
 def test_filters() -> None:
@@ -287,13 +314,18 @@ def test_freeze_and_approve(configs: Path, monkeypatch: pytest.MonkeyPatch) -> N
     assert workshop.read_approved(configs)[222]["manifests"] == ["5", "2220", "6"]
     # The file stays readable as the gate reads it
     approvals = workshop.load(configs)
-    assert approvals is not None and "6" in approvals.manifests[222]
+    assert "6" in approvals.manifests[222]
     # A reviewed false alarm of the scan
     arguments = ["approve", "222", "7", "--unscanned", "--configs", str(configs)]
     assert workshop_cli.main(arguments) == 0
     approvals = workshop.load(configs)
-    assert approvals is not None and approvals.unscanned[222] == {"7"}
+    assert approvals.unscanned[222] == {"7"}
     assert "7" in approvals.manifests[222]
+    # approve_all is kept
+    path = configs / "workshop/approved.toml"
+    path.write_text("approve_all = true\n" + path.read_text())
+    assert workshop_cli.main(["approve", "222", "8", "--configs", str(configs)]) == 0
+    assert workshop.load(configs).approve_all
 
 
 def test_keygen_sign_verify_commands(

@@ -121,13 +121,14 @@ def test_the_gate_holds_findings_even_if_approved(state: State, tmp_path: Path) 
     (item / "cfg").mkdir(parents=True)
     (item / "cfg/server.cfg").write_text("sv_password x\n")
     approvals = workshop.Approvals(manifests={7: {"70"}})
-    sources: dict[str, workshop.Approvals | None] = {"default": approvals}
+    sources = {"default": approvals}
     # Approved by its manifest, but held for the scan's finding, the admins told once
     assert not workshop.gate(state.layers, 7, "70", item, sources)
     assert not workshop.gate(state.layers, 7, "70", item, sources)
     assert state.notifications() == ["Workshop item 7 held: the scan found problems"]
-    # Without approvals too
-    assert not workshop.gate(state.layers, 7, "70", item, {"other": None})
+    # Approving all versions too
+    everything = {"other": workshop.Approvals(approve_all=True)}
+    assert not workshop.gate(state.layers, 7, "70", item, everything)
     # Approved as unscanned, a reviewed false alarm, it passes
     approvals.unscanned[7] = {"70"}
     assert workshop.gate(state.layers, 7, "70", item, sources)

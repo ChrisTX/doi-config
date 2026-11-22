@@ -13,7 +13,8 @@ Usage:
         verify VPKs' signatures and checksums, and print their keys' fingerprints
     nwi-server workshop freeze [--configs DIR]
         approve the current version of every item of the configs' servers' workshop lists, in
-        workshop/approved.toml, which then gates their updates (keeping what it approves already)
+        workshop/approved.toml, which gates their updates (keeping what it approves already, and
+        approve_all); without the file, a source approves no version
     nwi-server workshop approve ITEM [MANIFEST] [--unscanned] [--configs DIR]
         approve a version of an item, the Workshop's current one without MANIFEST; with --unscanned
         despite the scan's findings too, a reviewed false alarm

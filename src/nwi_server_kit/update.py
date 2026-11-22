@@ -231,6 +231,7 @@ def update_items(
         source: workshop.load(games.config_folder(source))
         for source in set().union(*sources.values())
     }
+    workshop.check_sources(state, approvals)
     if not items:
         return None, []
     app = games.workshop_app(items)

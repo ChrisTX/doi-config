@@ -319,7 +319,17 @@ version is held: the servers keep the version they have, and the admins are told
 runs is the Workshop's newest, in its `subscribed_file_ids.txt`, and its mapcycle
 leaves out the maps of the others, which players couldn't get; a startup map of
 theirs becomes the mapcycle's first. That covers an item that fell back after
-failures too. A source without `workshop/approved.toml` approves every version.
+failures too.
+
+A source without `workshop/approved.toml` approves no version: its servers
+mount no workshop items, and the admins are told once. `nwi-server workshop
+freeze` (below) makes the file of the current versions. A source that doesn't
+want the gate says so explicitly, at the top of the file, which lets every
+version through without review, except those the scan holds:
+
+```toml
+approve_all = true
+```
 
 Every new version is scanned before that (`src/nwi_server_kit/scan.py`), as a
 version that reaches the servers reaches the players' clients, which parse it,

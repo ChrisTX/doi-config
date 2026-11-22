@@ -12,11 +12,14 @@ A version is approved for a source if its manifest is approved, or if the item h
 is VPKs only, each signed with one of them (vpk.py); those the update records in its state
 (workshop.json), and the admins hear of them. Any other new version is held: the update doesn't make a
 layer of it, the servers keep the version they have, and the admins hear of it once, until it's
-approved. A source without workshop/approved.toml approves every version (`nwi-server workshop freeze`
-makes one of the current versions).
+approved. A source without workshop/approved.toml approves no version, so its servers mount no
+workshop items, and the admins hear of it once: `nwi-server workshop freeze` makes one of the current
+versions. A source that doesn't want the gate says so in it, at the top:
+
+    approve_all = true
 
 Every new version is scanned first (scan.py): one with findings is held for every source, approved
-or signed or not, until a source approves it as unscanned, a reviewed false alarm:
+or signed or not, approve_all too, until a source approves it as unscanned, a reviewed false alarm:
 
     [items.3431236539]
     unscanned = ["7284409961546829163"]
@@ -57,22 +60,29 @@ EXPIRY_WARNING = 30 * 24 * 3600
 @dataclass
 class Approvals:
     """A config source's approvals: per item, its approved manifests and the keys (DER) its versions
-    may be signed with; None of a source that doesn't gate (no approved.toml)."""
+    may be signed with; whether it approves every version (approve_all), and whether it has no
+    approved.toml, which approves none."""
 
     manifests: dict[int, set[str]] = field(default_factory=dict)
     keys: dict[int, list[bytes]] = field(default_factory=dict)
     # The versions that may pass despite the scan's findings
     unscanned: dict[int, set[str]] = field(default_factory=dict)
+    approve_all: bool = False
+    missing: bool = False
 
 
-def load(configs: Path) -> Approvals | None:
+def load(configs: Path) -> Approvals:
     """The approvals of a config source's configs."""
     path = configs / APPROVED
     if not path.is_file():
-        return None
+        return Approvals(missing=True)
     with path.open("rb") as file:
         settings = tomllib.load(file)
-    approvals = Approvals()
+    approve_all = settings.get("approve_all", False)
+    # A ValueError, of a broken config, as the update reports them
+    if type(approve_all) is not bool:
+        raise ValueError(f"{path}: approve_all is true or false")
+    approvals = Approvals(approve_all=approve_all)
     for item, entry in settings.get("items", {}).items():
         approvals.manifests[int(item)] = {
             str(manifest) for manifest in entry.get("manifests", [])
@@ -126,6 +136,8 @@ class State:
         self.held: dict[str, dict[str, str]] = data.get("held", {})
         self.failed: dict[str, str] = data.get("failed", {})
         self.warned: float = data.get("warned", 0)
+        # The sources without approved.toml the admins heard of
+        self.unapproved: list[str] = data.get("unapproved", [])
 
     def save(self) -> None:
         data = {
@@ -133,16 +145,17 @@ class State:
             "held": self.held,
             "failed": self.failed,
             "warned": self.warned,
+            "unapproved": self.unapproved,
         }
         temporary = self.path.with_name(f".{self.path.name}.new")
         temporary.write_text(json.dumps(data, indent=1, sort_keys=True) + "\n")
         temporary.rename(self.path)
 
     def approved(
-        self, source: str, item: int, manifest: str, approvals: Approvals | None
+        self, source: str, item: int, manifest: str, approvals: Approvals
     ) -> bool:
         """Whether a version is approved for a source: by its approvals or by a signature before."""
-        if approvals is None:
+        if approvals.approve_all:
             return True
         return manifest in approvals.manifests.get(
             item, set()
@@ -154,7 +167,7 @@ def gate(
     item: int,
     manifest: str,
     download: Path,
-    sources: dict[str, Approvals | None],
+    sources: dict[str, Approvals],
 ) -> bool:
     """Whether a new version of an item may become a layer: approved for one of the sources whose
     servers list it. Records approvals by signature and held versions, and notifies the admins."""
@@ -162,16 +175,20 @@ def gate(
     allowed = False
     findings = scan.scan(download)
     for source, approvals in sorted(sources.items()):
-        if findings and (
-            approvals is None or manifest not in approvals.unscanned.get(item, set())
-        ):
+        if findings and manifest not in approvals.unscanned.get(item, set()):
             hold_scanned(record, source, item, manifest, findings)
             continue
         if record.approved(source, item, manifest, approvals):
             allowed = True
             record.held.get(source, {}).pop(str(item), None)
             continue
-        assert approvals is not None
+        if approvals.missing:
+            record.held.setdefault(source, {})[str(item)] = manifest
+            print(
+                f"Held workshop item {item} at {manifest} for {source}: no workshop/approved.toml",
+                file=sys.stderr,
+            )
+            continue
         reason = signed_by(download, approvals.keys.get(item, []))
         if reason is None:
             allowed = True
@@ -201,6 +218,35 @@ def gate(
         )
     record.save()
     return allowed
+
+
+def check_sources(state: Path, sources: dict[str, Approvals]) -> None:
+    """Tell the admins once of each source without approved.toml, whose servers mount no workshop
+    items: on every update, as the versions they had stop being mounted too, not only new ones."""
+    record = State(state)
+    for source, approvals in sorted(sources.items()):
+        if not approvals.missing:
+            if source in record.unapproved:
+                record.unapproved.remove(source)
+            continue
+        if source in record.unapproved:
+            continue
+        notify.queue(
+            f"Workshop items held: {source} approves none",
+            f"The config source {source} has no workshop/approved.toml, so it approves no version of "
+            "a workshop item: the update holds them, and its servers mount none and leave them off "
+            "their workshop lists and mapcycles.\n\nApprove the Workshop's current versions, after "
+            f"reviewing them, in {source}'s configs with: nwi-server workshop freeze. Or, to let every "
+            "version through without review, put approve_all = true at the top of "
+            "workshop/approved.toml.",
+        )
+        print(
+            f"The config source {source} has no workshop/approved.toml: its servers mount no "
+            "workshop items",
+            file=sys.stderr,
+        )
+        record.unapproved.append(source)
+    record.save()
 
 
 def hold_scanned(
@@ -337,7 +383,7 @@ def manifest_of(version: Path) -> str:
 
 
 def allowed_versions(
-    state: Path, source: str, item: int, approvals: Approvals | None
+    state: Path, source: str, item: int, approvals: Approvals
 ) -> Callable[[Path], bool]:
     """Which of an item's versions a server of the source may mount."""
     record = State(state)
@@ -369,7 +415,8 @@ def filter_mapcycle(text: str, maps: set[str]) -> str:
 HEADER = """\
 # The approved versions of the workshop items of the servers' lists, by their manifests, and the keys
 # (workshop/keys/<name>.pem) an item's versions may be signed with, which approves them too. Any other
-# new version is held: the servers keep theirs (see nwi_server_kit/workshop.py).
+# new version is held: the servers keep theirs (see nwi_server_kit/workshop.py). approve_all = true
+# would let every version through without review.
 """
 
 
@@ -416,7 +463,10 @@ def read_approved(configs: Path) -> dict[int, dict[str, list[str]]]:
 
 
 def write_approved(configs: Path, approved: dict[int, dict[str, list[str]]]) -> None:
+    """Write approved.toml of the approved versions, keeping its approve_all."""
     lines = [HEADER]
+    if (configs / APPROVED).is_file() and load(configs).approve_all:
+        lines.append("approve_all = true\n")
     for item, entry in sorted(approved.items()):
         lines.append(f"[items.{item}]")
         lines.append(
