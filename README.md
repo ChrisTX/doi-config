@@ -90,6 +90,10 @@ A server without a `server.toml`, of no config of `servers`, needs its own
 
 ### Running with systemd
 
+[docs/Deployments.md](docs/Deployments.md) compares this with the containers
+below: the systemd units do more around the servers, e.g. the trial of new
+versions and the notifications.
+
 The servers run as system services, one instance per server, which share one
 install of each game. The games, and the workshop items, are those of the
 servers: each `/etc/nwi-server/<server>.env` is a server, its game its config's
@@ -459,6 +463,9 @@ leaves it. RCON is TCP on the game's port, while the game itself is UDP, so a
 firewall that only lets UDP in keeps RCON to the machine.
 
 ### Running in a container
+
+Containers do less around the servers than the systemd units, workshop items
+among it: see [docs/Deployments.md](docs/Deployments.md).
 
 `deploy/container/Containerfile` builds an image of a server: SourceMod,
 Metamod:Source and the plugins from their packages, this repository and its
