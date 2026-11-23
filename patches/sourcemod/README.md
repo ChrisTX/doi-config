@@ -17,12 +17,17 @@ reproduce it and how it was tested.
 | 0003 | DHooks params of a second setup of a detoured function read wrongly | no, with clang-cl's build |
 | 0004 | x86_64 Windows DHooks crash on thiscall detours (alliedmodders/sourcemod#2282) | yes |
 | 0005 | x86_64 Windows DHooks params in registers read garbage; needs 0004 | no, with clang-cl's build |
-| 0006 | x86_64 Windows servers crash at the first map start if a plugin loaded at startup uses SDK Hooks | yes |
+| 0006 | SDK Hooks grows the game's entity listeners with the C runtime's heap, which crashes 64-bit Windows servers at the first map start | yes |
 
 0001 to 0005 are needed by `nwi_gamedata`'s detours on 64-bit Windows, for
-rounds with bots only and the server's visibility. 0006 doesn't depend on
-DHooks: any plugin that uses SDK Hooks and is loaded at the server's start
-crashes a 64-bit Windows server without it. 0003 and 0005 fix reads of
+rounds with bots only and the server's visibility.
+
+0006 doesn't depend on DHooks or x86_64: SDK Hooks, loaded at the server's
+start, gives the game's vector of entity listeners a block of the C runtime's
+heap, which tier0 gets once the game grows the vector. Whether it does
+depends on the vector's size: the block holds 8 listeners on 32-bit, of which
+Day of Infamy uses 6, and 4 on 64-bit, so only the 64-bit server grows it, at
+the map start, and crashes in tier0 (measured with a debugger on both). 0003 and 0005 fix reads of
 registers whose contents depend on the compiler, so their bugs show with
 clang-cl's builds but not with MSVC's in the same tests; they're still bugs of
 the code.
@@ -50,5 +55,6 @@ alliedmodders/sourcemod#2403 and #2546 replace DHooks' detours, whose code
 0001 to 0005 change, and it isn't clear yet whether x86_64 Windows detours are
 meant to be supported before them. Once that's clearer, the DHooks patches
 could go upstream, or their bugs as tests for the rewrite. 0006 is independent
-of DHooks and could go upstream on its own. Until then, the patches are kept
+of DHooks and of x86_64, a bug on every Windows server that only shows when
+the game grows the vector, and could go upstream on its own. Until then, the patches are kept
 here and rebased onto SourceMod's master when it moves.

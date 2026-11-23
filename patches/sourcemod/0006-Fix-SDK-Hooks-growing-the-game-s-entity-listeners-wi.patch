@@ -4,45 +4,56 @@ Date: Mon, 23 Nov 2026 02:43:51 +0100
 Subject: [PATCH 6/6] Fix SDK Hooks growing the game's entity listeners with
  the wrong heap
 
-On x86_64 Windows, a server crashes at the first map start in tier0's
-realloc if SDK Hooks loads at the server's start, i.e. a plugin loaded
-then uses it. The block tier0 reallocates was allocated by
-SDKHooks::SDK_OnLoad.
-
 SDK Hooks adds itself to the game's entity listeners,
 CGlobalEntityList's CUtlVector<IEntityListener *>, with AddToTail.
 CUtlMemory grows with plain malloc and realloc. The game's libraries
 route those to tier0 (memoverride.cpp), but SourceMod's extensions
-don't link it, so the extension's growth came from the C runtime's
-heap. On 64-bit Windows, the vector is still empty when SDK Hooks loads
-at startup: the extension made its first allocation, and the game's
-next growth at the map start handed that block to tier0's realloc,
-which treats anything outside its own small-block heaps as its large
-heap and reads garbage. Loaded later, the vector already has the game's
-block and room, which is why this only shows at startup, and why 32-bit
-and Linux servers, where the game's listeners come first, don't hit it.
+don't link it, so a growth in the extension comes from the C runtime's
+heap. If that happens, the vector's block is the C runtime's, and the
+game hands it to tier0 the next time it grows the vector.
+
+When SDK Hooks loads at the server's start, i.e. a plugin loaded then
+uses it, the vector is still empty, and SDK Hooks makes its first
+allocation. CUtlMemory's first allocation is 32 bytes, whatever the
+size of the elements: 8 pointers on x86, 4 on x86_64. Whether the game
+then grows the vector depends on how many listeners it adds. Day of
+Infamy adds 5 more until its first map has started:
+- On x86, 6 listeners fit into the 8 slots, the game never grows the
+  vector, and the C runtime's block goes unnoticed.
+- On x86_64, the fifth listener doesn't fit into 4 slots: the game grows
+  the vector at the map start, tier0's realloc gets the C runtime's
+  block, which it takes for one of its own, and the server crashes.
+
+So the crash on x86_64 Windows comes from the vector's size alone; a
+game that adds more listeners would hand the C runtime's block to
+tier0 on x86 as well. Loaded later, the vector already holds the game's
+listeners in tier0's block, with room for SDK Hooks'.
 
 Grow the vector with g_pMemAlloc->Realloc before adding the listener,
-so the block is always tier0's.
+so its block is always tier0's.
 
-This doesn't depend on DHooks: to reproduce, on Day of Infamy's 64-bit
-Windows server (srcds_x64), load a plugin at startup that only includes
-<sdkhooks> and does nothing; the server crashes at the map start. With
-full page heap (gflags /p /enable srcds_x64.exe /full) the crash points
-at the block's allocation in SDKHooks::SDK_OnLoad.
+To reproduce, on Day of Infamy's 64-bit Windows server (srcds_x64),
+load a plugin at startup that only includes <sdkhooks> and does
+nothing: the server crashes at the map start. With full page heap
+(gflags /p /enable srcds_x64.exe /full) the crash points at the block's
+allocation in SDKHooks::SDK_OnLoad. Under a debugger, with write
+breakpoints on the vector's fields, stock SourceMod shows on both
+servers: an empty vector when SDK_OnLoad runs; SDK Hooks' allocation of
+8 slots (x86) or 4 (x86_64); the game's 5 listeners after it; on x86_64
+the access violation in tier0 as the fifth is added, on x86 no
+reallocation at all.
 
 Tested on Windows 11 with SourceMod built with MSVC 14.52 (Visual
 Studio 2026): the reproducer crashes with master at the map start,
 leaving a crash dump, and runs with this patch alone. With the whole
 series, the server runs with all of SourceMod's extensions and 25
-plugins loaded, on 64-bit (also under full page heap) and on 32-bit,
-which this bug doesn't affect.
+plugins loaded, on 64-bit (also under full page heap) and on 32-bit.
 ---
  extensions/sdkhooks/extension.cpp | 27 ++++++++++++++++++++++++++-
  1 file changed, 26 insertions(+), 1 deletion(-)
 
 diff --git a/extensions/sdkhooks/extension.cpp b/extensions/sdkhooks/extension.cpp
-index be521479..4534e35d 100644
+index be521479..527130d6 100644
 --- a/extensions/sdkhooks/extension.cpp
 +++ b/extensions/sdkhooks/extension.cpp
 @@ -126,6 +126,31 @@ IForward *g_pOnLevelInit = NULL;
@@ -51,9 +62,9 @@ index be521479..4534e35d 100644
  
 +// Adds a listener to the game's entity listeners, growing their vector with the game's allocator,
 +// tier0's: CUtlVector grows with malloc and realloc, which the game's libraries route to tier0
-+// (memoverride.cpp) but SourceMod's extensions don't. While the game hasn't added its own listeners
-+// yet, as on 64-bit Windows when the extension loads at startup, the C runtime's block would be the
-+// vector's, which the game's next growth hands to tier0's realloc: a block that allocator never made.
++// (memoverride.cpp) but SourceMod's extensions don't. While the vector is empty or full, e.g. when the
++// extension loads at the server's start, the C runtime's block would be the vector's, which the game's
++// next growth hands to tier0's realloc: a block that allocator never made.
 +void AddGameEntityListener(CUtlVector<IEntityListener *> *listeners, IEntityListener *listener)
 +{
 +	struct Access : CUtlVector<IEntityListener *>
