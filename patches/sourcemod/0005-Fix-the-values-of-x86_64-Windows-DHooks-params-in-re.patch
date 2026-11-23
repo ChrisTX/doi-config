@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christian Pfeiffer <cpfeiffer@rev-crew.info>
+Date: Mon, 23 Nov 2026 02:43:51 +0100
+Subject: [PATCH 5/6] Fix the values of x86_64 Windows DHooks params in
+ registers
+
+On x86_64 Windows, DHookParam.Get of a dynamic detour returns garbage
+for every param passed in a register, i.e. the first four arguments.
+x86_64MicrosoftDefault assigns RCX, RDX, R8 and R9 (XMM0 to XMM3 for
+floats) to them itself, and GetParamStruct saves their values after
+the stack arguments in the parameter buffer, but the setup's params
+never learnt their registers: their custom_register stayed None, so
+GetParamOffset took them for stack arguments and read them from the
+start of the buffer, a copy of the stack.
+
+Give the params the registers that the calling convention assigned, in
+UpdateRegisterArgumentSizes, next to their sizes. With that,
+GetRegisterParamOffset finds them after the stack arguments, which it
+then has to count as GetParamStruct copied them: the 32 bytes of shadow
+space first (x86_64MicrosoftDefault::GetArgStackSize), then 8 bytes per
+stack argument, as GetStackParamOffset already does on x86_64.
+
+Builds on the previous patch, of thiscall detours without params, which
+fixes the indices of the params in UpdateRegisterArgumentSizes.
+
+Tested with Day of Infamy's 64-bit Windows server (srcds_x64):
+- Under Wine (wine-cachyos 10.0), DHooks built with clang-cl and xwin's
+  MSVC libraries: a post detour of
+  CINSRules::GetTotalActivePlayersOnTeam(int) reads team for a call
+  with 3 as -1072758784 with master, as 3 with this patch. A second
+  setup of the same function needs the patch of params of a second
+  setup as well.
+- On Windows 11, built with MSVC 14.52 (Visual Studio 2026), the param
+  read 3 already with the previous patch alone: what the wrong register
+  holds differs between clang-cl's and MSVC's builds, so the bug
+  doesn't show there with this test. With this patch, it reads 3 there
+  as well.
+
+With the five DHooks patches, nwi_gamedata's detours of Day of Infamy's
+game rules (doi-config) let bots play coop and PvP rounds on the 64-bit
+Windows server as on 32-bit.
+---
+ extensions/dhooks/dynhooks_sourcepawn.cpp | 3 +++
+ extensions/dhooks/util.cpp                | 9 +++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/extensions/dhooks/dynhooks_sourcepawn.cpp b/extensions/dhooks/dynhooks_sourcepawn.cpp
+index 970eeaa2..9885e2e8 100644
+--- a/extensions/dhooks/dynhooks_sourcepawn.cpp
++++ b/extensions/dhooks/dynhooks_sourcepawn.cpp
+@@ -330,6 +330,9 @@ bool UpdateRegisterArgumentSizes(CHook* pDetour, HookSetup *setup)
+ 
+ 		argTypes[i].size = reg->m_iSize;
+ 		setup->params[i - firstArg].size = reg->m_iSize;
++		// The calling convention assigns the registers of the params on x86_64, which the params need
++		// to find their values (GetParamOffset).
++		setup->params[i - firstArg].custom_register = argTypes[i].custom_register;
+ 	}
+ 
+ 	return true;
+diff --git a/extensions/dhooks/util.cpp b/extensions/dhooks/util.cpp
+index ac9b678a..915b29f0 100644
+--- a/extensions/dhooks/util.cpp
++++ b/extensions/dhooks/util.cpp
+@@ -78,11 +78,20 @@ size_t GetRegisterParamOffset(HookParamsStruct *paramStruct, unsigned int index)
+ 
+ 	// Need to get the size of the stack arguments first. Register arguments are stored after them in the buffer.
+ 	size_t stackSize = 0;
++#if defined(KE_ARCH_X64) && defined(WIN32)
++	// The 32 bytes of shadow space, which GetParamStruct copies with the stack arguments
++	// (x86_64MicrosoftDefault::GetArgStackSize)
++	stackSize = 32;
++#endif
+ 	for (int i = paramStruct->dg->params.size() - 1; i >= 0; i--)
+ 	{
+ 		if (paramStruct->dg->params[i].custom_register == None)
+ 		{
++#ifdef KE_ARCH_X64
++			stackSize += 8;
++#else
+ 			stackSize += paramStruct->dg->params[i].size;
++#endif
+ 		}
+ 	}
+ 

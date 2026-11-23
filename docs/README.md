@@ -42,6 +42,8 @@ placed on top of a server as they are:
   (`addons/sourcemod/configs/advertisements.txt`). A server that shares a file
   with another links to it, like `private-mp` to `mp-battles`; the links are
   resolved when the server is set up, as the server only gets its own folder.
+- `patches/sourcemod` has the fixes of SourceMod that the servers need on
+  Windows, for our own builds of it.
 - `workshop` has the approved versions of the servers' workshop items (see
   [Workshop items](kit/Workshop.md)).
 - `src/nwi_server_kit` is the Python package of the servers' tools, with the

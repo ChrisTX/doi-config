@@ -76,7 +76,8 @@ say a casual PvP one, playing with bots until players join, and the round test
 uses it. Coop needs bots on the players' team for it, the game's AI teammates
 (`mp_coop_ai_teammates 1`). Its gamedata covers Windows as well, 32-bit and
 64-bit, tested with Day of Infamy's PvP and coop rounds under Wine. On 64-bit
-Windows, it needs fixes of DHooks that SourceMod 1.13 doesn't have yet: its
+Windows, it needs fixes of DHooks that SourceMod 1.13 doesn't have yet, the
+patches in `patches/sourcemod`: its
 detours crash without arguments, and its post-callbacks hand the caller the
 return address instead of the function's return value, so the game would go on
 waiting for players, and the coop modes would lose their rounds at once.

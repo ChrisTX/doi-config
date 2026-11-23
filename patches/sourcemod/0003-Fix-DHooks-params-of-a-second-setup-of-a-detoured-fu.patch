@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christian Pfeiffer <cpfeiffer@rev-crew.info>
+Date: Mon, 23 Nov 2026 02:43:51 +0100
+Subject: [PATCH 3/6] Fix DHooks params of a second setup of a detoured
+ function
+
+UpdateRegisterArgumentSizes gives the params of a setup the sizes of
+the registers they're passed in, which GetParamStruct lays out the
+parameter buffer by. Native_EnableDetour only called it for the setup
+that creates the detour, though. Another setup of the same function,
+e.g. of another plugin, or a second DynamicDetour of the same plugin,
+kept the sizes it declared, and read its params in registers at the
+wrong offsets of the buffer.
+
+Call it for every setup that enables a detour. It doesn't change the
+detour's calling convention: the sizes it sets there are the same each
+time.
+
+On its own, this shows on x86_64 with params in registers, whose sizes
+(8) differ from the declared ones (4 for an int). With the patch of
+register params' values on Windows, which has the params learn the
+registers that x86_64's calling convention assigns them, it's every
+param in a register: without this, a second setup of a function reads
+them wrongly while the first one reads them right.
+
+Tested with Day of Infamy's 64-bit Windows server (srcds_x64):
+- Under Wine (wine-cachyos 10.0), DHooks built with clang-cl and xwin's
+  MSVC libraries: two DynamicDetours of
+  CINSRules::GetTotalActivePlayersOnTeam(int) with a post callback each
+  read team for a call with 3. With the patch of register params only,
+  the first reads 3, the second -1072758784; with this patch as well,
+  both read 3.
+- On Windows 11, built with MSVC 14.52 (Visual Studio 2026), both
+  setups read 3 already with the patch of thiscall detours without
+  params alone: the wrong values come from whatever the registers hold,
+  which differs between clang-cl's and MSVC's builds, so the bug
+  doesn't show there with this test. With the whole series, both read 3
+  there as well.
+- On Linux x86, where only params with a custom register are concerned,
+  the dedicated server plays coop rounds with its detours (doi-config's
+  round test) with DHooks built with the DHooks patches as with DHooks
+  built from master.
+---
+ extensions/dhooks/natives.cpp | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/extensions/dhooks/natives.cpp b/extensions/dhooks/natives.cpp
+index f52c95a1..17938124 100644
+--- a/extensions/dhooks/natives.cpp
++++ b/extensions/dhooks/natives.cpp
+@@ -431,10 +431,13 @@ cell_t Native_EnableDetour(IPluginContext *pContext, const cell_t *params)
+ 	{
+ 		ICallingConvention *pCallConv = ConstructCallingConvention(setup);
+ 		pDetour = pDetourManager->HookFunction(setup->funcAddr, pCallConv);
+-		if (!UpdateRegisterArgumentSizes(pDetour, setup))
+-			return pContext->ThrowNativeError("A custom register for a parameter isn't supported.");
+ 	}
+ 
++	// Every setup needs the sizes and registers of its params, not only the one that created the
++	// detour: another setup of the function, e.g. another plugin's, reads its params with them.
++	if (!UpdateRegisterArgumentSizes(pDetour, setup))
++		return pContext->ThrowNativeError("A custom register for a parameter isn't supported.");
++
+ 	// Register our pre/post handler.
+ 	pDetour->AddCallback(hookType, (HookHandlerFn *)&HandleDetour);
+ 

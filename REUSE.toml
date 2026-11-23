@@ -14,3 +14,10 @@ path = [
 precedence = "override"
 SPDX-FileCopyrightText = ["Rothgar", "Christian Pfeiffer"]
 SPDX-License-Identifier = "GPL-3.0-only WITH LicenseRef-SourceMod-exception"
+
+# The patches of SourceMod's code, under SourceMod's licence
+[[annotations]]
+path = "patches/sourcemod/*.patch"
+precedence = "override"
+SPDX-FileCopyrightText = "Christian Pfeiffer"
+SPDX-License-Identifier = "GPL-3.0-only WITH LicenseRef-SourceMod-exception"

@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christian Pfeiffer <cpfeiffer@rev-crew.info>
+Date: Mon, 23 Nov 2026 02:43:51 +0100
+Subject: [PATCH 1/6] Fix x86_64 DHooks detours returning the return address
+
+On x86_64, every function with a dynamic detour returns garbage to its
+caller: the low half of a return address instead of its value. All
+detours return through the post-hook code that
+CHook::CreatePostCallback generates, pre-only ones too, and that code
+restored the saved registers first and then called
+CHook::GetReturnAddress through RAX, jumping to the result:
+
+    Write_RestoreRegisters(jit, HOOKTYPE_POST);   // RAX = the return value
+    jit.mov(rax, func.address);                   // RAX = GetReturnAddress
+    jit.call(rax);                                // RAX = the return address
+    jit.add(rsp, 8);
+    jit.jump(rax);                                // the caller gets RAX
+
+So the caller got the return address in RAX, instead of both the
+original value and a post-hook's override; a float return in XMM0 could
+be lost to the call as well. The 32-bit code saves the scratch
+registers around the same call.
+
+Get the return address before the registers are restored, put it into
+the stack slot that the post-hook code reserves at its start
+(jit.sub(rsp, 8)), restore the registers, RSP pointing at that slot
+again, and return with ret.
+
+To reproduce, on a 64-bit Windows server: detour any function that
+returns an int with a pre callback that returns MRES_Ignored, and call
+the function with SDKCall before and after enabling the detour. Before,
+it returns its value; detoured, a large number. A post callback that
+overrides the value with MRES_Override has no effect either.
+
+Tested with Day of Infamy's 64-bit Windows server (srcds_x64):
+- Under Wine (wine-cachyos 10.0), DHooks built with clang-cl and xwin's
+  MSVC libraries: CINSRules::GetTotalActivePlayersOnTeam(int) returns
+  0 for team 3 when called directly; through a pre detour that changes
+  nothing, master returns 1408306087, this patch 0, and an override of
+  1234 in a post callback arrives with this patch only.
+- On Windows 11, built with MSVC 14.52 (Visual Studio 2026), on top of
+  the patch of thiscall detours without params, without which any
+  thiscall detour with params crashes there: without this patch, the
+  pre detour returns -2131523849 and the override doesn't arrive; with
+  it, 0 and 1234.
+
+Linux x86_64 has no DHooks yet, but its JIT code is the same apart from
+the argument registers, so this would apply there too (the enabler in
+alliedmodders/sourcemod#2292 kept this order).
+---
+ extensions/dhooks/DynamicHooks/hook.cpp | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/extensions/dhooks/DynamicHooks/hook.cpp b/extensions/dhooks/DynamicHooks/hook.cpp
+index 55e4f8aa..8dfb8cb3 100644
+--- a/extensions/dhooks/DynamicHooks/hook.cpp
++++ b/extensions/dhooks/DynamicHooks/hook.cpp
+@@ -407,10 +407,8 @@ void CHook::CreatePostCallback()
+ 	// Call the post-hook handler
+ 	Write_CallHandler(jit, HOOKTYPE_POST);
+ 
+-	// Restore the previously saved registers, so any changes will be applied
+-	Write_RestoreRegisters(jit, HOOKTYPE_POST);
+-
+-	// Get return address
++	// Get the return address before restoring the registers. The call clobbers RAX and XMM0,
++	// which hold the (possibly overridden) return value of the function.
+ 	union
+ 	{
+ 		void* (__cdecl CHook::*GetReturnAddress)(void*);
+@@ -436,9 +434,15 @@ void CHook::CreatePostCallback()
+ 	// Free shadow space
+ 	MSVC_ONLY(jit.add(rsp, 40));
+ 
+-	// Jump to the original return address
+-	jit.add(rsp, 8);
+-	jit.jump(rax);
++	// Put the original return address into the stack slot reserved above
++	jit.mov(rsp(), rax);
++
++	// Restore the previously saved registers, so any changes will be applied.
++	// This restores RSP to point at that slot again.
++	Write_RestoreRegisters(jit, HOOKTYPE_POST);
++
++	// Return to the original return address
++	jit.retn();
+ }
+ 
+ void CHook::Write_CallHandler(x64JitWriter& jit, HookType_t type)

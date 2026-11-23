@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christian Pfeiffer <cpfeiffer@rev-crew.info>
+Date: Mon, 23 Nov 2026 02:43:51 +0100
+Subject: [PATCH 2/6] Fix a crash creating x86_64 DHooks detours
+
+Creating x86_64 dynamic detours crashes after a number of them, in
+GenBuffer::push (a write fault in its memcpy) under CHook::CHook ->
+CHook::CreateBridge. How many it takes depends on where the earlier
+detours' code ended up; on Day of Infamy's server it was the tenth or
+so.
+
+CreateBridge generated the bridge's code into m_bridge and, in the
+middle of it, from Write_ModifyReturnAddress, the post-hook code into
+m_postCallback. Both GenBuffers come from SourceHook's CPageAlloc, whose
+regions hold many buffers, and whose SetRE/SetRW change the protection
+of a whole region. When a buffer grows, GenBuffer::push allocates the
+new buffer, makes the old buffer's region read+execute and then the new
+buffer's region read+write. If the post-hook code's buffer grew into
+another region than the bridge's, the bridge's region was left
+read+execute, and the bridge's next write faulted.
+
+Generate the post-hook code first, completely, and then the bridge, so
+that only one buffer is written at a time. The bridge doesn't need the
+post-hook code's address while it's generated, only &m_pNewRetAddr,
+which it reads at runtime.
+
+To reproduce, on a 64-bit Windows server: enable detours on a few
+hundred functions (with any callback) in one go. Without this patch,
+the server crashes in dhooks.ext.dll partway through; with it, all of
+them are enabled and disabled again.
+
+Tested with Day of Infamy's 64-bit Windows server (srcds_x64), with pre
+detours on 300 functions of its server.dll (taken from its .pdata),
+enabled one after the other and disabled again: master crashes as
+described, this patch doesn't, both under Wine (wine-cachyos 10.0) with
+DHooks built with clang-cl and xwin's MSVC libraries, and on Windows 11
+built with MSVC 14.52 (Visual Studio 2026).
+---
+ extensions/dhooks/DynamicHooks/hook.cpp | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/extensions/dhooks/DynamicHooks/hook.cpp b/extensions/dhooks/DynamicHooks/hook.cpp
+index 8dfb8cb3..fac000ca 100644
+--- a/extensions/dhooks/DynamicHooks/hook.cpp
++++ b/extensions/dhooks/DynamicHooks/hook.cpp
+@@ -296,6 +296,11 @@ void CHook::CreateBridge()
+ {
+ 	auto& jit = m_bridge;
+ 
++	// Generate the post-hook code first. Both buffers share the regions of the same page allocator,
++	// and a growing buffer makes its old region read+execute (GenBuffer::push): generated in between,
++	// the post-hook code could make the bridge's region read-only while it's still being written.
++	CreatePostCallback();
++
+ 	//jit.breakpoint();
+ 	PrintRegisters(jit);
+ 
+@@ -385,7 +390,6 @@ void CHook::Write_ModifyReturnAddress(x64JitWriter& jit)
+ 	MSVC_ONLY(jit.add(rsp, 40));
+ 	
+ 	// Override the return address. This is a redirect to our post-hook code
+-	CreatePostCallback();
+ 	jit.mov(rax, reinterpret_cast<std::uint64_t>(&m_pNewRetAddr));
+ 	jit.mov(rax, rax());
+ 	jit.mov(rsp(), rax);

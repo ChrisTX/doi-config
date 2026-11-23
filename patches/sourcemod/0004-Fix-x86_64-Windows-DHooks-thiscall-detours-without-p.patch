@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christian Pfeiffer <cpfeiffer@rev-crew.info>
+Date: Mon, 23 Nov 2026 02:43:51 +0100
+Subject: [PATCH 4/6] Fix x86_64 Windows DHooks thiscall detours without params
+
+Fixes alliedmodders/sourcemod#2282.
+
+On x86_64 Windows, ConstructCallingConvention inserts the this pointer
+of a thiscall as the first argument of the calling convention (in RCX),
+but not into the setup's params. UpdateRegisterArgumentSizes then
+indexed both by the convention's arguments: for a thiscall without
+params, it wrote to an empty params vector, which crashed in
+DynamicDetour.Enable, and for other thiscalls, every param got the size
+of the register before it.
+
+Skip the this pointer there, as alliedmodders/sourcemod#2290 did, which
+was closed unmerged. Only x86_64 Windows inserts it, so the skip is
+limited to that, as the insertion is.
+
+Tested with Day of Infamy's 64-bit Windows server (srcds_x64): enabling
+a post detour of CINSRules::ShouldBeWaitingForPlayers() const crashes
+the server with master and works with this patch, both under Wine
+(wine-cachyos 10.0) with DHooks built with clang-cl and xwin's MSVC
+libraries, and on Windows 11 built with MSVC 14.52 (Visual Studio
+2026). On Windows 11, detours of thiscalls with params crashed with
+master as well, and work with this patch.
+
+The params of thiscalls on x86_64 Windows still read wrong values after
+this; the next patch, of register params' values on Windows, fixes
+that and builds on this one.
+---
+ extensions/dhooks/dynhooks_sourcepawn.cpp | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/extensions/dhooks/dynhooks_sourcepawn.cpp b/extensions/dhooks/dynhooks_sourcepawn.cpp
+index dbb0abc7..970eeaa2 100644
+--- a/extensions/dhooks/dynhooks_sourcepawn.cpp
++++ b/extensions/dhooks/dynhooks_sourcepawn.cpp
+@@ -309,7 +309,15 @@ bool UpdateRegisterArgumentSizes(CHook* pDetour, HookSetup *setup)
+ 	std::vector<DataTypeSized_t> &argTypes = callingConvention->m_vecArgTypes;
+ 	int numArgs = argTypes.size();
+ 
+-	for (int i = 0; i < numArgs; i++)
++	// ConstructCallingConvention inserts the this pointer of a thiscall as the first argument on
++	// x86_64 Windows, which isn't one of the setup's params.
++	int firstArg = 0;
++#if defined(DYNAMICHOOKS_x86_64) && defined(WIN32)
++	if (setup->callConv == CallConv_THISCALL)
++		firstArg = 1;
++#endif
++
++	for (int i = firstArg; i < numArgs; i++)
+ 	{
+ 		// Ignore regular arguments on the stack.
+ 		if (argTypes[i].custom_register == None)
+@@ -321,7 +329,7 @@ bool UpdateRegisterArgumentSizes(CHook* pDetour, HookSetup *setup)
+ 			return false;
+ 
+ 		argTypes[i].size = reg->m_iSize;
+-		setup->params[i].size = reg->m_iSize;
++		setup->params[i - firstArg].size = reg->m_iSize;
+ 	}
+ 
+ 	return true;
