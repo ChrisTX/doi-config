@@ -24,10 +24,16 @@ rounds with bots only and the server's visibility.
 
 0006 doesn't depend on DHooks or x86_64: SDK Hooks, loaded at the server's
 start, gives the game's vector of entity listeners a block of the C runtime's
-heap, which tier0 gets once the game grows the vector. Whether it does
-depends on the vector's size: the block holds 8 listeners on 32-bit, of which
-Day of Infamy uses 6, and 4 on 64-bit, so only the 64-bit server grows it, at
-the map start, and crashes in tier0 (measured with a debugger on both). 0003 and 0005 fix reads of
+heap, which the game hands to tier0 once it grows the vector. Measured with a
+debugger, Day of Infamy, Insurgency, TF2, CS:S, DoD:S and HL2DM add 6 or 7
+listeners, SDK Hooks' included: the block holds 8 on 32-bit, so it isn't grown
+there yet, and 4 on 64-bit, so every one of them grows it at the map start.
+TF2's tier0 allocates from the Windows process heap, as the C runtime does,
+and copes by chance; Day of Infamy's has heaps of its own and crashes. Map
+entities and other extensions add listeners too, so 32-bit servers can grow
+the block as well.
+
+0003 and 0005 fix reads of
 registers whose contents depend on the compiler, so their bugs show with
 clang-cl's builds but not with MSVC's in the same tests; they're still bugs of
 the code.
