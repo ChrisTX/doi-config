@@ -50,14 +50,21 @@ L 11/17/2026 - 14:00:03: [sourcebans.smx] Database failure
 
 def test_coop(tmp_path: Path) -> None:
     toml = tmp_path / "server.toml"
-    toml.write_text('playlist = "nwi/coop_commando"\n')
+    toml.write_text(
+        'playlist = "nwi/coop_commando"\nstartup_map = "bastogne stronghold"\n'
+    )
     assert rounds.is_coop(toml)
-    toml.write_text('playlist = "nwi/mp_casual_with_bots"\n')
+    # Insurgency's coop, without a playlist
+    toml.write_text('startup_map = "ministry_coop checkpoint"\n')
+    assert rounds.is_coop(toml)
+    toml.write_text('playlist = "nwi/mp_battles"\nstartup_map = "crete invasion"\n')
+    assert not rounds.is_coop(toml)
+    toml.write_text('startup_map = "crete"\n')
     assert not rounds.is_coop(toml)
     assert "mp_coop_ai_teammates 1" in rounds.setup_commands(True, "bastogne")
     assert rounds.setup_commands(False, "crete")[-1] == "changelevel crete"
     assert rounds.bot_commands(True) == []
-    assert rounds.bot_commands(False, "insurgency")[:2] == [
+    assert rounds.bot_commands(False, "insurgency")[1:3] == [
         "ins_bot_add",
         "ins_bot_add_t2",
     ]
@@ -79,13 +86,14 @@ class FakeServer:
             self.log += self.script.pop(0)
         return ""
 
-    def run(self, coop: bool = True) -> rounds.Result:
+    def run(self, coop: bool = True, game: str = "doi") -> rounds.Result:
         return rounds.run(
             self.rcon,
             lambda: "\n".join(self.log),
             lambda: self.error_log,
             coop,
             "bastogne",
+            game,
             clock=lambda: self.now,
             sleep=self.sleep,
         )
@@ -169,7 +177,55 @@ def test_pvp_bots_after_the_map(coop: bool) -> None:
     server = FakeServer([[], [line("14:00:10", "map crete")]])
     server.run(coop)
     added = [command for command in server.commands if "_bot_add" in command]
-    assert len(added) == (0 if coop else 2 * rounds.PVP_BOTS)
+    # Without the plugin's count of the teams, the bots count as dropped: added again, a few times
+    assert len(added) == (0 if coop else rounds.READD_TRIES * 2 * rounds.PVP_BOTS)
     if not coop:
         first = server.commands.index("doi_bot_add")
         assert server.commands[:first].count("nwi_test_rounds_status") == 2
+
+
+def test_bots_of_the_games() -> None:
+    """PvP raises the game's quota, which a playlist without bots sets to 0; coop gets the games' AI
+    teammates, and in Insurgency a bot that starts the game."""
+    # After the map change, whose playlist sets its quota again
+    assert rounds.bot_commands(False)[0] == "doi_bot_quota 10"
+    assert rounds.bot_commands(False, "insurgency")[0] == "ins_bot_quota 10"
+    assert "mp_coop_ai_teammates 1" in rounds.setup_commands(
+        True, "ministry_coop", "insurgency"
+    )
+    assert rounds.bot_commands(True, "insurgency") == ["ins_bot_add"]
+
+
+def test_bots_the_game_dropped_are_added_again() -> None:
+    """Bots on the players' team stay; none there, they're added again, a few times at most."""
+    kept = FakeServer([[], [line("14:00:10", "map crete"), status(0)]])
+    kept.run(coop=False)
+    assert kept.commands.count("doi_bot_add") == rounds.PVP_BOTS
+    empty = line(
+        "14:00:11",
+        "teams 2: 0 bots 0 humans, 3: 3 bots 0 humans, 0 deaths, game state 1",
+    )
+    dropped = FakeServer([[], [line("14:00:10", "map ministry_coop"), empty]])
+    dropped.run(coop=True, game="insurgency")
+    assert dropped.commands.count("ins_bot_add") == rounds.READD_TRIES
+
+
+def test_insurgency_coop_without_a_capture() -> None:
+    """Insurgency's AI teammates take no objective without a human player: its coop passes with the
+    rounds and deaths alone, Day of Infamy's coop and PvP still need the capture."""
+    script = [
+        [line("14:00:10", "map ministry_coop"), line("14:00:11", "game_start")],
+        [line("14:00:20", "round_start"), status(4)],
+    ]
+    server = FakeServer([list(lines) for lines in script])
+    result = server.run(coop=True, game="insurgency")
+    assert result.passed, result.failures
+    assert server.now < 60
+    assert [check.event for check in rounds.checks(True, "insurgency")] == [
+        "game_start",
+        "round_start",
+    ]
+    for coop, game in ((True, "doi"), (False, "insurgency")):
+        server = FakeServer([list(lines) for lines in script])
+        result = server.run(coop=coop, game=game)
+        assert result.failures == ["no controlpoint_captured within 900 seconds"]

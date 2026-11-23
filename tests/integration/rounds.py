@@ -5,12 +5,17 @@ to SourceMod's log.
 The game waits for human players before a round starts, also with bots on the teams, and the coop
 modes lose a round without human players on the players' team. nwi_gamedata's nwi_bot_only_rounds
 lets bots play without them. The test turns it on, keeps the empty server from hibernating, and puts
-bots on the teams: the coop modes' AI teammates on the players' team, whose enemies the game adds
-itself; in PvP, bots on both teams. Then it changes to the config's first map, so that its game
-starts anew, and checks, each within its time:
+bots on the teams: in coop the games' AI teammates on the players' team, whose enemies the game adds
+itself, which Insurgency only adds at a round's start, so a bot of its own starts its game first; in
+PvP, bots on both teams, with the game's quota raised for them, which a playlist without bots sets
+to 0.
+Then it changes to the config's first map, so that its game starts anew, and checks, each within its
+time:
 
 - the game starts (game_start), and a round (round_start),
 - the bots take an objective (controlpoint_captured), and die (the plugin's count of deaths),
+  where Insurgency's coop only has them die: its AI teammates only escort a human player, so without
+  one they never take an objective,
 - and SourceMod reports no exception, and no error of the configs' plugins (nwi_*).
 
 instance.py starts the config's test instance, puts the plugin in, runs the checks with run() and
@@ -37,6 +42,10 @@ TEAMS = re.compile(
 )
 # The coop modes' AI teammates on the players' team
 AI_TEAMMATES = 6
+# How long after adding the bots the test adds them again if the game dropped them, and how often: the
+# first bot of a map makes the game load its NavMesh, which restarts the game and drops the bots
+READD_SECONDS = 30
+READD_TRIES = 3
 # Bots a team in PvP
 PVP_BOTS = 10
 
@@ -65,6 +74,14 @@ CHECKS = (
     Check("round_start", 300),
     Check("controlpoint_captured", 900),
 )
+
+
+def checks(coop: bool, game: str = "doi") -> list[Check]:
+    """The checks of a config: Insurgency's coop without the objective, which its AI teammates only
+    take with a human player to escort (CINSBotActionCheckpoint gives them CINSBotEscort)."""
+    if coop and game == "insurgency":
+        return [check for check in CHECKS if check.event != "controlpoint_captured"]
+    return list(CHECKS)
 
 
 @dataclass
@@ -112,14 +129,22 @@ def errors(log: str) -> list[str]:
     ]
 
 
+# The coop modes of Day of Infamy and Insurgency, as nwi_mode_config.sp has them
+COOP_MODES = {
+    "stronghold", "entrenchment", "raid", "patrol",
+    "checkpoint", "hunt", "outpost", "survival", "conquer",
+}  # fmt: skip
+
+
 def is_coop(server_toml: Path) -> bool:
-    """Whether a config plays coop: its playlist's name, e.g. nwi/coop_commando."""
+    """Whether a config plays coop: the game mode of its startup map, e.g. bastogne stronghold."""
     with server_toml.open("rb") as file:
-        playlist = tomllib.load(file).get("playlist", "")
-    return isinstance(playlist, str) and "coop" in playlist
+        startup_map = tomllib.load(file).get("startup_map", "")
+    words = startup_map.split() if isinstance(startup_map, str) else []
+    return len(words) > 1 and words[1] in COOP_MODES
 
 
-def setup_commands(coop: bool, startup_map: str) -> list[str]:
+def setup_commands(coop: bool, startup_map: str, game: str = "doi") -> list[str]:
     """The commands that let the bots play the config's rounds, see the module's documentation."""
     commands = ["sv_hibernate_when_empty 0", "nwi_bot_only_rounds 1"]
     if coop:
@@ -132,12 +157,19 @@ def setup_commands(coop: bool, startup_map: str) -> list[str]:
 
 
 def bot_commands(coop: bool, game: str = "doi") -> list[str]:
-    """The bots added after the map change: PvP's, whose server adds none without players; the
-    commands of the game's folder (doi or insurgency)."""
+    """The bots added after the map change, the commands of the game's folder (doi or insurgency):
+    PvP's, whose server adds none without players; in Insurgency's coop one bot, which starts the
+    game, as the game adds its AI teammates only at a round's start and nwi_bot_only_rounds waits for
+    a bot on a team. At the round's start the game's quota sets the teams' bots, this one's too."""
     if coop:
-        return []
+        return ["ins_bot_add"] if game == "insurgency" else []
     prefix = "doi" if game == "doi" else "ins"
-    return [f"{prefix}_bot_add", f"{prefix}_bot_add_t2"] * PVP_BOTS
+    # A playlist without bots, e.g. NWI's mp_battles, sets the quota to 0 at every map change, and the
+    # game kicks the bots above it
+    return [f"{prefix}_bot_quota {PVP_BOTS}"] + [
+        f"{prefix}_bot_add",
+        f"{prefix}_bot_add_t2",
+    ] * PVP_BOTS
 
 
 def run(
@@ -154,7 +186,7 @@ def run(
     """Run the round test on a running server with the plugin loaded: RCON, SourceMod's log and its
     error log, see the module's documentation. The log's lines before the map change are skipped."""
     before = len(events(read_log()))
-    for command in setup_commands(coop, startup_map):
+    for command in setup_commands(coop, startup_map, game):
         try:
             rcon(command)
         except OSError:
@@ -163,18 +195,26 @@ def run(
     start = clock()
     # The map change takes a while; the bots come after it
     sleep(interval)
-    added = False
+    added_at: float | None = None
+    adds = 0
     result = Result()
-    pending = list(CHECKS)
+    pending = checks(coop, game)
     while True:
         elapsed = int(clock() - start)
         seen = events(read_log())[before:]
-        # PvP's bots once the new map is there, which drops those before it
-        if not added and any(text.startswith("map ") for _, text in seen):
+        # The bots once the new map is there, which drops those before it, and again if the game
+        # dropped them (READD_SECONDS): the players' team, the first, has none
+        dropped = result.teams is None or result.teams.bots[0] == 0
+        due = added_at is None or (
+            dropped and adds < READD_TRIES and clock() - added_at > READD_SECONDS
+        )
+        commands = bot_commands(coop, game)
+        if commands and due and any(text.startswith("map ") for _, text in seen):
             try:
-                for command in bot_commands(coop, game):
+                for command in commands:
                     rcon(command)
-                added = True
+                added_at = clock()
+                adds += 1
             except OSError:
                 pass
         try:
