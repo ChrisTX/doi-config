@@ -1,8 +1,8 @@
 # Builds the image anew from a clone of this repository, the containers' counterpart of the pull of
 # nwi-update.service: the next start of a container uses it. NWI_CONFIG is the clone, which is pulled
-# first, by default ~/.local/state/nwi-server/config; a drop-in can set another, e.g. a checkout
-# (systemctl --user edit nwi-build.service). The build needs the local pacman repository of
-# tests/integration/instance.py build.
+# first, by default ~/.local/state/nwi-server/config, cloned from NWI_REPOSITORY if it isn't there; a
+# drop-in can set others, e.g. a checkout or a fork (systemctl --user edit nwi-build.service). The
+# packages come from the public repository (tests/integration/instance.py build).
 [Unit]
 Description=Build the image of the Day of Infamy or Insurgency servers
 Wants=network-online.target
@@ -11,6 +11,8 @@ After=network-online.target
 [Service]
 Type=oneshot
 Environment=NWI_CONFIG=%S/nwi-server/config
+Environment=NWI_REPOSITORY=https://github.com/ChrisTX/doi-config.git
+ExecStartPre=/usr/bin/bash -c 'test -d "$NWI_CONFIG/.git" || exec git clone "$NWI_REPOSITORY" "$NWI_CONFIG"'
 ExecStart=/usr/bin/git -C ${NWI_CONFIG} pull --ff-only
 ExecStart=/usr/bin/bash -c 'exec "$NWI_CONFIG/tests/integration/instance.py" build'
 TimeoutStartSec=infinity
