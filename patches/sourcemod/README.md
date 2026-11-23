@@ -63,5 +63,7 @@ alliedmodders/sourcemod#2403 and #2546 replace DHooks' detours, whose code
 meant to be supported before them. Once that's clearer, the DHooks patches
 could go upstream, or their bugs as tests for the rewrite. 0006 is independent
 of DHooks and of x86_64, a bug on every Windows server that only shows when
-the game grows the vector, and is going upstream on its own. Until then, the patches are kept
-here and rebased onto SourceMod's master when it moves.
+the game grows the vector, and went upstream on its own: reported as
+alliedmodders/sourcemod#2618, fixed by alliedmodders/sourcemod#2619. Once
+that's merged, 0006 can go. Until then, the patches are kept here and rebased
+onto SourceMod's master when it moves.
