@@ -24,19 +24,17 @@ with write breakpoints on the vector:
 
   Game               Listeners  x86: grown?  x86_64: grown?
   Day of Infamy      6          no (8)       yes, crashes in tier0
-  Insurgency         6          no (8)       yes
+  Insurgency         6          no (8)       yes, crashes in tier0
   Team Fortress 2    6          no (8)       yes, no crash
   Counter-Strike: S  6          no (8)       yes, no crash
   Day of Defeat: S   6          no (8)       yes, no crash
   Half-Life 2: DM    7          no (8)       yes, no crash
 
-(Listeners counts SDK Hooks' own; Insurgency's x86_64 server was
-measured with this patch, so whether its tier0 crashes on the C
-runtime's block wasn't seen.) On x86_64, every one of these games
+(Listeners counts SDK Hooks' own.) On x86_64, every one of these games
 grows the C runtime's block. TF2's tier0 allocates from the Windows
 process heap, as the C runtime does, so its realloc happens to work on
-the block; Day of Infamy's tier0 has heaps of its own, takes the block
-for one of its own and crashes. On x86, the vector has room so far, but
+the block; Day of Infamy's and Insurgency's tier0 has heaps of its own, takes
+the block for one of its own and crashes. On x86, the vector has room so far, but
 the count isn't fixed: map entities like ai_relationship, ai_goal_*,
 logic_navigation or ai_speechfilter add themselves while they're
 active, as do other extensions, and HL2DM leaves one slot. One more
@@ -52,10 +50,11 @@ heap (gflags /p /enable srcds_x64.exe /full) the crash points at the
 block's allocation in SDKHooks::SDK_OnLoad.
 
 Tested on Windows 11 with SourceMod built with MSVC 14.52 (Visual
-Studio 2026): the reproducer crashes Day of Infamy's 64-bit server with
-master at the map start, leaving a crash dump, and runs with this
-patch alone; Insurgency's 64-bit server grows the vector through tier0
-with it. With the whole series, Day of Infamy's server runs with all of
+Studio 2026): the reproducer crashes Day of Infamy's and Insurgency's
+64-bit servers with master at the map start, and Day of Infamy's runs
+with this patch alone; Insurgency's 64-bit server grows the vector
+without a crash with it. Loaded once the server is up, SDK Hooks
+doesn't crash it, also across a map change. With the whole series, Day of Infamy's server runs with all of
 SourceMod's extensions and 25 plugins loaded, on 64-bit (also under
 full page heap) and on 32-bit.
 ---

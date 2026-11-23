@@ -29,7 +29,8 @@ debugger, Day of Infamy, Insurgency, TF2, CS:S, DoD:S and HL2DM add 6 or 7
 listeners, SDK Hooks' included: the block holds 8 on 32-bit, so it isn't grown
 there yet, and 4 on 64-bit, so every one of them grows it at the map start.
 TF2's tier0 allocates from the Windows process heap, as the C runtime does,
-and copes by chance; Day of Infamy's has heaps of its own and crashes. Map
+and copes by chance; Day of Infamy's and Insurgency's have heaps of their own
+and crash. Map
 entities and other extensions add listeners too, so 32-bit servers can grow
 the block as well.
 
@@ -62,5 +63,5 @@ alliedmodders/sourcemod#2403 and #2546 replace DHooks' detours, whose code
 meant to be supported before them. Once that's clearer, the DHooks patches
 could go upstream, or their bugs as tests for the rewrite. 0006 is independent
 of DHooks and of x86_64, a bug on every Windows server that only shows when
-the game grows the vector, and could go upstream on its own. Until then, the patches are kept
+the game grows the vector, and is going upstream on its own. Until then, the patches are kept
 here and rebased onto SourceMod's master when it moves.
