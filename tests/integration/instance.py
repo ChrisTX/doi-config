@@ -42,6 +42,12 @@ Usage:
         or ins-test) without nwi_cvar_unlocker, for the game's own bounds and flags, then remove it;
         with --with-descriptions their help texts too, into checks/cvars/descriptions/<GAME>.json,
         which git ignores, for editors on this machine
+    instance.py windows-rounds [--bits 32|64] [--sourcemod PACKAGE]... HOST [CONFIG...]
+        the round test on a Windows machine over SSH (tests/integration/windows.py): update each config
+        (coop-commando by default) for its mods, put its files into the machine's install of its game
+        (WINDOWS_DOI, WINDOWS_INSURGENCY) with SourceMod's PACKAGE folders of the machine
+        (WINDOWS_SOURCEMOD), start its 64-bit server (or 32-bit), check the rounds as rounds does,
+        then stop it and put the install's files back; exit status 1 if a config failed
     instance.py down
         remove the test instance, its database and volumes
     instance.py rcon COMMAND...
@@ -79,6 +85,14 @@ one VAR=value a line, e.g. TEST_ADMIN=[U:1:123], the environment's taking preced
                           before those of up's own
     NWI_TEST_REPO         public (the default) or local: the repository of build and of the database's
                           tables
+    WINDOWS_DOI, WINDOWS_INSURGENCY
+                          the folders of the games' installs on the Windows machine of windows-rounds,
+                          e.g. D:\\nwi\\doi-server, with Metamod:Source; the test changes them while it
+                          runs, so installs of the tests'
+    WINDOWS_SOURCEMOD     the folders of SourceMod's packages on the machine (with addons/sourcemod),
+                          separated by semicolons, copied in turn: e.g. a 64-bit and a 32-bit build
+    WINDOWS_PROCDUMP      ProcDump on the machine (procdump.exe), which then starts the server and
+                          writes a dump of a crash
 """
 
 import os
@@ -102,6 +116,7 @@ REPOSITORY = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(REPOSITORY / "src"), str(REPOSITORY)]
 from nwi_server_kit import rcon as rcon_client
 from tests.integration import rounds as round_checks
+from tests.integration import windows
 from tests.integration.soak_watch import REPORT
 
 SETTINGS = (
@@ -115,6 +130,10 @@ SETTINGS = (
     "SANITISER",
     "LAUNCH_OPTIONS",
     "NWI_TEST_REPO",
+    "WINDOWS_DOI",
+    "WINDOWS_INSURGENCY",
+    "WINDOWS_SOURCEMOD",
+    "WINDOWS_PROCDUMP",
 )
 IMAGE = "localhost/nwi-server"
 SANITISER_IMAGE = "localhost/nwi-server-sanitiser"
@@ -973,18 +992,59 @@ class Instance:
                 result = self.round_test(config, game, startup_map)
             finally:
                 self.down()
-            print(f"{config}: {'passed' if result.passed else 'FAILED'}")
-            for seconds, event in result.events:
-                print(f"  {seconds:4d} s  {event}")
-            if result.teams is not None:
-                teams = result.teams
-                print(
-                    f"  teams: {teams.bots[0]} and {teams.bots[1]} bots, "
-                    f"{teams.deaths} deaths, game state {teams.state}"
-                )
-            for failure in result.failures:
-                print(f"  {failure}")
+            self.report(config, result)
             if not result.passed:
+                failed.append(config)
+        if failed:
+            print(f"Failed: {', '.join(failed)}", file=sys.stderr)
+        return 1 if failed else 0
+
+    @staticmethod
+    def report(config: str, result: "round_checks.Result") -> None:
+        """A round test's result, as rounds and windows-rounds print it."""
+        print(f"{config}: {'passed' if result.passed else 'FAILED'}")
+        for seconds, event in result.events:
+            print(f"  {seconds:4d} s  {event}")
+        if result.teams is not None:
+            teams = result.teams
+            print(
+                f"  teams: {teams.bots[0]} and {teams.bots[1]} bots, "
+                f"{teams.deaths} deaths, game state {teams.state}"
+            )
+        for failure in result.failures:
+            print(f"  {failure}")
+
+    def windows_rounds(self, args: list[str]) -> int:
+        """The round test of each config on a Windows machine, see the usage and
+        tests/integration/windows.py."""
+        parsed = parse_windows_rounds(args, self.settings)
+        for config in parsed.configs:
+            game = str(server_settings(config).get("game", "doi"))
+            if not self.settings.get(f"WINDOWS_{game.upper()}"):
+                raise InstanceError(
+                    f"{config} is of {game}: WINDOWS_{game.upper()} is its install's folder"
+                )
+        self.update(parsed.configs)
+        failed = []
+        for config in parsed.configs:
+            game = str(server_settings(config).get("game", "doi"))
+            host = windows.Host(parsed.host, self.settings[f"WINDOWS_{game.upper()}"])
+            print(f"{config}: {game}, {parsed.bits}-bit, on {parsed.host}")
+            run_of = windows.run(
+                host,
+                game,
+                parsed.bits,
+                config_folder(config),
+                self.state / "servers" / config,
+                parsed.packages,
+                REPOSITORY,
+                dict(self.settings),
+                procdump=self.settings.get("WINDOWS_PROCDUMP", ""),
+            )
+            self.report(config, run_of.result)
+            for dump in run_of.dumps:
+                print(f"  dump: {dump}")
+            if not run_of.result.passed or run_of.dumps:
                 failed.append(config)
         if failed:
             print(f"Failed: {', '.join(failed)}", file=sys.stderr)
@@ -1039,6 +1099,54 @@ class Instance:
             startup_map,
             game,
         )
+
+
+@dataclass
+class WindowsRounds:
+    """windows-rounds' arguments."""
+
+    host: str
+    configs: list[str]
+    bits: int = 64
+    packages: list[str] = field(default_factory=list)
+
+
+def parse_windows_rounds(args: list[str], settings: Mapping[str, str]) -> WindowsRounds:
+    bits = 64
+    packages: list[str] = []
+    words: list[str] = []
+    index = 0
+    while index < len(args):
+        arg = args[index]
+        value = args[index + 1] if index + 1 < len(args) else ""
+        if arg == "--bits":
+            if value not in ("32", "64"):
+                raise InstanceError("--bits is 32 or 64")
+            bits = int(value)
+            index += 1
+        elif arg == "--sourcemod":
+            if not value:
+                raise InstanceError("--sourcemod needs a folder of the machine")
+            packages.append(value)
+            index += 1
+        elif arg.startswith("-"):
+            raise InstanceError(f"unknown option {arg}")
+        else:
+            words.append(arg)
+        index += 1
+    if not words:
+        raise InstanceError("windows-rounds needs the machine, as ssh takes it")
+    if not packages:
+        packages = [
+            package
+            for package in settings.get("WINDOWS_SOURCEMOD", "").split(";")
+            if package
+        ]
+    if not packages:
+        raise InstanceError(
+            "no SourceMod package: --sourcemod or WINDOWS_SOURCEMOD, a folder of the machine"
+        )
+    return WindowsRounds(words[0], words[1:] or ["coop-commando"], bits, packages)
 
 
 def server_settings(config: str) -> dict[str, object]:
@@ -1124,6 +1232,7 @@ def main(argv: list[str] | None = None) -> int:
         "rounds",
         "stress",
         "dump-cvars",
+        "windows-rounds",
     ):
         print(f"Usage:{usage}", file=sys.stderr)
         return 2
@@ -1152,6 +1261,8 @@ def main(argv: list[str] | None = None) -> int:
             return instance.stress(rest)
         elif command == "dump-cvars":
             return instance.dump_cvars(rest)
+        elif command == "windows-rounds":
+            return instance.windows_rounds(rest)
         else:
             return instance.soak(rest)
     except InstanceError as error:

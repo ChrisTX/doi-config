@@ -130,3 +130,53 @@ take an objective. It takes a few minutes a config:
 ```bash
 tests/integration/instance.py rounds
 ```
+
+## Testing on Windows
+
+The Linux servers only run the 32-bit Linux builds of the games, SourceMod and
+Metamod:Source, so the Windows servers' gamedata (`windows`, `windows64`) and
+SourceMod's Windows builds, e.g. with [its patches](../../patches/sourcemod/README.md),
+need a Windows machine. `instance.py windows-rounds` runs the round test on one
+over SSH (`tests/integration/windows.py`):
+
+1. It makes the config's files here, as the container does: SourceMod from a
+   package on the machine, our plugins, `game/`, the config's mods and the
+   config. SourceBans++ isn't there, as there's no database.
+2. It copies them into the machine's install of the game and starts its
+   server, 64-bit by default, under ProcDump if it's there.
+3. It runs the round test, with RCON through an SSH tunnel, so the machine's
+   firewall stays as it is.
+4. It stops the server and puts the install's files back. The server's logs
+   stay there until the next run.
+
+The machine needs:
+
+- OpenSSH's server, with PowerShell as its shell, which Windows 10 and 11 have
+  as an optional feature;
+- an install of each game it tests, with Metamod:Source, which the test
+  changes while it runs, so one of its own. The server downloads the config's
+  workshop items itself, as a Windows server does, which makes the first run of
+  `coop-commando` take a while (about 8 GB);
+- a build of SourceMod, its package folder with `addons/sourcemod`: for 64-bit
+  servers, one with `patches/sourcemod`.
+
+Its settings go into `~/.config/nwi-server-kit/test-instance.env` with the
+others, e.g. for a machine `windows-vm` of `~/.ssh/config`:
+
+```ini
+WINDOWS_DOI=D:\nwi\doi-server
+WINDOWS_INSURGENCY=D:\nwi\ins-server
+# A 64-bit and a 32-bit build, copied in turn into one SourceMod
+WINDOWS_SOURCEMOD=D:\nwi\build-series64\package;D:\nwi\build-series32\package
+WINDOWS_PROCDUMP=D:\nwi\tools\procdump.exe
+```
+
+Then:
+
+```bash
+tests/integration/instance.py windows-rounds windows-vm coop-commando ins-test
+tests/integration/instance.py windows-rounds --bits 32 windows-vm coop-commando
+```
+
+A crash fails the test, and ProcDump's dump stays on the machine, in the
+install's `.nwi-test\dumps`.

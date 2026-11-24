@@ -31,6 +31,9 @@ static const char g_events[][] = {
 };
 
 int g_deaths;
+// Whether SDK Tools finds the game rules: SourceMod's gamedata has them of 32-bit Windows and Linux
+// only, the Windows test turns it off on 64-bit servers
+ConVar g_gameState;
 
 public void OnPluginStart()
 {
@@ -42,6 +45,8 @@ public void OnPluginStart()
     HookEvent("round_begin", Event_Begin, EventHookMode_PostNoCopy);
     HookEvent("player_death", Event_Death, EventHookMode_PostNoCopy);
     RegServerCmd("nwi_test_rounds_status", Command_Status, "Logs the teams and the deaths so far");
+    g_gameState = CreateConVar("nwi_test_rounds_game_state", "1",
+        "Whether the game rules' state is there: without, it's logged as -1", _, true, 0.0, true, 1.0);
     RegServerCmd("nwi_test_rounds_state", Command_State, "nwi_test_rounds_state <state>: sets the game rules' state");
 }
 
@@ -75,16 +80,21 @@ Action Command_Status(int args)
 
 Action Command_State(int args)
 {
+    if (!g_gameState.BoolValue)
+    {
+        LogError("nwi_test_rounds: no game rules to set the state of (nwi_test_rounds_game_state 0)");
+        return Plugin_Handled;
+    }
     int state = GetCmdArgInt(1);
     LogMessage("nwi_test_rounds: setting the game state %d to %d", GameState(), state);
     GameRules_SetProp("m_iGameState", state);
     return Plugin_Handled;
 }
 
-// The game rules' state (DT_GameRulesProxy's m_iGameState)
+// The game rules' state (DT_GameRulesProxy's m_iGameState), -1 without the game rules
 int GameState()
 {
-    return GameRules_GetProp("m_iGameState");
+    return g_gameState.BoolValue ? GameRules_GetProp("m_iGameState") : -1;
 }
 
 // The players of the two playing teams (2 and 3): bots and humans
