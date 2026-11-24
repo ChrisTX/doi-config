@@ -123,7 +123,9 @@ and `soak-bots` by default, puts in its plugin
 events), lets bots play with `nwi_bot_only_rounds` and checks, each in its
 time, that the game and a round start, that the bots take an objective and
 die, and that SourceMod reports no errors of our plugins
-(`tests/integration/rounds.py`). It takes a few minutes a config:
+(`tests/integration/rounds.py`). In Insurgency's coop, the bots only have to
+die: its AI teammates only escort a human player, so without one they never
+take an objective. It takes a few minutes a config:
 
 ```bash
 tests/integration/instance.py rounds
